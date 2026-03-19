@@ -144,3 +144,9 @@
 
 ## Fix-uri vizuale (Sprint 9)
 - [x] Sidebar: logo mai mare, fundal transparent, versiunea galbenă cu text negru
+
+## Sprint 10 — Zile naștere + Organigramă
+- [x] Backend: procedură tRPC people.upcomingBirthdays (30 zile viitoare)
+- [x] Backend: procedură tRPC people.orgChart (structură ierarhică din department + jobTitle)
+- [x] Dashboard: card "Zile de naștere" cu avatare, nume, data și countdown zile
+- [x] Organigramă: pagina interactivă cu noduri per departament, expand/collapse, căutare

@@ -109,7 +109,7 @@ export default function Profil() {
   const [editing, setEditing] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
   const [form, setForm] = useState<ProfileData>({
-    name: "", phone: "", phoneMobile: "", department: "", jobTitle: "",   birthDate: "", hireDate: "", addressBuletin: "", addressSecondary: "",
+    name: "", phone: "", phoneMobile: "", department: "", jobTitle: "", birthDate: "", hireDate: "", addressBuletin: "", addressSecondary: "",
     city: "", cnp: "", ciSeries: "", ciNumber: "", ciExpiry: "", ciIssuedBy: "",
     iban: "", bankName: "", emergencyContact: "", emergencyPhone: "",
     emergencyRelation: "", bloodType: "", allergies: "", profileNotes: "",

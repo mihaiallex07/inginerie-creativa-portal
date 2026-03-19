@@ -58,7 +58,22 @@ import {
   getHRDashboardStats,
   getFullProfile,
   updateFullProfile,
+  getUpcomingBirthdays,
+  getOrgChartData,
 } from "./db";
+
+// ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
+const peopleRouter = router({
+  upcomingBirthdays: protectedProcedure
+    .input(z.object({ daysAhead: z.number().min(1).max(365).default(30) }).optional())
+    .query(async ({ input }) => {
+      return getUpcomingBirthdays(input?.daysAhead ?? 30);
+    }),
+  orgChart: protectedProcedure
+    .query(async () => {
+      return getOrgChartData();
+    }),
+});
 
 export const appRouter = router({
   system: systemRouter,
@@ -771,5 +786,7 @@ export const appRouter = router({
         return updateFullProfile(userId, data);
       }),
   }),
+  people: peopleRouter,
 });
+
 export type AppRouter = typeof appRouter;

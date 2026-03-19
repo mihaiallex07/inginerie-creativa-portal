@@ -846,3 +846,89 @@ export async function updateFullProfile(userId: number, data: {
   await db.update(users).set(data as any).where(eq(users.id, userId));
   return { success: true };
 }
+
+// ─── ZILE DE NAȘTERE & ORGANIGRAMĂ ───────────────────────────────────────────
+
+export async function getUpcomingBirthdays(daysAhead = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  // Fetch all active users with a birthDate
+  const allUsers = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      avatarUrl: users.avatarUrl,
+      department: users.department,
+      jobTitle: users.jobTitle,
+      birthDate: users.birthDate,
+    })
+    .from(users)
+    .where(and(eq(users.isActive, true)));
+
+  const today = new Date();
+  const todayMonth = today.getMonth() + 1;
+  const todayDay = today.getDate();
+
+  const result: Array<{
+    id: number;
+    name: string | null;
+    avatarUrl: string | null;
+    department: string | null;
+    jobTitle: string | null;
+    birthDate: string;
+    daysUntil: number;
+    isToday: boolean;
+  }> = [];
+
+  for (const u of allUsers) {
+    if (!u.birthDate) continue;
+    const bd = new Date(u.birthDate as any);
+    const bMonth = bd.getMonth() + 1;
+    const bDay = bd.getDate();
+
+    // Calculate days until next birthday this year
+    let nextBirthday = new Date(today.getFullYear(), bMonth - 1, bDay);
+    if (
+      nextBirthday.getMonth() + 1 < todayMonth ||
+      (nextBirthday.getMonth() + 1 === todayMonth && bDay < todayDay)
+    ) {
+      nextBirthday = new Date(today.getFullYear() + 1, bMonth - 1, bDay);
+    }
+
+    const diffMs = nextBirthday.getTime() - new Date(today.getFullYear(), todayMonth - 1, todayDay).getTime();
+    const daysUntil = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    if (daysUntil <= daysAhead) {
+      result.push({
+        id: u.id,
+        name: u.name,
+        avatarUrl: u.avatarUrl,
+        department: u.department,
+        jobTitle: u.jobTitle,
+        birthDate: String(u.birthDate).slice(0, 10),
+        daysUntil,
+        isToday: daysUntil === 0,
+      });
+    }
+  }
+
+  return result.sort((a, b) => a.daysUntil - b.daysUntil);
+}
+
+export async function getOrgChartData() {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: users.id,
+      name: users.name,
+      avatarUrl: users.avatarUrl,
+      department: users.department,
+      jobTitle: users.jobTitle,
+      role: users.role,
+      email: users.email,
+      isActive: users.isActive,
+    })
+    .from(users)
+    .where(eq(users.isActive, true));
+}

@@ -23,6 +23,7 @@ import CereriConcediu from "./pages/CereriConcediu";
 import AprobariConcediu from "./pages/AprobariConcediu";
 import AdminUtilizatori from "./pages/AdminUtilizatori";
 import DashboardHR from "./pages/DashboardHR";
+import Organigrama from "./pages/Organigrama";
 
 function Router() {
   return (
@@ -41,9 +42,9 @@ function Router() {
         <Route path="/proiecte" component={Proiecte} />
         <Route path="/profil" component={Profil} />
         <Route path="/cereri" component={CereriConcediu} />
+        <Route path="/organigrama" component={Organigrama} />
         <Route path="/viziune" component={() => <PlaceholderPage title="Viziune & Valori" />} />
         <Route path="/regulament" component={() => <PlaceholderPage title="Regulament Intern" />} />
-        <Route path="/organigrama" component={() => <PlaceholderPage title="Organigramă" />} />
         <Route path="/biblioteca" component={() => <PlaceholderPage title="Bibliotecă Tehnică" />} />
         <Route path="/formulare" component={() => <PlaceholderPage title="Formulare & Cereri" />} />
         <Route path="/rapoarte-hr" component={RapoarteHR} />

@@ -16,6 +16,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronRight,
+  Cake,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
@@ -47,6 +48,7 @@ export default function Dashboard() {
   const { data: newsData } = trpc.news.list.useQuery({ limit: 3 });
   const { data: projectsData } = trpc.projects.list.useQuery({ status: "activ" });
   const { data: proposalsData } = trpc.proposals.list.useQuery({ status: "deschisa" });
+  const { data: birthdaysData } = trpc.people.upcomingBirthdays.useQuery({ daysAhead: 30 });
 
   const checkIn = trpc.pontaj.checkIn.useMutation({
     onSuccess: (data) => {
@@ -273,6 +275,57 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Zile de naștere */}
+      {birthdaysData && birthdaysData.length > 0 && (
+        <Card className="border-border overflow-hidden">
+          <CardHeader className="pb-2 pt-4 px-4">
+            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <Cake className="h-4 w-4 text-[#FFCB09]" />
+              Zile de naștere în următoarele 30 de zile
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="space-y-2">
+              {birthdaysData.slice(0, 5).map((person) => {
+                const bd = new Date(person.birthDate);
+                const dayLabel = person.isToday
+                  ? "🎉 Azi!"
+                  : person.daysUntil === 1
+                  ? "Mâine"
+                  : `în ${person.daysUntil} zile`;
+                const initials = person.name?.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase() ?? "?";
+                return (
+                  <div key={person.id} className={`flex items-center gap-3 p-2.5 rounded-lg ${
+                    person.isToday ? "bg-[#FFCB09]/10 border border-[#FFCB09]/30" : "bg-muted/40"
+                  }`}>
+                    <div className="h-9 w-9 rounded-full bg-[#FFCB09] flex items-center justify-center text-xs font-bold text-[#221F1F] shrink-0 overflow-hidden">
+                      {person.avatarUrl
+                        ? <img src={person.avatarUrl} alt={person.name ?? ""} className="h-full w-full object-cover" />
+                        : initials
+                      }
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{person.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {person.jobTitle ?? person.department ?? "Angajat"}
+                      </p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className={`text-xs font-semibold ${
+                        person.isToday ? "text-[#FFCB09]" : "text-muted-foreground"
+                      }`}>{dayLabel}</p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {bd.getDate()} {["ian","feb","mar","apr","mai","iun","iul","aug","sep","oct","nov","dec"][bd.getMonth()]}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* News */}
       <div>
