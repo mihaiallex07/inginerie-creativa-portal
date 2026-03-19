@@ -81,3 +81,4 @@
 
 ## Buguri Active
 - [x] Fix eroare "OAuth callback failed" la autentificare cu cont @ingineriecreativa.ro
+- [ ] Fix erori SQL: coloane lipsă în tabele (proposals, projects, news, pontaj) - discrepanță schema Drizzle vs DB

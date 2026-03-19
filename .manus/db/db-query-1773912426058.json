@@ -1,0 +1,9 @@
+{
+  "query": "\n-- Add missing columns to news\nALTER TABLE news \n  ADD COLUMN `isImportant` boolean DEFAULT false,\n  ADD COLUMN `publishedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP;\n\n-- Drop columns not in schema\nALTER TABLE news \n  DROP COLUMN `isPublished`,\n  DROP COLUMN `viewCount`;\n\n-- Fix tags column from text to json\nALTER TABLE news MODIFY COLUMN `tags` json DEFAULT (JSON_ARRAY());\n\n-- Fix title length\nALTER TABLE news MODIFY COLUMN `title` varchar(512) NOT NULL;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \n-- Add missing columns to news\nALTER TABLE news \n  ADD COLUMN `isImportant` boolean DEFAULT false,\n  ADD COLUMN `publishedAt` timestamp NULL DEFAULT CURRENT_TIMESTAMP;\n\n-- Drop columns not in schema\nALTER TABLE news \n  DROP COLUMN `isPublished`,\n  DROP COLUMN `viewCount`;\n\n-- Fix tags column from text to json\nALTER TABLE news MODIFY COLUMN `tags` json DEFAULT (JSON_ARRAY());\n\n-- Fix title length\nALTER TABLE news MODIFY COLUMN `title` varchar(512) NOT NULL;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1475
+}
