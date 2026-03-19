@@ -78,3 +78,6 @@
 - [x] Responsive design (desktop + mobil)
 - [x] Loading states și error handling
 - [x] Vitest tests pentru proceduri principale (33/33 passed)
+
+## Buguri Active
+- [x] Fix eroare "OAuth callback failed" la autentificare cu cont @ingineriecreativa.ro
