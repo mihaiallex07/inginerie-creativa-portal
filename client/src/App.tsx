@@ -10,6 +10,7 @@ import Pontaj from "./pages/Pontaj";
 import TimeTracking from "./pages/TimeTracking";
 import Stiri from "./pages/Stiri";
 import StireDetaliu from "./pages/StireDetaliu";
+import StireNou from "./pages/StireNou";
 import Documente from "./pages/Documente";
 import Procese from "./pages/Procese";
 import ProcesDetaliu from "./pages/ProcesDetaliu";
@@ -26,6 +27,7 @@ function Router() {
         <Route path="/pontaj" component={Pontaj} />
         <Route path="/time-tracking" component={TimeTracking} />
         <Route path="/stiri" component={Stiri} />
+        <Route path="/stiri/nou" component={StireNou} />
         <Route path="/stiri/:id" component={StireDetaliu} />
         <Route path="/documente" component={Documente} />
         <Route path="/procese" component={Procese} />
