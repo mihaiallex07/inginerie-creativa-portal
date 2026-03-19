@@ -26,7 +26,7 @@ export default function Propuneri() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const [open, setOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("toate");
   const [form, setForm] = useState({
     title: "",
     description: "",
@@ -34,7 +34,7 @@ export default function Propuneri() {
     isAnonymous: false,
   });
 
-  const { data: proposals, isLoading } = trpc.proposals.list.useQuery({ status: statusFilter || undefined });
+  const { data: proposals, isLoading } = trpc.proposals.list.useQuery({ status: statusFilter === "toate" ? undefined : statusFilter });
 
   const create = trpc.proposals.create.useMutation({
     onSuccess: (d) => {
@@ -126,7 +126,7 @@ export default function Propuneri() {
           <SelectValue placeholder="Toate statusurile" />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value="">Toate statusurile</SelectItem>
+          <SelectItem value="toate">Toate statusurile</SelectItem>
           {Object.entries(STATUS_CONFIG).map(([value, cfg]) => (
             <SelectItem key={value} value={value}>{cfg.label}</SelectItem>
           ))}

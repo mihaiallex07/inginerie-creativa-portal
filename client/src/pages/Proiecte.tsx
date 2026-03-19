@@ -29,7 +29,7 @@ export default function Proiecte() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("activ");
+  const [statusFilter, setStatusFilter] = useState("toate");
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -41,7 +41,7 @@ export default function Proiecte() {
     color: "#FFCB09",
   });
 
-  const { data: projects, isLoading } = trpc.projects.list.useQuery({ status: statusFilter || undefined });
+  const { data: projects, isLoading } = trpc.projects.list.useQuery({ status: statusFilter === "toate" ? undefined : statusFilter });
   const canManage = user?.role === "super_admin" || user?.role === "admin_hr" || user?.role === "manager";
 
   const upsert = trpc.projects.upsert.useMutation({
@@ -143,7 +143,7 @@ export default function Proiecte() {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Toate</SelectItem>
+            <SelectItem value="toate">Toate</SelectItem>
             <SelectItem value="activ">Active</SelectItem>
             <SelectItem value="suspendat">Suspendate</SelectItem>
             <SelectItem value="finalizat">Finalizate</SelectItem>

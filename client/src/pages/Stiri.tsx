@@ -12,7 +12,7 @@ import { useLocation } from "wouter";
 import { Newspaper, Pin, AlertCircle, Search, Plus } from "lucide-react";
 
 const CATEGORIES = [
-  { value: "", label: "Toate categoriile" },
+  { value: "toate", label: "Toate categoriile" },
   { value: "companie", label: "Companie", color: "bg-blue-100 text-blue-800" },
   { value: "proiecte", label: "Proiecte", color: "bg-green-100 text-green-800" },
   { value: "hr", label: "HR", color: "bg-purple-100 text-purple-800" },
@@ -29,9 +29,9 @@ export default function Stiri() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("");
+  const [category, setCategory] = useState("toate");
 
-  const { data: newsData, isLoading } = trpc.news.list.useQuery({ category: category || undefined, limit: 50 });
+  const { data: newsData, isLoading } = trpc.news.list.useQuery({ category: category === "toate" ? undefined : category, limit: 50 });
 
   const canCreate = user?.role === "super_admin" || user?.role === "admin_hr" || user?.role === "manager";
 

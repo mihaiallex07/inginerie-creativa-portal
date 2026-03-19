@@ -57,7 +57,7 @@ export default function TimeTracking() {
 
   // Manual entry form
   const [manualForm, setManualForm] = useState({
-    projectId: "",
+    projectId: "fara",
     date: format(new Date(), "yyyy-MM-dd"),
     hours: "1",
     minutes: "0",
@@ -69,7 +69,7 @@ export default function TimeTracking() {
 
   // Timer form
   const [timerForm, setTimerForm] = useState({
-    projectId: "",
+    projectId: "fara",
     taskName: "",
     activityType: "proiectare",
     isBillable: true,
@@ -144,7 +144,7 @@ export default function TimeTracking() {
                       <SelectValue placeholder="Selectează" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Intern / Fără proiect</SelectItem>
+                      <SelectItem value="fara">Intern / Fără proiect</SelectItem>
                       {projects?.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
                     </SelectContent>
                   </Select>
@@ -191,7 +191,7 @@ export default function TimeTracking() {
               <Button
                 className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
                 onClick={() => addManual.mutate({
-                  projectId: manualForm.projectId ? Number(manualForm.projectId) : undefined,
+                  projectId: (manualForm.projectId && manualForm.projectId !== "fara") ? Number(manualForm.projectId) : undefined,
                   date: manualForm.date,
                   durationMinutes: Number(manualForm.hours) * 60 + Number(manualForm.minutes),
                   activityType: manualForm.activityType as any,
@@ -266,13 +266,13 @@ export default function TimeTracking() {
                   <SelectValue placeholder="Proiect (opțional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Fără proiect</SelectItem>
+                  <SelectItem value="fara">Fără proiect</SelectItem>
                   {projects?.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
                 </SelectContent>
               </Select>
               <Button
                 onClick={() => startTimer.mutate({
-                  projectId: timerForm.projectId ? Number(timerForm.projectId) : undefined,
+                  projectId: (timerForm.projectId && timerForm.projectId !== "fara") ? Number(timerForm.projectId) : undefined,
                   taskName: timerForm.taskName || undefined,
                   activityType: timerForm.activityType as any,
                   isBillable: timerForm.isBillable,
