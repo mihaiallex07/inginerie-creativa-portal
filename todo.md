@@ -99,3 +99,18 @@
 - [x] Rapoarte HR: endpoint Express pentru generare și descărcare PDF branded
 - [x] Rapoarte HR: pagina RapoarteHR.tsx cu filtre, preview tabel, butoane export Excel+PDF
 - [x] Rapoarte HR: acces restricționat la rolurile super_admin, admin_hr, manager
+
+## Module Noi (Sprint 3)
+- [x] Cereri Concediu: schema DB (tabel leave_requests cu status flux)
+- [x] Cereri Concediu: proceduri tRPC (creare, listare, aprobare, respingere)
+- [x] Cereri Concediu: pagina angajat (formular depunere + istoric cereri proprii)
+- [x] Cereri Concediu: pagina manager/HR (lista cereri echipă + aprobare/respingere)
+- [x] Cereri Concediu: notificări automate la schimbare status
+- [x] Admin Utilizatori: proceduri tRPC (listare, update rol, dezactivare, invitare)
+- [x] Admin Utilizatori: pagina cu tabel angajați, filtre, editare rol inline
+- [x] Admin Utilizatori: dialog adăugare utilizator manual + dezactivare cont
+- [x] Dashboard HR: statistici pontaj lunar (prezențe, absențe, ore totale echipă)
+- [x] Dashboard HR: statistici cereri concediu (în așteptare, aprobate, respinse)
+- [x] Dashboard HR: grafic distribuție locații și tipuri prezență
+- [x] Dashboard HR: alerte angajați fără pontaj înregistrat în ziua curentă
+- [x] Sidebar: secțiunea ADMINISTRARE extinsă cu noile pagini

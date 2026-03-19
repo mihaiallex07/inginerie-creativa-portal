@@ -15,6 +15,13 @@
       "when": 1773846613289,
       "tag": "0001_marvelous_mercury",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1773918827758,
+      "tag": "0002_massive_wild_child",
+      "breakpoints": true
     }
   ]
 }

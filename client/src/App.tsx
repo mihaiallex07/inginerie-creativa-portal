@@ -19,6 +19,10 @@ import Proiecte from "./pages/Proiecte";
 import Profil from "./pages/Profil";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import RapoarteHR from "./pages/RapoarteHR";
+import CereriConcediu from "./pages/CereriConcediu";
+import AprobariConcediu from "./pages/AprobariConcediu";
+import AdminUtilizatori from "./pages/AdminUtilizatori";
+import DashboardHR from "./pages/DashboardHR";
 
 function Router() {
   return (
@@ -36,13 +40,16 @@ function Router() {
         <Route path="/propuneri" component={Propuneri} />
         <Route path="/proiecte" component={Proiecte} />
         <Route path="/profil" component={Profil} />
-        <Route path="/cereri" component={() => <PlaceholderPage title="Cereri Concediu" />} />
+        <Route path="/cereri" component={CereriConcediu} />
         <Route path="/viziune" component={() => <PlaceholderPage title="Viziune & Valori" />} />
         <Route path="/regulament" component={() => <PlaceholderPage title="Regulament Intern" />} />
         <Route path="/organigrama" component={() => <PlaceholderPage title="Organigramă" />} />
         <Route path="/biblioteca" component={() => <PlaceholderPage title="Bibliotecă Tehnică" />} />
         <Route path="/formulare" component={() => <PlaceholderPage title="Formulare & Cereri" />} />
         <Route path="/rapoarte-hr" component={RapoarteHR} />
+        <Route path="/aprobari-concediu" component={AprobariConcediu} />
+        <Route path="/admin-utilizatori" component={AdminUtilizatori} />
+        <Route path="/dashboard-hr" component={DashboardHR} />
         <Route path="/notificari" component={() => <PlaceholderPage title="Notificări" />} />
         <Route path="/setari" component={() => <PlaceholderPage title="Setări" />} />
         <Route path="/404" component={NotFound} />

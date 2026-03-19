@@ -594,3 +594,214 @@ export async function getActiveUsers() {
     .where(eq(users.isActive, true))
     .orderBy(users.name);
 }
+
+// ─── LEAVE REQUESTS ──────────────────────────────────────────────────────────
+import { leaveRequests, type InsertLeaveRequest } from "../drizzle/schema";
+
+export async function createLeaveRequest(data: InsertLeaveRequest) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [result] = await db.insert(leaveRequests).values(data);
+  return result;
+}
+
+export async function getLeaveRequestsByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: leaveRequests.id,
+    type: leaveRequests.type,
+    startDate: leaveRequests.startDate,
+    endDate: leaveRequests.endDate,
+    totalDays: leaveRequests.totalDays,
+    reason: leaveRequests.reason,
+    status: leaveRequests.status,
+    reviewNote: leaveRequests.reviewNote,
+    reviewedAt: leaveRequests.reviewedAt,
+    createdAt: leaveRequests.createdAt,
+    reviewerName: users.name,
+  })
+    .from(leaveRequests)
+    .leftJoin(users, eq(leaveRequests.reviewedBy, users.id))
+    .where(eq(leaveRequests.userId, userId))
+    .orderBy(desc(leaveRequests.createdAt));
+}
+
+export async function getAllLeaveRequests(statusFilter?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const conditions = statusFilter && statusFilter !== "toate"
+    ? [sql`${leaveRequests.status} = ${statusFilter}`]
+    : [];
+  return db.select({
+    id: leaveRequests.id,
+    userId: leaveRequests.userId,
+    type: leaveRequests.type,
+    startDate: leaveRequests.startDate,
+    endDate: leaveRequests.endDate,
+    totalDays: leaveRequests.totalDays,
+    reason: leaveRequests.reason,
+    status: leaveRequests.status,
+    reviewNote: leaveRequests.reviewNote,
+    reviewedAt: leaveRequests.reviewedAt,
+    createdAt: leaveRequests.createdAt,
+    employeeName: users.name,
+    employeeEmail: users.email,
+    employeeDepartment: users.department,
+  })
+    .from(leaveRequests)
+    .leftJoin(users, eq(leaveRequests.userId, users.id))
+    .where(conditions.length > 0 ? and(...conditions) : undefined)
+    .orderBy(desc(leaveRequests.createdAt));
+}
+
+export async function reviewLeaveRequest(
+  id: number,
+  reviewedBy: number,
+  status: "aprobata" | "respinsa",
+  reviewNote?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(leaveRequests)
+    .set({ status, reviewedBy, reviewNote: reviewNote ?? null, reviewedAt: new Date() })
+    .where(eq(leaveRequests.id, id));
+}
+
+export async function cancelLeaveRequest(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(leaveRequests)
+    .set({ status: "anulata" })
+    .where(and(eq(leaveRequests.id, id), eq(leaveRequests.userId, userId)));
+}
+
+export async function getLeaveRequestById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [row] = await db.select().from(leaveRequests).where(eq(leaveRequests.id, id));
+  return row ?? null;
+}
+
+// ─── ADMIN USERS ─────────────────────────────────────────────────────────────
+export async function getAllUsersAdmin() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: users.id,
+    name: users.name,
+    email: users.email,
+    role: users.role,
+    department: users.department,
+    jobTitle: users.jobTitle,
+    isActive: users.isActive,
+    lastSignedIn: users.lastSignedIn,
+    createdAt: users.createdAt,
+  })
+    .from(users)
+    .orderBy(users.name);
+}
+
+export async function updateUserRole(id: number, role: typeof users.$inferSelect["role"]) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(users).set({ role }).where(eq(users.id, id));
+}
+
+export async function updateUserActive(id: number, isActive: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(users).set({ isActive }).where(eq(users.id, id));
+}
+
+export async function updateUserProfile(id: number, data: {
+  name?: string;
+  department?: string;
+  jobTitle?: string;
+  phone?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const updateSet: Record<string, unknown> = {};
+  if (data.name !== undefined) updateSet.name = data.name;
+  if (data.department !== undefined) updateSet.department = data.department;
+  if (data.jobTitle !== undefined) updateSet.jobTitle = data.jobTitle;
+  if (data.phone !== undefined) updateSet.phone = data.phone;
+  if (Object.keys(updateSet).length > 0) {
+    await db.update(users).set(updateSet).where(eq(users.id, id));
+  }
+}
+
+// ─── HR DASHBOARD STATISTICS ─────────────────────────────────────────────────
+export async function getHRDashboardStats(year: number, month: number) {
+  const db = await getDb();
+  if (!db) return null;
+
+  const startStr = `${year}-${String(month).padStart(2, "0")}-01`;
+  const endDay = new Date(year, month, 0).getDate();
+  const endStr = `${year}-${String(month).padStart(2, "0")}-${String(endDay).padStart(2, "0")}`;
+
+  // Total angajați activi
+  const [{ totalUsers }] = await db.select({ totalUsers: sql<number>`COUNT(*)` })
+    .from(users).where(eq(users.isActive, true));
+
+  // Pontaj luna: zile prezent, total ore, distribuție locații
+  const pontajRows = await db.select({
+    userId: pontaj.userId,
+    type: pontaj.type,
+    totalMinutes: pontaj.totalMinutes,
+    date: pontaj.date,
+  })
+    .from(pontaj)
+    .where(and(
+      sql`DATE(${pontaj.date}) >= ${startStr}`,
+      sql`DATE(${pontaj.date}) <= ${endStr}`
+    ));
+
+  const totalPontajMinutes = pontajRows.reduce((a, r) => a + (r.totalMinutes ?? 0), 0);
+  const uniqueUserDays = new Set(pontajRows.map(r => `${r.userId}-${r.date}`)).size;
+  const locationCounts: Record<string, number> = {};
+  pontajRows.forEach(r => {
+    locationCounts[r.type] = (locationCounts[r.type] ?? 0) + 1;
+  });
+
+  // Angajați fără pontaj azi
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const pontajAziUserIds = await db.select({ userId: pontaj.userId })
+    .from(pontaj)
+    .where(sql`DATE(${pontaj.date}) = ${todayStr}`);
+  const pontajAziSet = new Set(pontajAziUserIds.map(r => r.userId));
+  const allActiveUsers = await db.select({ id: users.id, name: users.name })
+    .from(users).where(eq(users.isActive, true));
+  const farapontajAzi = allActiveUsers.filter(u => !pontajAziSet.has(u.id));
+
+  // Cereri concediu luna
+  const leaveRows = await db.select({
+    status: leaveRequests.status,
+    totalDays: leaveRequests.totalDays,
+  })
+    .from(leaveRequests)
+    .where(and(
+      sql`DATE(${leaveRequests.startDate}) >= ${startStr}`,
+      sql`DATE(${leaveRequests.startDate}) <= ${endStr}`
+    ));
+
+  const leaveStats = {
+    total: leaveRows.length,
+    inAsteptare: leaveRows.filter(r => r.status === "in_asteptare").length,
+    aprobate: leaveRows.filter(r => r.status === "aprobata").length,
+    respinse: leaveRows.filter(r => r.status === "respinsa").length,
+    totalZile: leaveRows.filter(r => r.status === "aprobata").reduce((a, r) => a + r.totalDays, 0),
+  };
+
+  return {
+    totalUsers: Number(totalUsers),
+    pontaj: {
+      totalMinutes: totalPontajMinutes,
+      uniqueUserDays,
+      locationCounts,
+    },
+    farapontajAzi: farapontajAzi.map(u => ({ id: u.id, name: u.name })),
+    leaveStats,
+  };
+}

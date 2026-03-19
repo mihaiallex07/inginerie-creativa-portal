@@ -28,6 +28,7 @@ import {
   Bell,
   BookOpen,
   Building2,
+  CalendarCheck,
   ChevronRight,
   Clock,
   FileText,
@@ -38,6 +39,7 @@ import {
   Newspaper,
   PanelLeft,
   Settings,
+  Shield,
   Timer,
   User,
   Users,
@@ -94,7 +96,10 @@ const navSections = [
   {
     label: "ADMINISTRARE",
     items: [
+      { icon: BarChart3, label: "Dashboard HR", path: "/dashboard-hr" },
       { icon: BarChart3, label: "Rapoarte HR", path: "/rapoarte-hr" },
+      { icon: CalendarCheck, label: "Aprobări Concediu", path: "/aprobari-concediu" },
+      { icon: Shield, label: "Utilizatori", path: "/admin-utilizatori" },
     ],
   },
 ];

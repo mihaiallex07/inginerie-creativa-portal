@@ -45,6 +45,17 @@ import {
   createNotification,
   getAllUsers,
   updateUser,
+  createLeaveRequest,
+  getLeaveRequestsByUser,
+  getAllLeaveRequests,
+  reviewLeaveRequest,
+  cancelLeaveRequest,
+  getLeaveRequestById,
+  getAllUsersAdmin,
+  updateUserRole,
+  updateUserActive,
+  updateUserProfile,
+  getHRDashboardStats,
 } from "./db";
 
 export const appRouter = router({
@@ -585,6 +596,119 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
-});
+  // ─── LEAVE REQUESTS (Cereri Concediu) ───────────────────────────────────────────────
+  leave: router({
+    create: protectedProcedure
+      .input(z.object({
+        type: z.enum(["concediu_odihna", "concediu_medical", "concediu_fara_plata", "liber_legal", "recuperare", "alt"]),
+        startDate: z.string(), // "YYYY-MM-DD"
+        endDate: z.string(),
+        totalDays: z.number().min(1),
+        reason: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        await createLeaveRequest({
+          userId: ctx.user.id,
+          type: input.type,
+          startDate: input.startDate as unknown as Date,
+          endDate: input.endDate as unknown as Date,
+          totalDays: input.totalDays,
+          reason: input.reason,
+        });
+        return { success: true };
+      }),
 
+    myRequests: protectedProcedure.query(async ({ ctx }) => {
+      return getLeaveRequestsByUser(ctx.user.id);
+    }),
+
+    allRequests: protectedProcedure
+      .input(z.object({ status: z.string().optional() }))
+      .query(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        return getAllLeaveRequests(input.status);
+      }),
+
+    review: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["aprobata", "respinsa"]),
+        reviewNote: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        await reviewLeaveRequest(input.id, ctx.user.id, input.status, input.reviewNote);
+        return { success: true };
+      }),
+
+    cancel: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const req = await getLeaveRequestById(input.id);
+        if (!req || req.userId !== ctx.user.id) throw new Error("Cerere negăsită");
+        if (req.status !== "in_asteptare") throw new Error("Cererea nu mai poate fi anulată");
+        await cancelLeaveRequest(input.id, ctx.user.id);
+        return { success: true };
+      }),
+  }),
+
+  // ─── ADMIN USERS ─────────────────────────────────────────────────────────────────
+  adminUsers: router({
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const role = ctx.user.role;
+      if (role !== "super_admin" && role !== "admin_hr") throw new Error("Acces interzis");
+      return getAllUsersAdmin();
+    }),
+
+    updateRole: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        role: z.enum(["super_admin", "admin_hr", "manager", "angajat", "colaborator"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr") throw new Error("Acces interzis");
+        await updateUserRole(input.id, input.role);
+        return { success: true };
+      }),
+
+    toggleActive: protectedProcedure
+      .input(z.object({ id: z.number(), isActive: z.boolean() }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr") throw new Error("Acces interzis");
+        await updateUserActive(input.id, input.isActive);
+        return { success: true };
+      }),
+
+    updateProfile: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().optional(),
+        department: z.string().optional(),
+        jobTitle: z.string().optional(),
+        phone: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr") throw new Error("Acces interzis");
+        const { id, ...data } = input;
+        await updateUserProfile(id, data);
+        return { success: true };
+      }),
+  }),
+
+  // ─── HR DASHBOARD ─────────────────────────────────────────────────────────────────
+  hrDashboard: router({
+    stats: protectedProcedure
+      .input(z.object({ year: z.number(), month: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        return getHRDashboardStats(input.year, input.month);
+      }),
+  }),
+});
 export type AppRouter = typeof appRouter;
