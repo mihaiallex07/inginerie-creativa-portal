@@ -84,3 +84,5 @@
 - [x] Fix erori SQL: coloane lipsă în tabele (proposals, projects, news, pontaj) - discrepanță schema Drizzle vs DB
 - [x] Fix SelectItem value gol în pagina /stiri (și alte pagini cu Select)
 - [x] Fix routing conflict /stiri/nou vs /stiri/:id - NaN la newsId/id
+- [x] Redesign Pontaj: selector dată, dropdown ore din 30 în 30 min, locații firmă, notă, asociere proiect
+- [x] Enum pontaj extins: santier, eveniment adăugate în schema DB și migrare SQL aplicată

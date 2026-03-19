@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE `pontaj` MODIFY COLUMN `type` ENUM('birou','remote','deplasare','concediu','medical','liber_legal','absent','recuperare','santier','eveniment') NOT NULL DEFAULT 'birou';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute ALTER TABLE `pontaj` MODIFY COLUMN `type` ENUM('birou','remote','deplasare','concediu','medical','liber_legal','absent','recuperare','santier','eveniment') NOT NULL DEFAULT 'birou';",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 514
+}

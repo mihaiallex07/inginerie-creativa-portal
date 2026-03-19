@@ -43,7 +43,7 @@ export const pontaj = mysqlTable("pontaj", {
   checkOut: timestamp("checkOut"),
   breakMinutes: int("breakMinutes").default(0),
   totalMinutes: int("totalMinutes").default(0),
-  type: mysqlEnum("type", ["birou", "remote", "deplasare", "concediu", "medical", "liber_legal", "absent", "recuperare"]).default("birou").notNull(),
+  type: mysqlEnum("type", ["birou", "remote", "deplasare", "concediu", "medical", "liber_legal", "absent", "recuperare", "santier", "eveniment"]).default("birou").notNull(),
   notes: text("notes"),
   isApproved: boolean("isApproved").default(false),
   approvedBy: int("approvedBy"),

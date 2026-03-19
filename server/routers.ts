@@ -118,6 +118,46 @@ export const appRouter = router({
         }
         return getAllPontajByMonth(input.year, input.month);
       }),
+
+    // Manual entry with specific date + time (30-min slots)
+    manualEntry: protectedProcedure
+      .input(z.object({
+        date: z.string(), // "YYYY-MM-DD"
+        checkInTime: z.string(), // "HH:MM"
+        checkOutTime: z.string().optional(), // "HH:MM"
+        type: z.enum(["birou", "remote", "deplasare", "concediu", "medical", "liber_legal", "absent", "recuperare", "santier", "eveniment"]),
+        location: z.string().optional(),
+        notes: z.string().optional(),
+        projectId: z.number().optional(),
+        breakMinutes: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const dateObj = new Date(input.date + "T00:00:00");
+        const [inH, inM] = input.checkInTime.split(":").map(Number);
+        const checkIn = new Date(dateObj);
+        checkIn.setHours(inH, inM, 0, 0);
+
+        let checkOut: Date | undefined;
+        let totalMinutes = 0;
+        if (input.checkOutTime) {
+          const [outH, outM] = input.checkOutTime.split(":").map(Number);
+          checkOut = new Date(dateObj);
+          checkOut.setHours(outH, outM, 0, 0);
+          totalMinutes = Math.max(0, Math.floor((checkOut.getTime() - checkIn.getTime()) / 60000) - (input.breakMinutes ?? 0));
+        }
+
+        await upsertPontaj({
+          userId: ctx.user.id,
+          date: dateObj,
+          checkIn,
+          checkOut,
+          type: input.type,
+          notes: input.notes,
+          breakMinutes: input.breakMinutes ?? 0,
+          totalMinutes,
+        });
+        return { success: true };
+      }),
   }),
 
   // ─── PROJECTS ────────────────────────────────────────────────────────────
