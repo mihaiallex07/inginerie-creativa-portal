@@ -91,3 +91,5 @@
 - [x] Pontaj: fix bug timezone - orele se salvează cu offset UTC (8:30 → 14:30)
 - [x] Pontaj: editare intrări trecute din raportul lunar
 - [x] Pontaj: blocare editare dacă luna este închisă (luna curentă = deschisă, lunile anterioare = închise)
+- [x] Pontaj: fix bug timezone backend - orele se salvează cu offset +6h (8:30 → 14:30)
+- [x] Pontaj: UX dropdown ieșire - elimină opțiunea "Fără Ieșire", pornire de la ora intrare +30min

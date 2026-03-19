@@ -82,11 +82,12 @@ function todayISO() {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
-// Extract HH:MM from a DB timestamp (stored as local time via setHours)
+// Extract HH:MM from a DB timestamp (stored as UTC via Date.UTC)
+// Must use getUTCHours/getUTCMinutes because server stores times as UTC
 function extractLocalTime(dateVal: Date | string | null | undefined): string {
   if (!dateVal) return "";
   const d = new Date(dateVal);
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
 // A month is "closed" if it's strictly before the current month
@@ -672,13 +673,36 @@ function TimeSelectors({
   checkInTime: string; checkOutTime: string; breakMinutes: number;
   onCheckIn: (v: string) => void; onCheckOut: (v: string) => void; onBreak: (v: number) => void;
 }) {
+  // Filter checkout slots: only show times after checkIn + 30 min
+  const checkOutSlots = useMemo(() => {
+    if (!checkInTime) return TIME_SLOTS;
+    const [h, m] = checkInTime.split(":").map(Number);
+    const minMinutes = h * 60 + m + 30;
+    return TIME_SLOTS.filter(t => {
+      const [th, tm] = t.split(":").map(Number);
+      return th * 60 + tm >= minMinutes;
+    });
+  }, [checkInTime]);
+
+  // Auto-set checkout default when checkIn changes and checkout is empty or before new minimum
+  const handleCheckInChange = (v: string) => {
+    onCheckIn(v);
+    if (checkOutTime) {
+      const [ih, im] = v.split(":").map(Number);
+      const [oh, om] = checkOutTime.split(":").map(Number);
+      if (oh * 60 + om <= ih * 60 + im + 30) {
+        onCheckOut("");
+      }
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
       <div>
         <Label className="text-sm font-semibold mb-1.5 block flex items-center gap-1.5">
           <LogIn className="h-3.5 w-3.5" /> Intrare *
         </Label>
-        <Select value={checkInTime} onValueChange={onCheckIn}>
+        <Select value={checkInTime} onValueChange={handleCheckInChange}>
           <SelectTrigger>
             <SelectValue placeholder="Ora intrare" />
           </SelectTrigger>
@@ -691,13 +715,12 @@ function TimeSelectors({
         <Label className="text-sm font-semibold mb-1.5 block flex items-center gap-1.5">
           <LogOut className="h-3.5 w-3.5" /> Ieșire
         </Label>
-        <Select value={checkOutTime || "fara"} onValueChange={v => onCheckOut(v === "fara" ? "" : v)}>
+        <Select value={checkOutTime || ""} onValueChange={v => onCheckOut(v)}>
           <SelectTrigger>
-            <SelectValue placeholder="Ora ieșire" />
+            <SelectValue placeholder="Selectează ora..." />
           </SelectTrigger>
           <SelectContent className="max-h-60">
-            <SelectItem value="fara">— Fără ieșire —</SelectItem>
-            {TIME_SLOTS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+            {checkOutSlots.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

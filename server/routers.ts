@@ -135,17 +135,18 @@ export const appRouter = router({
         breakMinutes: z.number().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const dateObj = new Date(input.date + "T00:00:00");
+        // Build dates as UTC to avoid server timezone offset (server runs in America/New_York)
+        // input.date = "YYYY-MM-DD", input.checkInTime = "HH:MM" — treat as UTC directly
         const [inH, inM] = input.checkInTime.split(":").map(Number);
-        const checkIn = new Date(dateObj);
-        checkIn.setHours(inH, inM, 0, 0);
+        const [year, month, day] = input.date.split("-").map(Number);
+        const checkIn = new Date(Date.UTC(year, month - 1, day, inH, inM, 0, 0));
+        const dateObj = new Date(Date.UTC(year, month - 1, day));
 
         let checkOut: Date | undefined;
         let totalMinutes = 0;
         if (input.checkOutTime) {
           const [outH, outM] = input.checkOutTime.split(":").map(Number);
-          checkOut = new Date(dateObj);
-          checkOut.setHours(outH, outM, 0, 0);
+          checkOut = new Date(Date.UTC(year, month - 1, day, outH, outM, 0, 0));
           totalMinutes = Math.max(0, Math.floor((checkOut.getTime() - checkIn.getTime()) / 60000) - (input.breakMinutes ?? 0));
         }
 
@@ -176,16 +177,16 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         const entry = await getPontajById(input.id);
         if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
-        const dateObj = new Date(input.date + "T00:00:00");
+        // Build dates as UTC to avoid server timezone offset
+        const [year, month, day] = input.date.split("-").map(Number);
+        const dateObj = new Date(Date.UTC(year, month - 1, day));
         const [inH, inM] = input.checkInTime.split(":").map(Number);
-        const checkIn = new Date(dateObj);
-        checkIn.setHours(inH, inM, 0, 0);
+        const checkIn = new Date(Date.UTC(year, month - 1, day, inH, inM, 0, 0));
         let checkOut: Date | undefined;
         let totalMinutes = 0;
         if (input.checkOutTime) {
           const [outH, outM] = input.checkOutTime.split(":").map(Number);
-          checkOut = new Date(dateObj);
-          checkOut.setHours(outH, outM, 0, 0);
+          checkOut = new Date(Date.UTC(year, month - 1, day, outH, outM, 0, 0));
           totalMinutes = Math.max(0, Math.floor((checkOut.getTime() - checkIn.getTime()) / 60000) - (input.breakMinutes ?? 0));
         }
         await updatePontajEntry(input.id, ctx.user.id, {
