@@ -114,3 +114,9 @@
 - [x] Dashboard HR: grafic distribuție locații și tipuri prezență
 - [x] Dashboard HR: alerte angajați fără pontaj înregistrat în ziua curentă
 - [x] Sidebar: secțiunea ADMINISTRARE extinsă cu noile pagini
+
+## Fix-uri vizuale (Sprint 4)
+- [x] Sidebar: scrollbar galben pe fundal transparent (înlocuiește scrollbar-ul default)
+- [x] DashboardLayout: eliminare header duplicat care apare de două ori
+- [x] AdminUtilizatori: fix overlap buton schimbare rol cu chenarul din spate
+- [x] AdminUtilizatori: simplificare roluri la admin, angajat, manager, colaborator

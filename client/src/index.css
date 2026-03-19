@@ -138,6 +138,27 @@
   }
 }
 
+/* ── Scrollbar styling: thin yellow thumb on transparent track ── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #FFCB09;
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #e6b700;
+}
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #FFCB09 transparent;
+}
+
 @layer components {
   /**
    * Custom container utility that centers content and adds responsive padding.

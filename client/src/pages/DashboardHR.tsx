@@ -23,7 +23,6 @@ import {
   ChevronRight,
   BarChart3,
 } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
 
 const LOCATION_LABELS: Record<string, { label: string; emoji: string; color: string }> = {
   bucuresti: { label: "București", emoji: "🏢", color: "bg-blue-100 text-blue-800" },
@@ -75,7 +74,7 @@ export default function DashboardHR() {
   const totalLocationEntries = locationEntries.reduce((a, [, v]) => a + v, 0);
 
   return (
-    <DashboardLayout>
+    
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between flex-wrap gap-3">
@@ -275,6 +274,6 @@ export default function DashboardHR() {
           </>
         )}
       </div>
-    </DashboardLayout>
+    
   );
 }

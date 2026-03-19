@@ -23,7 +23,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { CalendarDays, Plus, Clock, CheckCircle2, XCircle, Ban, FileText } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
 
 const LEAVE_TYPES: Record<string, { label: string; color: string }> = {
   concediu_odihna: { label: "Concediu odihnă", color: "bg-blue-100 text-blue-800" },
@@ -121,7 +120,7 @@ export default function CereriConcediu() {
   };
 
   return (
-    <DashboardLayout>
+    
       <div className="p-6 max-w-4xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -298,6 +297,6 @@ export default function CereriConcediu() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    
   );
 }

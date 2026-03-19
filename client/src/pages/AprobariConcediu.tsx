@@ -20,7 +20,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { CheckCircle2, XCircle, Clock, Ban, Users, CalendarCheck } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
 
 const LEAVE_TYPES: Record<string, { label: string; color: string }> = {
   concediu_odihna: { label: "Concediu odihnă", color: "bg-blue-100 text-blue-800" },
@@ -69,7 +68,7 @@ export default function AprobariConcediu() {
   };
 
   return (
-    <DashboardLayout>
+    
       <div className="p-6 max-w-5xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -240,6 +239,6 @@ export default function AprobariConcediu() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    
   );
 }

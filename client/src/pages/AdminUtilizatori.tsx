@@ -27,13 +27,10 @@ import {
   UserCheck,
   UserX,
   Pencil,
-  ChevronDown,
 } from "lucide-react";
-import DashboardLayout from "@/components/DashboardLayout";
 
 const ROLES: Record<string, { label: string; color: string }> = {
-  super_admin: { label: "Super Admin", color: "bg-red-100 text-red-800 border-red-200" },
-  admin_hr: { label: "Admin HR", color: "bg-purple-100 text-purple-800 border-purple-200" },
+  admin_hr: { label: "Admin", color: "bg-purple-100 text-purple-800 border-purple-200" },
   manager: { label: "Manager", color: "bg-blue-100 text-blue-800 border-blue-200" },
   angajat: { label: "Angajat", color: "bg-green-100 text-green-800 border-green-200" },
   colaborator: { label: "Colaborator", color: "bg-gray-100 text-gray-700 border-gray-200" },
@@ -119,7 +116,7 @@ export default function AdminUtilizatori() {
   };
 
   return (
-    <DashboardLayout>
+    
       <div className="p-6 max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div>
@@ -238,7 +235,6 @@ export default function AdminUtilizatori() {
                         >
                           <SelectTrigger className={`h-8 text-xs border font-medium ${rc.color}`}>
                             <SelectValue />
-                            <ChevronDown className="h-3 w-3 ml-1 opacity-60" />
                           </SelectTrigger>
                           <SelectContent>
                             {Object.entries(ROLES).map(([k, v]) => (
@@ -321,6 +317,6 @@ export default function AdminUtilizatori() {
           </DialogContent>
         </Dialog>
       </div>
-    </DashboardLayout>
+    
   );
 }
