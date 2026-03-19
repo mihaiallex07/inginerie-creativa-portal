@@ -56,6 +56,8 @@ import {
   updateUserActive,
   updateUserProfile,
   getHRDashboardStats,
+  getFullProfile,
+  updateFullProfile,
 } from "./db";
 
 export const appRouter = router({
@@ -708,6 +710,64 @@ export const appRouter = router({
         const role = ctx.user.role;
         if (role !== "admin") throw new Error("Acces interzis");
         return getHRDashboardStats(input.year, input.month);
+      }),
+  }),
+  // ─── PROFIL EXTINS ────────────────────────────────────────────────────────────────────────────────────────
+  profile: router({
+    getMyProfile: protectedProcedure.query(async ({ ctx }) => {
+      return getFullProfile(ctx.user.id);
+    }),
+
+    adminGetProfile: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin" && ctx.user.id !== input.userId)
+          throw new Error("Acces interzis");
+        return getFullProfile(input.userId);
+      }),
+
+    updateMyProfile: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1).optional(),
+        phone: z.string().optional().nullable(),
+        department: z.string().optional().nullable(),
+        jobTitle: z.string().optional().nullable(),
+        birthDate: z.string().optional().nullable(),
+        hireDate: z.string().optional().nullable(),
+        addressBuletin: z.string().optional().nullable(),
+        addressSecondary: z.string().optional().nullable(),
+        city: z.string().optional().nullable(),
+        cnp: z.string().max(13).optional().nullable(),
+        ciSeries: z.string().max(4).optional().nullable(),
+        ciNumber: z.string().max(10).optional().nullable(),
+        ciExpiry: z.string().optional().nullable(),
+        ciIssuedBy: z.string().optional().nullable(),
+        iban: z.string().max(34).optional().nullable(),
+        bankName: z.string().optional().nullable(),
+        emergencyContact: z.string().optional().nullable(),
+        emergencyPhone: z.string().optional().nullable(),
+        emergencyRelation: z.string().optional().nullable(),
+        bloodType: z.enum(["A+","A-","B+","B-","AB+","AB-","O+","O-"]).optional().nullable(),
+        allergies: z.string().optional().nullable(),
+        profileNotes: z.string().optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        return updateFullProfile(ctx.user.id, input);
+      }),
+
+    adminUpdateProfile: protectedProcedure
+      .input(z.object({
+        userId: z.number(),
+        hireDate: z.string().optional().nullable(),
+        profileNotes: z.string().optional().nullable(),
+        department: z.string().optional().nullable(),
+        jobTitle: z.string().optional().nullable(),
+        workHoursPerDay: z.string().optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+        const { userId, ...data } = input;
+        return updateFullProfile(userId, data);
       }),
   }),
 });

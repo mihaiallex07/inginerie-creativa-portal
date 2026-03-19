@@ -805,3 +805,43 @@ export async function getHRDashboardStats(year: number, month: number) {
     leaveStats,
   };
 }
+
+// ─── PROFIL EXTINS ────────────────────────────────────────────────────────────
+
+export async function getFullProfile(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(users).where(eq(users.id, userId)).limit(1);
+  return result[0] ?? null;
+}
+
+export async function updateFullProfile(userId: number, data: {
+  name?: string | null;
+  phone?: string | null;
+  department?: string | null;
+  jobTitle?: string | null;
+  birthDate?: string | null;
+  hireDate?: string | null;
+  addressBuletin?: string | null;
+  addressSecondary?: string | null;
+  city?: string | null;
+  cnp?: string | null;
+  ciSeries?: string | null;
+  ciNumber?: string | null;
+  ciExpiry?: string | null;
+  ciIssuedBy?: string | null;
+  iban?: string | null;
+  bankName?: string | null;
+  emergencyContact?: string | null;
+  emergencyPhone?: string | null;
+  emergencyRelation?: string | null;
+  bloodType?: "A+" | "A-" | "B+" | "B-" | "AB+" | "AB-" | "O+" | "O-" | null;
+  allergies?: string | null;
+  profileNotes?: string | null;
+  workHoursPerDay?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database unavailable");
+  await db.update(users).set(data as any).where(eq(users.id, userId));
+  return { success: true };
+}

@@ -26,6 +26,31 @@ export const users = mysqlTable("users", {
   phone: varchar("phone", { length: 32 }),
   isActive: boolean("isActive").default(true).notNull(),
   workHoursPerDay: decimal("workHoursPerDay", { precision: 4, scale: 2 }).default("8.00"),
+  // ── Profil personal ──
+  birthDate: date("birthDate"),
+  hireDate: date("hireDate"),
+  // ── Adrese ──
+  addressBuletin: text("addressBuletin"),
+  addressSecondary: text("addressSecondary"),
+  city: varchar("city", { length: 128 }),
+  // ── Date CI (sensibile) ──
+  cnp: varchar("cnp", { length: 13 }),
+  ciSeries: varchar("ciSeries", { length: 4 }),
+  ciNumber: varchar("ciNumber", { length: 10 }),
+  ciExpiry: date("ciExpiry"),
+  ciIssuedBy: varchar("ciIssuedBy", { length: 128 }),
+  // ── Date financiare (sensibile) ──
+  iban: varchar("iban", { length: 34 }),
+  bankName: varchar("bankName", { length: 128 }),
+  // ── Contact urgență ──
+  emergencyContact: varchar("emergencyContact", { length: 128 }),
+  emergencyPhone: varchar("emergencyPhone", { length: 32 }),
+  emergencyRelation: varchar("emergencyRelation", { length: 64 }),
+  // ── Medical ──
+  bloodType: mysqlEnum("bloodType", ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]),
+  allergies: text("allergies"),
+  // ── Note interne ──
+  profileNotes: text("profileNotes"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),

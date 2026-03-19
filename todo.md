@@ -131,3 +131,10 @@
 - [x] AdminUtilizatori.tsx: dropdown cu 3 roluri (Admin, Angajat, Colaborator)
 - [x] DashboardHR, RapoarteHR, AprobariConcediu: acces restricționat la role === 'admin'
 - [x] Migrare date: utilizatorii cu super_admin/admin_hr/manager → admin
+
+## Profil extins (Sprint 7)
+- [x] Schema DB: câmpuri noi în users (birthDate, hireDate, addressBuletin, addressSecondary, cnp, ciSeries, ciNumber, ciExpiry, iban, emergencyContact, emergencyPhone, bloodType, notes)
+- [x] Backend: proceduri tRPC profile.getMyProfile, profile.updateMyProfile, profile.adminGetProfile
+- [x] Frontend: pagina Profil.tsx redesenată cu secțiuni (Info personale, Adrese, Date CI, Financiar, Contact urgență)
+- [x] Câmpuri sensibile (CNP, IBAN, CI) vizibile doar utilizatorului propriu și adminului
+- [ ] Reminder zile de naștere: afișare în calendar și notificare (backlog)
