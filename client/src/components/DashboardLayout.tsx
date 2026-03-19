@@ -225,9 +225,13 @@ function DashboardLayoutContent({
                 )}
               </button>
               {!isCollapsed && (
-                <div className="flex flex-col min-w-0">
-                  <img src={LOGO_YELLOW} alt="Inginerie Creativă" className="h-6 object-contain object-left" />
-                  <span className="text-[10px] text-sidebar-foreground/50 mt-0.5 tracking-wider uppercase">Portal intern</span>
+                <div className="flex items-center min-w-0">
+                  <img
+                    src={LOGO_YELLOW}
+                    alt="Inginerie Creativă"
+                    className="h-10 w-auto object-contain object-left"
+                    style={{ background: 'transparent', mixBlendMode: 'normal' }}
+                  />
                 </div>
               )}
             </div>

@@ -141,3 +141,6 @@
 
 ## Fix-uri profil (Sprint 8)
 - [x] Profil: câmp separat telefon mobil personal + telefon de serviciu (2 câmpuri distincte)
+
+## Fix-uri vizuale (Sprint 9)
+- [x] Sidebar: logo mai mare, fundal transparent, versiunea galbenă cu text negru
