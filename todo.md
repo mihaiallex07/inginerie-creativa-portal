@@ -86,3 +86,8 @@
 - [x] Fix routing conflict /stiri/nou vs /stiri/:id - NaN la newsId/id
 - [x] Redesign Pontaj: selector dată, dropdown ore din 30 în 30 min, locații firmă, notă, asociere proiect
 - [x] Enum pontaj extins: santier, eveniment adăugate în schema DB și migrare SQL aplicată
+- [x] Pontaj: locații specifice firmei (București Caracas 4, Cluj KITE, Miercurea-Ciuc, Brașov IASC, Eveniment, Deplasare, Vizită Șantier, Telemuncă)
+- [x] Pontaj: selecție locație mai vizibilă (border galben mai gros + fundal galben mai intens)
+- [x] Pontaj: fix bug timezone - orele se salvează cu offset UTC (8:30 → 14:30)
+- [x] Pontaj: editare intrări trecute din raportul lunar
+- [x] Pontaj: blocare editare dacă luna este închisă (luna curentă = deschisă, lunile anterioare = închise)

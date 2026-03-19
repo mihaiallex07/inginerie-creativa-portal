@@ -139,6 +139,25 @@ export async function getAllPontajByMonth(year: number, month: number) {
     .orderBy(users.name, pontaj.date);
 }
 
+export async function updatePontajEntry(id: number, userId: number, data: Partial<typeof pontaj.$inferInsert>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(pontaj).set({ ...data, updatedAt: new Date() }).where(and(eq(pontaj.id, id), eq(pontaj.userId, userId)));
+}
+
+export async function deletePontajEntry(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(pontaj).where(and(eq(pontaj.id, id), eq(pontaj.userId, userId)));
+}
+
+export async function getPontajById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(pontaj).where(eq(pontaj.id, id)).limit(1);
+  return result[0] ?? null;
+}
+
 // ─── PROJECTS ────────────────────────────────────────────────────────────────
 export async function getProjects(status?: string) {
   const db = await getDb();

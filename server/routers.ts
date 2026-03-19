@@ -8,6 +8,9 @@ import {
   upsertPontaj,
   getPontajByMonth,
   getAllPontajByMonth,
+  updatePontajEntry,
+  deletePontajEntry,
+  getPontajById,
   getProjects,
   upsertProject,
   getTimeEntriesForUser,
@@ -58,7 +61,7 @@ export const appRouter = router({
     }),
 
     checkIn: protectedProcedure
-      .input(z.object({ type: z.enum(["birou", "remote", "deplasare", "concediu", "medical", "liber_legal", "absent", "recuperare"]).optional() }))
+      .input(z.object({ type: z.enum(["bucuresti", "cluj", "miercurea_ciuc", "brasov", "eveniment", "deplasare", "vizita_santier", "telemunca", "concediu", "medical", "liber_legal", "absent", "recuperare"]).optional() }))
       .mutation(async ({ ctx, input }) => {
         const existing = await getTodayPontaj(ctx.user.id);
         if (existing?.checkIn) return { success: false, message: "Deja ai făcut check-in astăzi" };
@@ -66,7 +69,7 @@ export const appRouter = router({
           userId: ctx.user.id,
           date: new Date(),
           checkIn: new Date(),
-          type: input.type ?? "birou",
+          type: input.type ?? "bucuresti",
         });
         return { success: true };
       }),
@@ -125,7 +128,7 @@ export const appRouter = router({
         date: z.string(), // "YYYY-MM-DD"
         checkInTime: z.string(), // "HH:MM"
         checkOutTime: z.string().optional(), // "HH:MM"
-        type: z.enum(["birou", "remote", "deplasare", "concediu", "medical", "liber_legal", "absent", "recuperare", "santier", "eveniment"]),
+        type: z.enum(["bucuresti", "cluj", "miercurea_ciuc", "brasov", "eveniment", "deplasare", "vizita_santier", "telemunca", "concediu", "medical", "liber_legal", "absent", "recuperare"]),
         location: z.string().optional(),
         notes: z.string().optional(),
         projectId: z.number().optional(),
@@ -156,6 +159,54 @@ export const appRouter = router({
           breakMinutes: input.breakMinutes ?? 0,
           totalMinutes,
         });
+        return { success: true };
+      }),
+
+    updateEntry: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        date: z.string(),
+        checkInTime: z.string(),
+        checkOutTime: z.string().optional(),
+        type: z.enum(["bucuresti", "cluj", "miercurea_ciuc", "brasov", "eveniment", "deplasare", "vizita_santier", "telemunca", "concediu", "medical", "liber_legal", "absent", "recuperare"]),
+        notes: z.string().optional(),
+        projectId: z.number().optional(),
+        breakMinutes: z.number().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const entry = await getPontajById(input.id);
+        if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
+        const dateObj = new Date(input.date + "T00:00:00");
+        const [inH, inM] = input.checkInTime.split(":").map(Number);
+        const checkIn = new Date(dateObj);
+        checkIn.setHours(inH, inM, 0, 0);
+        let checkOut: Date | undefined;
+        let totalMinutes = 0;
+        if (input.checkOutTime) {
+          const [outH, outM] = input.checkOutTime.split(":").map(Number);
+          checkOut = new Date(dateObj);
+          checkOut.setHours(outH, outM, 0, 0);
+          totalMinutes = Math.max(0, Math.floor((checkOut.getTime() - checkIn.getTime()) / 60000) - (input.breakMinutes ?? 0));
+        }
+        await updatePontajEntry(input.id, ctx.user.id, {
+          date: dateObj,
+          checkIn,
+          checkOut,
+          type: input.type,
+          notes: input.notes,
+          breakMinutes: input.breakMinutes ?? 0,
+          totalMinutes,
+          projectId: input.projectId,
+        });
+        return { success: true };
+      }),
+
+    deleteEntry: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const entry = await getPontajById(input.id);
+        if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
+        await deletePontajEntry(input.id, ctx.user.id);
         return { success: true };
       }),
   }),
