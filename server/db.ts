@@ -818,6 +818,7 @@ export async function getFullProfile(userId: number) {
 export async function updateFullProfile(userId: number, data: {
   name?: string | null;
   phone?: string | null;
+  phoneMobile?: string | null;
   department?: string | null;
   jobTitle?: string | null;
   birthDate?: string | null;

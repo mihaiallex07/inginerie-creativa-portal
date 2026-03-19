@@ -138,3 +138,6 @@
 - [x] Frontend: pagina Profil.tsx redesenată cu secțiuni (Info personale, Adrese, Date CI, Financiar, Contact urgență)
 - [x] Câmpuri sensibile (CNP, IBAN, CI) vizibile doar utilizatorului propriu și adminului
 - [ ] Reminder zile de naștere: afișare în calendar și notificare (backlog)
+
+## Fix-uri profil (Sprint 8)
+- [x] Profil: câmp separat telefon mobil personal + telefon de serviciu (2 câmpuri distincte)

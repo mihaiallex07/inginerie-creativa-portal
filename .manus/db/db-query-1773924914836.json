@@ -1,0 +1,9 @@
+{
+  "query": "ALTER TABLE users ADD COLUMN phoneMobile VARCHAR(32);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute ALTER TABLE users ADD COLUMN phoneMobile VARCHAR(32);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 836
+}

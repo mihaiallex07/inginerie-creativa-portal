@@ -24,6 +24,7 @@ export const users = mysqlTable("users", {
   jobTitle: varchar("jobTitle", { length: 128 }),
   avatarUrl: text("avatarUrl"),
   phone: varchar("phone", { length: 32 }),
+  phoneMobile: varchar("phoneMobile", { length: 32 }),
   isActive: boolean("isActive").default(true).notNull(),
   workHoursPerDay: decimal("workHoursPerDay", { precision: 4, scale: 2 }).default("8.00"),
   // ── Profil personal ──

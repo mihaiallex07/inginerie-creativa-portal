@@ -28,6 +28,7 @@ const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 type ProfileData = {
   name: string;
   phone: string;
+  phoneMobile: string;
   department: string;
   jobTitle: string;
   birthDate: string;
@@ -108,8 +109,7 @@ export default function Profil() {
   const [editing, setEditing] = useState(false);
   const [showSensitive, setShowSensitive] = useState(false);
   const [form, setForm] = useState<ProfileData>({
-    name: "", phone: "", department: "", jobTitle: "",
-    birthDate: "", hireDate: "", addressBuletin: "", addressSecondary: "",
+    name: "", phone: "", phoneMobile: "", department: "", jobTitle: "",   birthDate: "", hireDate: "", addressBuletin: "", addressSecondary: "",
     city: "", cnp: "", ciSeries: "", ciNumber: "", ciExpiry: "", ciIssuedBy: "",
     iban: "", bankName: "", emergencyContact: "", emergencyPhone: "",
     emergencyRelation: "", bloodType: "", allergies: "", profileNotes: "",
@@ -125,6 +125,7 @@ export default function Profil() {
       setForm({
         name: profile.name ?? "",
         phone: profile.phone ?? "",
+        phoneMobile: (profile as any).phoneMobile ?? "",
         department: profile.department ?? "",
         jobTitle: profile.jobTitle ?? "",
         birthDate: fmt(profile.birthDate),
@@ -162,6 +163,7 @@ export default function Profil() {
     updateMutation.mutate({
       name: form.name || undefined,
       phone: form.phone || null,
+      phoneMobile: form.phoneMobile || null,
       department: form.department || null,
       jobTitle: form.jobTitle || null,
       birthDate: form.birthDate || null,
@@ -281,6 +283,7 @@ export default function Profil() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FieldRow label="Funcție / Post" {...f("jobTitle")} placeholder="ex: Inginer Proiectant" />
             <FieldRow label="Departament" {...f("department")} placeholder="ex: Proiectare" />
+            <FieldRow label="Telefon mobil (personal)" {...f("phoneMobile")} type="tel" placeholder="+40 7xx xxx xxx" />
             <FieldRow label="Telefon de serviciu" {...f("phone")} type="tel" placeholder="+40 7xx xxx xxx" />
             <FieldRow label="Data angajării" {...f("hireDate")} type="date" />
           </div>
