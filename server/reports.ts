@@ -5,6 +5,35 @@
 import ExcelJS from "exceljs";
 import PDFDocument from "pdfkit";
 import { PassThrough } from "stream";
+import * as fs from "fs";
+import * as path from "path";
+import * as https from "https";
+import { fileURLToPath } from "url";
+
+// ─── Font cache ──────────────────────────────────────────────────────────────
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const FONT_DIR = path.join(__dirname, "fonts");
+const FONT_REGULAR = path.join(FONT_DIR, "Roboto-Regular.ttf");
+const FONT_BOLD = path.join(FONT_DIR, "Roboto-Bold.ttf");
+
+async function downloadFont(url: string, dest: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    https.get(url, (res) => {
+      res.pipe(file);
+      file.on("finish", () => { file.close(); resolve(); });
+    }).on("error", (err) => { fs.unlink(dest, () => {}); reject(err); });
+  });
+}
+
+async function ensureFonts(): Promise<void> {
+  if (!fs.existsSync(FONT_DIR)) fs.mkdirSync(FONT_DIR, { recursive: true });
+  const CDN_REGULAR = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/Roboto-Regular_1db39a61.ttf";
+  const CDN_BOLD = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/Roboto-Bold_8a1fdd58.ttf";
+  if (!fs.existsSync(FONT_REGULAR)) await downloadFont(CDN_REGULAR, FONT_REGULAR);
+  if (!fs.existsSync(FONT_BOLD)) await downloadFont(CDN_BOLD, FONT_BOLD);
+}
 
 // ─── Brand constants ──────────────────────────────────────────────────────────
 const BRAND = {
@@ -454,6 +483,7 @@ export async function generatePDF(
   rows: string[][],
   totalsRow?: string[]
 ): Promise<Buffer<ArrayBufferLike>> {
+  await ensureFonts();
   return new Promise((resolve, reject) => {
     const doc = new PDFDocument({
       size: "A4",
@@ -471,21 +501,25 @@ export async function generatePDF(
     const margin = 30;
     const contentW = pageW - margin * 2;
 
+    // ── Register fonts with Unicode support ──
+    doc.registerFont("Regular", FONT_REGULAR);
+    doc.registerFont("Bold", FONT_BOLD);
+
     // ── Header band ──
     doc.rect(0, 0, pageW, 50).fill("#221F1F");
-    doc.fontSize(18).fillColor("#FFCB09").font("Helvetica-Bold")
+    doc.fontSize(18).fillColor("#FFCB09").font("Bold")
       .text(COMPANY, margin, 14, { width: contentW * 0.6 });
-    doc.fontSize(9).fillColor("#FFFFFF").font("Helvetica")
+    doc.fontSize(9).fillColor("#FFFFFF").font("Regular")
       .text(`Generat: ${new Date().toLocaleString("ro-RO")}`, margin + contentW * 0.6, 20, { width: contentW * 0.4, align: "right" });
 
     // ── Title band ──
     doc.rect(0, 50, pageW, 28).fill("#FFCB09");
-    doc.fontSize(13).fillColor("#221F1F").font("Helvetica-Bold")
+    doc.fontSize(13).fillColor("#221F1F").font("Bold")
       .text(title, margin, 57, { width: contentW });
 
     // ── Subtitle ──
     doc.rect(0, 78, pageW, 18).fill("#F5F5F5");
-    doc.fontSize(8).fillColor("#666666").font("Helvetica")
+    doc.fontSize(8).fillColor("#666666").font("Regular")
       .text(subtitle, margin, 83, { width: contentW });
 
     let y = 104;
@@ -496,7 +530,7 @@ export async function generatePDF(
     // Header row
     doc.rect(margin, y, contentW, 18).fill("#221F1F");
     headers.forEach((h, i) => {
-      doc.fontSize(8).fillColor("#FFCB09").font("Helvetica-Bold")
+      doc.fontSize(8).fillColor("#FFCB09").font("Bold")
         .text(h, margin + i * colW + 3, y + 5, { width: colW - 6, align: "center" });
     });
     y += 18;
@@ -510,7 +544,7 @@ export async function generatePDF(
         // Repeat header
         doc.rect(margin, y, contentW, 18).fill("#221F1F");
         headers.forEach((h, i) => {
-          doc.fontSize(8).fillColor("#FFCB09").font("Helvetica-Bold")
+          doc.fontSize(8).fillColor("#FFCB09").font("Bold")
             .text(h, margin + i * colW + 3, y + 5, { width: colW - 6, align: "center" });
         });
         y += 18;
@@ -519,7 +553,7 @@ export async function generatePDF(
       doc.rect(margin, y, contentW, rowH).fill(bg);
       doc.rect(margin, y, contentW, rowH).stroke("#EEEEEE");
       row.forEach((cell, i) => {
-        doc.fontSize(8).fillColor("#221F1F").font("Helvetica")
+        doc.fontSize(8).fillColor("#221F1F").font("Regular")
           .text(cell ?? "—", margin + i * colW + 3, y + 4, { width: colW - 6, align: "center", lineBreak: false });
       });
       y += rowH;
@@ -529,7 +563,7 @@ export async function generatePDF(
     if (totalsRow) {
       doc.rect(margin, y, contentW, 18).fill("#FFCB09");
       totalsRow.forEach((cell, i) => {
-        doc.fontSize(9).fillColor("#221F1F").font("Helvetica-Bold")
+        doc.fontSize(9).fillColor("#221F1F").font("Bold")
           .text(cell ?? "", margin + i * colW + 3, y + 5, { width: colW - 6, align: "center", lineBreak: false });
       });
       y += 18;
@@ -537,7 +571,7 @@ export async function generatePDF(
 
     // ── Footer ──
     doc.rect(0, pageH - 30, pageW, 30).fill("#221F1F");
-    doc.fontSize(7).fillColor("#AAAAAA").font("Helvetica")
+    doc.fontSize(7).fillColor("#AAAAAA").font("Regular")
       .text(`${COMPANY} — Document generat automat de Portalul Intern. Confidențial.`, margin, pageH - 20, { width: contentW, align: "center" });
 
     doc.end();

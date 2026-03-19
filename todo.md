@@ -120,3 +120,6 @@
 - [x] DashboardLayout: eliminare header duplicat care apare de două ori
 - [x] AdminUtilizatori: fix overlap buton schimbare rol cu chenarul din spate
 - [x] AdminUtilizatori: simplificare roluri la admin, angajat, manager, colaborator
+
+## Fix-uri (Sprint 5)
+- [x] PDF Export: fix diacritice românești (ă, â, î, ș, ț) — font pdfkit înlocuit cu Roboto TTF Unicode
