@@ -18,6 +18,7 @@ import Propuneri from "./pages/Propuneri";
 import Proiecte from "./pages/Proiecte";
 import Profil from "./pages/Profil";
 import PlaceholderPage from "./pages/PlaceholderPage";
+import RapoarteHR from "./pages/RapoarteHR";
 
 function Router() {
   return (
@@ -41,6 +42,7 @@ function Router() {
         <Route path="/organigrama" component={() => <PlaceholderPage title="Organigramă" />} />
         <Route path="/biblioteca" component={() => <PlaceholderPage title="Bibliotecă Tehnică" />} />
         <Route path="/formulare" component={() => <PlaceholderPage title="Formulare & Cereri" />} />
+        <Route path="/rapoarte-hr" component={RapoarteHR} />
         <Route path="/notificari" component={() => <PlaceholderPage title="Notificări" />} />
         <Route path="/setari" component={() => <PlaceholderPage title="Setări" />} />
         <Route path="/404" component={NotFound} />

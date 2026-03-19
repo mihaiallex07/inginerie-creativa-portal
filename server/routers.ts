@@ -11,6 +11,11 @@ import {
   updatePontajEntry,
   deletePontajEntry,
   getPontajById,
+  getPontajLunarAngajat,
+  getSumarEchipaLunar,
+  getAbsenteLunare,
+  getOreSuplimentare,
+  getPontajPerProiect,
   getProjects,
   upsertProject,
   getTimeEntriesForUser,
@@ -209,6 +214,47 @@ export const appRouter = router({
         if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
         await deletePontajEntry(input.id, ctx.user.id);
         return { success: true };
+      }),
+
+    // ── HR Report preview procedures ──────────────────────────────────────
+    getByMonth: protectedProcedure
+      .input(z.object({ year: z.number(), month: z.number(), userId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        return getPontajLunarAngajat(input.userId, input.year, input.month);
+      }),
+
+    getAllByMonth: protectedProcedure
+      .input(z.object({ year: z.number(), month: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        return getSumarEchipaLunar(input.year, input.month);
+      }),
+
+    getAbsente: protectedProcedure
+      .input(z.object({ year: z.number(), month: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        return getAbsenteLunare(input.year, input.month);
+      }),
+
+    getOreSuplimentare: protectedProcedure
+      .input(z.object({ year: z.number(), month: z.number(), norm: z.number().optional() }))
+      .query(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        return getOreSuplimentare(input.year, input.month, input.norm ?? 480);
+      }),
+
+    getPontajProiect: protectedProcedure
+      .input(z.object({ year: z.number(), month: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        return getPontajPerProiect(input.year, input.month);
       }),
   }),
 

@@ -93,3 +93,9 @@
 - [x] Pontaj: blocare editare dacă luna este închisă (luna curentă = deschisă, lunile anterioare = închise)
 - [x] Pontaj: fix bug timezone backend - orele se salvează cu offset +6h (8:30 → 14:30)
 - [x] Pontaj: UX dropdown ieșire - elimină opțiunea "Fără Ieșire", pornire de la ora intrare +30min
+- [x] Rapoarte HR: instalare exceljs + pdfkit pe server
+- [x] Rapoarte HR: proceduri tRPC pentru 5 rapoarte (pontaj lunar, sumar echipă, concedii/absențe, ore suplimentare, pontaj per proiect)
+- [x] Rapoarte HR: endpoint Express pentru generare și descărcare Excel branded
+- [x] Rapoarte HR: endpoint Express pentru generare și descărcare PDF branded
+- [x] Rapoarte HR: pagina RapoarteHR.tsx cu filtre, preview tabel, butoane export Excel+PDF
+- [x] Rapoarte HR: acces restricționat la rolurile super_admin, admin_hr, manager

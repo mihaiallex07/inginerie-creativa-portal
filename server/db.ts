@@ -436,3 +436,161 @@ export async function createNotification(data: typeof notifications.$inferInsert
   if (!db) return;
   await db.insert(notifications).values(data);
 }
+
+// ─── RAPOARTE HR ─────────────────────────────────────────────────────────────
+
+/** Pontaj complet pentru un singur angajat pe o lună, cu numele proiectului */
+export async function getPontajLunarAngajat(userId: number, year: number, month: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-31`;
+  return db
+    .select({
+      id: pontaj.id,
+      date: pontaj.date,
+      checkIn: pontaj.checkIn,
+      checkOut: pontaj.checkOut,
+      type: pontaj.type,
+      breakMinutes: pontaj.breakMinutes,
+      totalMinutes: pontaj.totalMinutes,
+      notes: pontaj.notes,
+      projectName: projects.name,
+    })
+    .from(pontaj)
+    .leftJoin(projects, eq(pontaj.projectId, projects.id))
+    .where(and(eq(pontaj.userId, userId), sql`DATE(${pontaj.date}) >= ${start}`, sql`DATE(${pontaj.date}) <= ${end}`))
+    .orderBy(pontaj.date);
+}
+
+/** Sumar lunar pentru toți angajații activi */
+export async function getSumarEchipaLunar(year: number, month: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-31`;
+
+  // Get all active users
+  const allUsers = await db.select().from(users).where(eq(users.isActive, true)).orderBy(users.name);
+
+  // Get all pontaj for the month
+  const allPontaj = await db
+    .select()
+    .from(pontaj)
+    .where(and(sql`DATE(${pontaj.date}) >= ${start}`, sql`DATE(${pontaj.date}) <= ${end}`));
+
+  const presentTypes = ["bucuresti", "cluj", "miercurea_ciuc", "brasov", "eveniment", "deplasare", "vizita_santier", "telemunca"];
+
+  return allUsers.map(u => {
+    const userPontaj = allPontaj.filter(p => p.userId === u.id);
+    return {
+      id: u.id,
+      name: u.name ?? u.email ?? "—",
+      email: u.email,
+      department: u.department,
+      presentDays: userPontaj.filter(p => presentTypes.includes(p.type)).length,
+      totalMinutes: userPontaj.reduce((acc, p) => acc + (p.totalMinutes ?? 0), 0),
+      concediuDays: userPontaj.filter(p => p.type === "concediu").length,
+      medicalDays: userPontaj.filter(p => p.type === "medical").length,
+      absentDays: userPontaj.filter(p => p.type === "absent").length,
+      liberLegalDays: userPontaj.filter(p => p.type === "liber_legal").length,
+      recuperareDays: userPontaj.filter(p => p.type === "recuperare").length,
+    };
+  });
+}
+
+/** Toate absențele/concediile pe o lună */
+export async function getAbsenteLunare(year: number, month: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-31`;
+  const absenceTypes = ["concediu", "medical", "liber_legal", "absent", "recuperare"];
+  return db
+    .select({
+      name: users.name,
+      email: users.email,
+      date: pontaj.date,
+      type: pontaj.type,
+      notes: pontaj.notes,
+    })
+    .from(pontaj)
+    .leftJoin(users, eq(pontaj.userId, users.id))
+    .where(and(
+      sql`DATE(${pontaj.date}) >= ${start}`,
+      sql`DATE(${pontaj.date}) <= ${end}`,
+      sql`${pontaj.type} IN ('concediu','medical','liber_legal','absent','recuperare')`
+    ))
+    .orderBy(users.name, pontaj.date);
+}
+
+/** Ore suplimentare (zile cu totalMinutes > normMinutes) */
+export async function getOreSuplimentare(year: number, month: number, normMinutes = 480) {
+  const db = await getDb();
+  if (!db) return [];
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-31`;
+  const rows = await db
+    .select({
+      name: users.name,
+      date: pontaj.date,
+      totalMinutes: pontaj.totalMinutes,
+      type: pontaj.type,
+    })
+    .from(pontaj)
+    .leftJoin(users, eq(pontaj.userId, users.id))
+    .where(and(
+      sql`DATE(${pontaj.date}) >= ${start}`,
+      sql`DATE(${pontaj.date}) <= ${end}`,
+      sql`${pontaj.totalMinutes} > ${normMinutes}`
+    ))
+    .orderBy(users.name, pontaj.date);
+
+  return rows.map(r => ({
+    ...r,
+    name: r.name ?? "—",
+    overMinutes: Math.max(0, (r.totalMinutes ?? 0) - normMinutes),
+  }));
+}
+
+/** Pontaj grupat per proiect */
+export async function getPontajPerProiect(year: number, month: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const start = `${year}-${String(month).padStart(2, "0")}-01`;
+  const end = `${year}-${String(month).padStart(2, "0")}-31`;
+  const rows = await db
+    .select({
+      projectName: projects.name,
+      name: users.name,
+      date: pontaj.date,
+      totalMinutes: pontaj.totalMinutes,
+      type: pontaj.type,
+      notes: pontaj.notes,
+    })
+    .from(pontaj)
+    .leftJoin(users, eq(pontaj.userId, users.id))
+    .leftJoin(projects, eq(pontaj.projectId, projects.id))
+    .where(and(
+      sql`DATE(${pontaj.date}) >= ${start}`,
+      sql`DATE(${pontaj.date}) <= ${end}`,
+      sql`${pontaj.projectId} IS NOT NULL`
+    ))
+    .orderBy(projects.name, users.name, pontaj.date);
+
+  return rows.map(r => ({
+    ...r,
+    projectName: r.projectName ?? "Fără proiect",
+    name: r.name ?? "—",
+  }));
+}
+
+/** Lista angajaților activi pentru selectorul HR */
+export async function getActiveUsers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({ id: users.id, name: users.name, email: users.email, department: users.department })
+    .from(users)
+    .where(eq(users.isActive, true))
+    .orderBy(users.name);
+}

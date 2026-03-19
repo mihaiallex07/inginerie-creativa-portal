@@ -24,6 +24,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
+  BarChart3,
   Bell,
   BookOpen,
   Building2,
@@ -88,6 +89,12 @@ const navSections = [
       { icon: FileText, label: "Documentele mele", path: "/documente" },
       { icon: Lightbulb, label: "Propunerile mele", path: "/propuneri" },
       { icon: User, label: "Profilul meu", path: "/profil" },
+    ],
+  },
+  {
+    label: "ADMINISTRARE",
+    items: [
+      { icon: BarChart3, label: "Rapoarte HR", path: "/rapoarte-hr" },
     ],
   },
 ];
