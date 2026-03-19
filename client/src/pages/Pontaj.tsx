@@ -35,7 +35,7 @@ const LOCATIONS: LocationDef[] = [
   { value: "miercurea_ciuc",label: "Miercurea-Ciuc",   sublabel: "Birou",               icon: "🏢" },
   { value: "brasov",        label: "Brașov",           sublabel: "IASC Livezilor 28",   icon: "🏢" },
   { value: "eveniment",     label: "Eveniment",        sublabel: "Conferință / târg",   icon: "📅" },
-  { value: "deplasare",     label: "Deplasare",        sublabel: "Client / partener",   icon: "🚗" },
+  { value: "deplasare",     label: "Deplasare",        sublabel: "În scopul muncii",    icon: "🚗" },
   { value: "vizita_santier",label: "Vizită Șantier",   sublabel: "Inspecție / supervizare", icon: "🏗️" },
   { value: "telemunca",     label: "Telemuncă",        sublabel: "Lucru de acasă",      icon: "🏠" },
   { value: "concediu",      label: "Concediu",         sublabel: "Odihnă / CO",         icon: "🌴" },
