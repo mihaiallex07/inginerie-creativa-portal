@@ -19,7 +19,7 @@ export const users = mysqlTable("users", {
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
-  role: mysqlEnum("role", ["super_admin", "admin_hr", "manager", "angajat", "colaborator"]).default("angajat").notNull(),
+  role: mysqlEnum("role", ["admin", "angajat", "colaborator"]).default("angajat").notNull(),
   department: varchar("department", { length: 128 }),
   jobTitle: varchar("jobTitle", { length: 128 }),
   avatarUrl: text("avatarUrl"),

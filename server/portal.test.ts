@@ -202,7 +202,7 @@ describe("news", () => {
   });
 
   it("create succeeds for admin (auth passes)", async () => {
-    const caller = appRouter.createCaller(makeCtx("admin_hr"));
+    const caller = appRouter.createCaller(makeCtx("admin"));
     // With mocked DB, create should succeed
     const result = await caller.news.create({ title: "Test", content: "Content", category: "companie", excerpt: "" });
     expect(result).toBeDefined();
@@ -267,11 +267,11 @@ describe("proposals", () => {
 
 // ─── RBAC tests ───────────────────────────────────────────────────────────────
 describe("RBAC - role based access control", () => {
-  it("super_admin can access admin routes", async () => {
-    const caller = appRouter.createCaller(makeCtx("super_admin"));
+  it("admin can access admin routes", async () => {
+    const caller = appRouter.createCaller(makeCtx("admin"));
     // Should not throw auth error
     const result = await caller.auth.me();
-    expect(result?.role).toBe("super_admin");
+    expect(result?.role).toBe("admin");
   });
 
   it("colaborator has limited access", async () => {
@@ -288,7 +288,7 @@ describe("RBAC - role based access control", () => {
   });
 
   it("manager can create news (auth passes)", async () => {
-    const caller = appRouter.createCaller(makeCtx("manager"));
+    const caller = appRouter.createCaller(makeCtx("admin"));
     // With mocked DB, should succeed
     const result = await caller.news.create({ title: "T", content: "C", category: "companie", excerpt: "" });
     expect(result).toBeDefined();

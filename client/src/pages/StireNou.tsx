@@ -38,7 +38,7 @@ export default function StireNou() {
   const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
 
-  const canCreate = user?.role === "super_admin" || user?.role === "admin_hr" || user?.role === "manager";
+  const canCreate = user?.role === "admin";
 
   const [form, setForm] = useState<FormState>({
     title: "",

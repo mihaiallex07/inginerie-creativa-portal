@@ -42,7 +42,7 @@ export default function Proiecte() {
   });
 
   const { data: projects, isLoading } = trpc.projects.list.useQuery({ status: statusFilter === "toate" ? undefined : statusFilter });
-  const canManage = user?.role === "super_admin" || user?.role === "admin_hr" || user?.role === "manager";
+  const canManage = user?.role === "admin";
 
   const upsert = trpc.projects.upsert.useMutation({
     onSuccess: () => {

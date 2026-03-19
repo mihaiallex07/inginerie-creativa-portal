@@ -7,11 +7,9 @@ import { toast } from "sonner";
 import { useLocation } from "wouter";
 
 const ROLE_LABELS: Record<string, string> = {
-  super_admin: "Super Administrator",
-  admin_hr: "Administrator HR",
-  manager: "Manager Departament",
+  admin: "Administrator",
   angajat: "Angajat",
-  colaborator: "Colaborator Extern",
+  colaborator: "Colaborator",
 };
 
 export default function Profil() {

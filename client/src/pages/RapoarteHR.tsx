@@ -346,7 +346,7 @@ export default function RapoarteHR() {
   const [error, setError] = useState<string | null>(null);
 
   // Check HR access
-  const hrRoles = ["super_admin", "admin_hr", "manager"];
+  const hrRoles = ["admin"];
   const hasAccess = user && hrRoles.includes(user.role ?? "");
 
   // Fetch active users for selector

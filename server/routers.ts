@@ -132,7 +132,7 @@ export const appRouter = router({
       .input(z.object({ year: z.number(), month: z.number() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") {
+        if (role !== "admin") {
           throw new Error("Acces interzis");
         }
         return getAllPontajByMonth(input.year, input.month);
@@ -232,7 +232,7 @@ export const appRouter = router({
       .input(z.object({ year: z.number(), month: z.number(), userId: z.number() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         return getPontajLunarAngajat(input.userId, input.year, input.month);
       }),
 
@@ -240,7 +240,7 @@ export const appRouter = router({
       .input(z.object({ year: z.number(), month: z.number() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         return getSumarEchipaLunar(input.year, input.month);
       }),
 
@@ -248,7 +248,7 @@ export const appRouter = router({
       .input(z.object({ year: z.number(), month: z.number() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         return getAbsenteLunare(input.year, input.month);
       }),
 
@@ -256,7 +256,7 @@ export const appRouter = router({
       .input(z.object({ year: z.number(), month: z.number(), norm: z.number().optional() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         return getOreSuplimentare(input.year, input.month, input.norm ?? 480);
       }),
 
@@ -264,7 +264,7 @@ export const appRouter = router({
       .input(z.object({ year: z.number(), month: z.number() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         return getPontajPerProiect(input.year, input.month);
       }),
   }),
@@ -291,7 +291,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") {
+        if (role !== "admin") {
           throw new Error("Acces interzis");
         }
         await upsertProject({ ...input, managerId: ctx.user.id });
@@ -421,7 +421,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") {
+        if (role !== "admin") {
           throw new Error("Acces interzis");
         }
         const id = await createNews({ ...input, authorId: ctx.user.id });
@@ -446,7 +446,7 @@ export const appRouter = router({
       .input(z.object({ userId: z.number() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         return getDocumentsForUser(input.userId);
       }),
 
@@ -465,7 +465,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && input.userId !== ctx.user.id) {
+        if (role !== "admin" && input.userId !== ctx.user.id) {
           throw new Error("Acces interzis");
         }
         const id = await createDocument({ ...input, uploadedBy: ctx.user.id });
@@ -506,7 +506,7 @@ export const appRouter = router({
       .input(z.object({ processId: z.number() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") {
+        if (role !== "admin") {
           throw new Error("Acces interzis");
         }
         return getProcessReadStatus(input.processId);
@@ -577,7 +577,7 @@ export const appRouter = router({
   users: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       const role = ctx.user.role;
-      if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") {
+      if (role !== "admin") {
         throw new Error("Acces interzis");
       }
       return getAllUsers();
@@ -626,7 +626,7 @@ export const appRouter = router({
       .input(z.object({ status: z.string().optional() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         return getAllLeaveRequests(input.status);
       }),
 
@@ -638,7 +638,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         await reviewLeaveRequest(input.id, ctx.user.id, input.status, input.reviewNote);
         return { success: true };
       }),
@@ -658,18 +658,18 @@ export const appRouter = router({
   adminUsers: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       const role = ctx.user.role;
-      if (role !== "super_admin" && role !== "admin_hr") throw new Error("Acces interzis");
+      if (role !== "admin") throw new Error("Acces interzis");
       return getAllUsersAdmin();
     }),
 
     updateRole: protectedProcedure
       .input(z.object({
         id: z.number(),
-        role: z.enum(["super_admin", "admin_hr", "manager", "angajat", "colaborator"]),
+        role: z.enum(["admin", "angajat", "colaborator"]),
       }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         await updateUserRole(input.id, input.role);
         return { success: true };
       }),
@@ -678,7 +678,7 @@ export const appRouter = router({
       .input(z.object({ id: z.number(), isActive: z.boolean() }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         await updateUserActive(input.id, input.isActive);
         return { success: true };
       }),
@@ -693,7 +693,7 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         const { id, ...data } = input;
         await updateUserProfile(id, data);
         return { success: true };
@@ -706,7 +706,7 @@ export const appRouter = router({
       .input(z.object({ year: z.number(), month: z.number() }))
       .query(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "super_admin" && role !== "admin_hr" && role !== "manager") throw new Error("Acces interzis");
+        if (role !== "admin") throw new Error("Acces interzis");
         return getHRDashboardStats(input.year, input.month);
       }),
   }),

@@ -33,7 +33,7 @@ export default function Stiri() {
 
   const { data: newsData, isLoading } = trpc.news.list.useQuery({ category: category === "toate" ? undefined : category, limit: 50 });
 
-  const canCreate = user?.role === "super_admin" || user?.role === "admin_hr" || user?.role === "manager";
+  const canCreate = user?.role === "admin";
 
   const filtered = newsData?.filter(({ news: item }) =>
     !search || item.title.toLowerCase().includes(search.toLowerCase()) || (item.excerpt ?? "").toLowerCase().includes(search.toLowerCase())

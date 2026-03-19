@@ -123,3 +123,11 @@
 
 ## Fix-uri (Sprint 5)
 - [x] PDF Export: fix diacritice românești (ă, â, î, ș, ț) — font pdfkit înlocuit cu Roboto TTF Unicode
+
+## Simplificare roluri (Sprint 6)
+- [x] Schema DB: enum role simplificat la admin, angajat, colaborator (migrare SQL)
+- [x] RBAC middleware: adminProcedure verifică role === 'admin' (în loc de super_admin/admin_hr/manager)
+- [x] routers.ts: actualizare toate referințele la roluri vechi
+- [x] AdminUtilizatori.tsx: dropdown cu 3 roluri (Admin, Angajat, Colaborator)
+- [x] DashboardHR, RapoarteHR, AprobariConcediu: acces restricționat la role === 'admin'
+- [x] Migrare date: utilizatorii cu super_admin/admin_hr/manager → admin

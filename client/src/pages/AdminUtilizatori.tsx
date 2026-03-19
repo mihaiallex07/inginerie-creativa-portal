@@ -30,8 +30,7 @@ import {
 } from "lucide-react";
 
 const ROLES: Record<string, { label: string; color: string }> = {
-  admin_hr: { label: "Admin", color: "bg-purple-100 text-purple-800 border-purple-200" },
-  manager: { label: "Manager", color: "bg-blue-100 text-blue-800 border-blue-200" },
+  admin: { label: "Admin", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
   angajat: { label: "Angajat", color: "bg-green-100 text-green-800 border-green-200" },
   colaborator: { label: "Colaborator", color: "bg-gray-100 text-gray-700 border-gray-200" },
 };
@@ -40,7 +39,7 @@ type UserRow = {
   id: number;
   name: string | null;
   email: string | null;
-  role: "super_admin" | "admin_hr" | "manager" | "angajat" | "colaborator";
+  role: "admin" | "angajat" | "colaborator";
   department: string | null;
   jobTitle: string | null;
   isActive: boolean;
@@ -102,7 +101,7 @@ export default function AdminUtilizatori() {
   const stats = {
     total: users?.length ?? 0,
     activi: users?.filter(u => u.isActive).length ?? 0,
-    admins: users?.filter(u => u.role === "super_admin" || u.role === "admin_hr").length ?? 0,
+    admins: users?.filter(u => u.role === "admin").length ?? 0,
   };
 
   const openEdit = (u: UserRow) => {

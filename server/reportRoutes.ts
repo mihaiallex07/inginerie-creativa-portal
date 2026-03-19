@@ -29,7 +29,7 @@ import {
 async function requireHR(req: Request, res: Response): Promise<{ id: number; role: string; name: string | null } | null> {
   try {
     const user = await sdk.authenticateRequest(req);
-    const hrRoles = ["super_admin", "admin_hr", "manager"] as const;
+    const hrRoles = ["admin"] as const;
     if (!user || !hrRoles.includes(user.role as typeof hrRoles[number])) {
       res.status(403).json({ error: "Acces interzis. Necesită rol HR/Admin." });
       return null;
