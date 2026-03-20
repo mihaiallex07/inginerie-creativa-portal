@@ -27,7 +27,26 @@ import {
   UserCheck,
   UserX,
   Pencil,
+  Trash2,
 } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+
+const DEPARTMENTS = [
+  "Proiectare Arhitectură",
+  "Proiectare Structură",
+  "Proiectare Instalații",
+  "Vânzări",
+  "Execuție",
+];
 
 const ROLES: Record<string, { label: string; color: string }> = {
   admin: { label: "Admin", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
@@ -64,6 +83,7 @@ export default function AdminUtilizatori() {
   const [roleFilter, setRoleFilter] = useState("toate");
   const [editUser, setEditUser] = useState<UserRow | null>(null);
   const [editForm, setEditForm] = useState({ name: "", department: "", jobTitle: "", phone: "" });
+  const [deleteTarget, setDeleteTarget] = useState<UserRow | null>(null);
 
   const { data: users, isLoading } = trpc.adminUsers.list.useQuery();
 
@@ -89,6 +109,15 @@ export default function AdminUtilizatori() {
     onError: (e) => toast.error(e.message),
   });
 
+  const deleteUserMutation = trpc.adminUsers.deleteUser.useMutation({
+    onSuccess: () => {
+      toast.success("Utilizator șters complet");
+      utils.adminUsers.list.invalidate();
+      setDeleteTarget(null);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   const filtered = (users ?? []).filter(u => {
     const matchSearch = !search ||
       (u.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
@@ -96,6 +125,10 @@ export default function AdminUtilizatori() {
       (u.department ?? "").toLowerCase().includes(search.toLowerCase());
     const matchRole = roleFilter === "toate" || u.role === roleFilter;
     return matchSearch && matchRole;
+  }).sort((a, b) => {
+    // Activi întâi, apoi inactivi; în cadrul fiecărei grupe, ordine alfabetică
+    if (a.isActive !== b.isActive) return a.isActive ? -1 : 1;
+    return (a.name ?? "").localeCompare(b.name ?? "", "ro");
   });
 
   const stats = {
@@ -257,12 +290,21 @@ export default function AdminUtilizatori() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className={`h-8 w-8 ${u.isActive ? "text-red-400 hover:text-red-600 hover:bg-red-50" : "text-green-500 hover:text-green-700 hover:bg-green-50"}`}
+                          className={`h-8 w-8 ${u.isActive ? "text-orange-400 hover:text-orange-600 hover:bg-orange-50" : "text-green-500 hover:text-green-700 hover:bg-green-50"}`}
                           onClick={() => toggleActiveMutation.mutate({ id: u.id, isActive: !u.isActive })}
                           disabled={toggleActiveMutation.isPending}
-                          title={u.isActive ? "Dezactivează cont" : "Activează cont"}
+                          title={u.isActive ? "Dezactivează cont (păstrează istoricul)" : "Activează cont"}
                         >
                           {u.isActive ? <UserX className="h-3.5 w-3.5" /> : <UserCheck className="h-3.5 w-3.5" />}
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-400 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => setDeleteTarget(u)}
+                          title="Șterge utilizator complet (ireversibil)"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                       </div>
 
@@ -292,7 +334,16 @@ export default function AdminUtilizatori() {
               </div>
               <div className="space-y-1.5">
                 <Label>Departament</Label>
-                <Input value={editForm.department} onChange={e => setEditForm(f => ({ ...f, department: e.target.value }))} placeholder="ex: Proiectare, Management, IT" />
+                <Select value={editForm.department} onValueChange={v => setEditForm(f => ({ ...f, department: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selectează departamentul" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map(d => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-1.5">
                 <Label>Funcție</Label>
@@ -315,6 +366,33 @@ export default function AdminUtilizatori() {
             </div>
           </DialogContent>
         </Dialog>
+
+      {/* Dialog confirmare ștergere completă */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => !open && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" />
+              Șterge utilizator complet
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>Ești sigur că vrei să ștergi definitiv contul lui <strong>{deleteTarget?.name ?? deleteTarget?.email}</strong>?</p>
+              <p className="text-red-600 font-medium">Această acțiune este ireversibilă — se vor șterge și toate înregistrările de pontaj, cererile de concediu și orice altă dată asociată acestui cont.</p>
+              <p className="text-muted-foreground text-xs">Dacă vrei să păstrezi istoricul, folosește butonul de dezactivare (portocaliu) în loc de ștergere.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Anulează</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => deleteTarget && deleteUserMutation.mutate({ id: deleteTarget.id })}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? "Se șterge..." : "Șterge definitiv"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       </div>
     
   );

@@ -932,3 +932,19 @@ export async function getOrgChartData() {
     .from(users)
     .where(eq(users.isActive, true));
 }
+
+// ─── DELETE USER COMPLETELY ──────────────────────────────────────────────────
+export async function deleteUserCompletely(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  // Ștergem mai întâi datele asociate (pontaj, leave requests, time tracking etc.)
+  await db.execute(sql`DELETE FROM pontaj WHERE user_id = ${userId}`);
+  await db.execute(sql`DELETE FROM leave_requests WHERE user_id = ${userId}`);
+  // Ștergem time tracking dacă există tabela
+  try {
+    await db.execute(sql`DELETE FROM time_entries WHERE user_id = ${userId}`);
+  } catch {}
+  // Ștergem în final utilizatorul
+  await db.execute(sql`DELETE FROM users WHERE id = ${userId}`);
+  return { success: true };
+}

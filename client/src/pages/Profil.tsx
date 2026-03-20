@@ -25,6 +25,14 @@ const ROLE_LABELS: Record<string, string> = {
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
+const DEPARTMENTS = [
+  "Proiectare Arhitectură",
+  "Proiectare Structură",
+  "Proiectare Instalații",
+  "Vânzări",
+  "Execuție",
+];
+
 type ProfileData = {
   name: string;
   phone: string;
@@ -282,7 +290,23 @@ export default function Profil() {
           <SectionHeader icon={Briefcase} title="Informații profesionale" subtitle="Funcție, departament, contact" />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FieldRow label="Funcție / Post" {...f("jobTitle")} placeholder="ex: Inginer Proiectant" />
-            <FieldRow label="Departament" {...f("department")} placeholder="ex: Proiectare" />
+            <div className="space-y-1">
+              <Label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Departament</Label>
+              {editing ? (
+                <Select value={form.department} onValueChange={v => setForm(p => ({ ...p, department: v }))}>
+                  <SelectTrigger className="h-9 text-sm">
+                    <SelectValue placeholder="Selectează departamentul" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DEPARTMENTS.map(d => (
+                      <SelectItem key={d} value={d}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              ) : (
+                <p className="text-sm text-foreground py-1.5">{form.department || <span className="text-muted-foreground italic">Necòmpletat</span>}</p>
+              )}
+            </div>
             <FieldRow label="Telefon mobil (personal)" {...f("phoneMobile")} type="tel" placeholder="+40 7xx xxx xxx" />
             <FieldRow label="Telefon de serviciu" {...f("phone")} type="tel" placeholder="+40 7xx xxx xxx" />
             <FieldRow label="Data angajării" {...f("hireDate")} type="date" />

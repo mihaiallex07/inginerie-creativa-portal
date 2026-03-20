@@ -150,3 +150,12 @@
 - [x] Backend: procedură tRPC people.orgChart (structură ierarhică din department + jobTitle)
 - [x] Dashboard: card "Zile de naștere" cu avatare, nume, data și countdown zile
 - [x] Organigramă: pagina interactivă cu noduri per departament, expand/collapse, căutare
+
+## Sprint 11 — Fix-uri critice
+- [x] Profil: fix bug salvare — datele se salvează pe userId, nu pe sesiune globală
+- [x] Profil: dropdown departamente cu 5 opțiuni (proiectare arhitectură, structură, instalații, vânzări, execuție)
+- [x] Dashboard: fix card zile de naștere — vizibil mereu, cu mesaj gol dacă nu există date
+- [x] Dashboard: elimină widget pontaj duplicat, înlocuiește cu shortcut rapid spre Pontaj zilnic
+- [x] AdminUtilizatori: buton ștergere completă utilizator + dialog confirmare cu avertisment
+- [x] AdminUtilizatori: sortare alfabetică — activi primii, inactivi la final
+- [x] AdminUtilizatori: dropdown departamente în dialogul de editare profil

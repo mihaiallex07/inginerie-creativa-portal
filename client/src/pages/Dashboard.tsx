@@ -4,17 +4,13 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  Clock,
   FileText,
   FolderOpen,
   Lightbulb,
-  LogIn,
-  LogOut,
   Newspaper,
   Timer,
   TrendingUp,
   AlertCircle,
-  CheckCircle2,
   ChevronRight,
   Cake,
 } from "lucide-react";
@@ -50,27 +46,6 @@ export default function Dashboard() {
   const { data: proposalsData } = trpc.proposals.list.useQuery({ status: "deschisa" });
   const { data: birthdaysData } = trpc.people.upcomingBirthdays.useQuery({ daysAhead: 30 });
 
-  const checkIn = trpc.pontaj.checkIn.useMutation({
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success("Check-in realizat cu succes!");
-        utils.pontaj.today.invalidate();
-      } else {
-        toast.error(data.message ?? "Eroare la check-in");
-      }
-    },
-  });
-
-  const checkOut = trpc.pontaj.checkOut.useMutation({
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success("Check-out realizat cu succes!");
-        utils.pontaj.today.invalidate();
-      } else {
-        toast.error(data.message ?? "Eroare la check-out");
-      }
-    },
-  });
 
   const firstName = user?.name?.split(" ")[0] ?? "Coleg";
   const today = format(new Date(), "EEEE, d MMMM yyyy", { locale: ro });
@@ -113,30 +88,29 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Pontaj Widget */}
-      <Card className="border-2 border-border overflow-hidden">
+      {/* Pontaj Shortcut */}
+      <Card
+        className="border-2 border-border overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
+        onClick={() => setLocation("/pontaj")}
+      >
         <CardContent className="p-0">
           <div className="flex flex-col sm:flex-row">
             {/* Status */}
             <div className="flex-1 p-4 border-b sm:border-b-0 sm:border-r border-border">
               <div className="flex items-center gap-2 mb-1">
-                <div className={`h-2 w-2 rounded-full ${isCheckedIn && !isCheckedOut ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
+                <div className={`h-2 w-2 rounded-full ${isCheckedIn && !isCheckedOut ? "bg-green-500 animate-pulse" : isCheckedOut ? "bg-blue-400" : "bg-gray-300"}`} />
                 <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                  {isCheckedOut ? "Zi încheiată" : isCheckedIn ? "Prezent la birou" : "Neînregistrat"}
+                  {isCheckedOut ? "Zi încheiata" : isCheckedIn ? "Prezent — în curs" : "Neînregistrat azi"}
                 </span>
               </div>
               {isCheckedIn && todayPontaj?.checkIn && (
                 <p className="text-sm text-muted-foreground">
-                  Check-in: <span className="font-semibold text-foreground">
+                  Intrare: <span className="font-semibold text-foreground">
                     {format(new Date(todayPontaj.checkIn), "HH:mm")}
                   </span>
-                </p>
-              )}
-              {isCheckedOut && todayPontaj?.checkOut && (
-                <p className="text-sm text-muted-foreground">
-                  Check-out: <span className="font-semibold text-foreground">
-                    {format(new Date(todayPontaj.checkOut), "HH:mm")}
-                  </span>
+                  {isCheckedOut && todayPontaj?.checkOut && (
+                    <> &rarr; Ieșire: <span className="font-semibold text-foreground">{format(new Date(todayPontaj.checkOut), "HH:mm")}</span></>
+                  )}
                 </p>
               )}
             </div>
@@ -154,33 +128,15 @@ export default function Dashboard() {
               <p className="text-xs text-muted-foreground mt-1">Normă: 8h 00min</p>
             </div>
 
-            {/* Action */}
+            {/* Navigate CTA */}
             <div className="p-4 flex items-center justify-center">
-              {!isCheckedIn ? (
-                <Button
-                  onClick={() => checkIn.mutate({})}
-                  disabled={checkIn.isPending || pontajLoading}
-                  className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold gap-2 px-6"
-                >
-                  <LogIn className="h-4 w-4" />
-                  Check-in
-                </Button>
-              ) : !isCheckedOut ? (
-                <Button
-                  onClick={() => checkOut.mutate()}
-                  disabled={checkOut.isPending}
-                  variant="outline"
-                  className="border-[#221F1F] text-[#221F1F] font-semibold gap-2 px-6 hover:bg-[#221F1F] hover:text-white"
-                >
-                  <LogOut className="h-4 w-4" />
-                  Check-out
-                </Button>
-              ) : (
-                <div className="flex items-center gap-2 text-green-600">
-                  <CheckCircle2 className="h-5 w-5" />
-                  <span className="text-sm font-medium">Zi completă</span>
+              <div className="flex flex-col items-center gap-1.5 text-center">
+                <div className="h-10 w-10 rounded-full bg-[#FFCB09]/15 flex items-center justify-center">
+                  <TrendingUp className="h-5 w-5 text-[#FFCB09]" />
                 </div>
-              )}
+                <span className="text-xs text-muted-foreground">Pontaj zilnic</span>
+                <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              </div>
             </div>
           </div>
         </CardContent>
@@ -277,15 +233,19 @@ export default function Dashboard() {
       </div>
 
       {/* Zile de naștere */}
-      {birthdaysData && birthdaysData.length > 0 && (
-        <Card className="border-border overflow-hidden">
-          <CardHeader className="pb-2 pt-4 px-4">
-            <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
-              <Cake className="h-4 w-4 text-[#FFCB09]" />
-              Zile de naștere în următoarele 30 de zile
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-4">
+      <Card className="border-border overflow-hidden">
+        <CardHeader className="pb-2 pt-4 px-4">
+          <CardTitle className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <Cake className="h-4 w-4 text-[#FFCB09]" />
+            Zile de naștere în următoarele 30 de zile
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="px-4 pb-4">
+          {!birthdaysData || birthdaysData.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic py-2">
+              Niciun coleg nu are data nașterii înregistrată în profil.
+            </p>
+          ) : (
             <div className="space-y-2">
               {birthdaysData.slice(0, 5).map((person) => {
                 const bd = new Date(person.birthDate);
@@ -323,9 +283,9 @@ export default function Dashboard() {
                 );
               })}
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
       {/* News */}
       <div>

@@ -55,6 +55,7 @@ import {
   updateUserRole,
   updateUserActive,
   updateUserProfile,
+  deleteUserCompletely,
   getHRDashboardStats,
   getFullProfile,
   updateFullProfile,
@@ -713,6 +714,15 @@ export const appRouter = router({
         if (role !== "admin") throw new Error("Acces interzis");
         const { id, ...data } = input;
         await updateUserProfile(id, data);
+        return { success: true };
+      }),
+
+    deleteUser: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+        if (ctx.user.id === input.id) throw new Error("Nu ți poți șterge propriul cont");
+        await deleteUserCompletely(input.id);
         return { success: true };
       }),
   }),
