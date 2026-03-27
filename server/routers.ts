@@ -404,6 +404,93 @@ export const appRouter = router({
       .query(async ({ input }) => {
         return getTimeEntriesForProject(input.projectId);
       }),
+
+    // Calendar-style entry: with explicit startTime + endTime (UTC strings)
+    addCalendarEntry: protectedProcedure
+      .input(z.object({
+        projectId: z.number().optional(),
+        date: z.string(), // "YYYY-MM-DD"
+        startTime: z.string(), // "HH:MM" treated as UTC
+        endTime: z.string(),   // "HH:MM" treated as UTC
+        activityType: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).optional(),
+        taskName: z.string().optional(),
+        description: z.string().optional(),
+        isBillable: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const [year, month, day] = input.date.split("-").map(Number);
+        const [sh, sm] = input.startTime.split(":").map(Number);
+        const [eh, em] = input.endTime.split(":").map(Number);
+        const startDate = new Date(Date.UTC(year, month - 1, day, sh, sm, 0));
+        const endDate = new Date(Date.UTC(year, month - 1, day, eh, em, 0));
+        const durationMinutes = Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / 60000));
+        const id = await createTimeEntry({
+          userId: ctx.user.id,
+          projectId: input.projectId,
+          date: new Date(Date.UTC(year, month - 1, day)),
+          startTime: startDate,
+          endTime: endDate,
+          durationMinutes,
+          activityType: input.activityType ?? "proiectare",
+          taskName: input.taskName,
+          description: input.description,
+          isBillable: input.isBillable ?? true,
+          isRunning: false,
+          status: "salvat",
+        });
+        return { success: true, id };
+      }),
+
+    updateCalendarEntry: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        projectId: z.number().optional().nullable(),
+        date: z.string(),
+        startTime: z.string(),
+        endTime: z.string(),
+        activityType: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).optional(),
+        taskName: z.string().optional(),
+        description: z.string().optional(),
+        isBillable: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const entries = await getTimeEntriesForUser(ctx.user.id);
+        const entry = entries.find(e => e.id === input.id);
+        if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
+        const [year, month, day] = input.date.split("-").map(Number);
+        const [sh, sm] = input.startTime.split(":").map(Number);
+        const [eh, em] = input.endTime.split(":").map(Number);
+        const startDate = new Date(Date.UTC(year, month - 1, day, sh, sm, 0));
+        const endDate = new Date(Date.UTC(year, month - 1, day, eh, em, 0));
+        const durationMinutes = Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / 60000));
+        await updateTimeEntry(input.id, {
+          projectId: input.projectId ?? undefined,
+          date: new Date(Date.UTC(year, month - 1, day)),
+          startTime: startDate,
+          endTime: endDate,
+          durationMinutes,
+          activityType: input.activityType ?? "proiectare",
+          taskName: input.taskName,
+          description: input.description,
+          isBillable: input.isBillable ?? true,
+        });
+        return { success: true };
+      }),
+
+    deleteEntry: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const entries = await getTimeEntriesForUser(ctx.user.id);
+        const entry = entries.find(e => e.id === input.id);
+        if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
+        const db = await (await import("./db")).getDb();
+        if (db) {
+          const { timeEntries } = await import("../drizzle/schema");
+          const { eq } = await import("drizzle-orm");
+          await db.delete(timeEntries).where(eq(timeEntries.id, input.id));
+        }
+        return { success: true };
+      }),
   }),
 
   // ─── NEWS ────────────────────────────────────────────────────────────────

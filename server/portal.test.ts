@@ -265,6 +265,69 @@ describe("proposals", () => {
   });
 });
 
+// ─── Calendar time-tracking tests ──────────────────────────────────────────
+describe("timeTracking calendar procedures", () => {
+  it("addCalendarEntry requires authentication", async () => {
+    const caller = appRouter.createCaller(makeGuestCtx());
+    await expect(
+      caller.timeTracking.addCalendarEntry({
+        date: "2026-03-27",
+        startTime: "09:00",
+        endTime: "10:00",
+        activityType: "proiectare",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("addCalendarEntry succeeds for authenticated user", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.timeTracking.addCalendarEntry({
+      date: "2026-03-27",
+      startTime: "09:00",
+      endTime: "10:30",
+      activityType: "proiectare",
+      taskName: "Test calendar entry",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("updateCalendarEntry requires authentication", async () => {
+    const caller = appRouter.createCaller(makeGuestCtx());
+    await expect(
+      caller.timeTracking.updateCalendarEntry({
+        id: 1,
+        date: "2026-03-27",
+        startTime: "09:00",
+        endTime: "10:00",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("updateCalendarEntry throws for non-owned entry", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    // getTimeEntriesForUser returns [] so entry won't be found
+    await expect(
+      caller.timeTracking.updateCalendarEntry({
+        id: 999,
+        date: "2026-03-27",
+        startTime: "09:00",
+        endTime: "10:00",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("deleteEntry requires authentication", async () => {
+    const caller = appRouter.createCaller(makeGuestCtx());
+    await expect(caller.timeTracking.deleteEntry({ id: 1 })).rejects.toThrow();
+  });
+
+  it("deleteEntry throws for non-owned entry", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    // getTimeEntriesForUser returns [] so entry won't be found
+    await expect(caller.timeTracking.deleteEntry({ id: 999 })).rejects.toThrow();
+  });
+});
+
 // ─── RBAC tests ───────────────────────────────────────────────────────────────
 describe("RBAC - role based access control", () => {
   it("admin can access admin routes", async () => {

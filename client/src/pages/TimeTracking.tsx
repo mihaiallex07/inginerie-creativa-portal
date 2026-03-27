@@ -1,420 +1,595 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { format, startOfWeek, endOfWeek, subWeeks, addWeeks } from "date-fns";
+import { format, startOfWeek, endOfWeek, addWeeks, subWeeks, addDays, isSameDay, parseISO } from "date-fns";
 import { ro } from "date-fns/locale";
-import { useState, useEffect } from "react";
-import { Play, Square, Plus, Timer, ChevronLeft, ChevronRight, TrendingUp, Clock } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
+import { useState, useMemo, useRef, useCallback } from "react";
+import { ChevronLeft, ChevronRight, Plus, Trash2, Pencil, Clock, CalendarDays } from "lucide-react";
 
+// ─── Constants ───────────────────────────────────────────────────────────────
 const ACTIVITY_TYPES = [
-  { value: "proiectare", label: "Proiectare", color: "#FFCB09" },
-  { value: "consultanta", label: "Consultanță", color: "#3B82F6" },
-  { value: "sedinta", label: "Ședință", color: "#8B5CF6" },
-  { value: "documentare", label: "Documentare", color: "#6B7280" },
-  { value: "deplasare", label: "Deplasare", color: "#F59E0B" },
-  { value: "administrativ", label: "Administrativ", color: "#9CA3AF" },
-  { value: "verificare", label: "Verificare", color: "#10B981" },
-  { value: "executie", label: "Execuție", color: "#EF4444" },
-];
+  { value: "proiectare",   label: "Proiectare",    color: "#3B82F6" },
+  { value: "consultanta",  label: "Consultanță",   color: "#8B5CF6" },
+  { value: "sedinta",      label: "Ședință",        color: "#EC4899" },
+  { value: "documentare",  label: "Documentare",   color: "#6B7280" },
+  { value: "deplasare",    label: "Deplasare",     color: "#F59E0B" },
+  { value: "administrativ",label: "Administrativ", color: "#9CA3AF" },
+  { value: "verificare",   label: "Verificare",    color: "#10B981" },
+  { value: "executie",     label: "Execuție",      color: "#EF4444" },
+] as const;
+
+type ActivityType = typeof ACTIVITY_TYPES[number]["value"];
+
+// Calendar hours range: 06:00 – 21:00 (15 hours)
+const START_HOUR = 6;
+const END_HOUR = 21;
+const TOTAL_HOURS = END_HOUR - START_HOUR;
+const SLOT_HEIGHT = 48; // px per 30-min slot → 96px per hour
+const HOUR_HEIGHT = SLOT_HEIGHT * 2;
+
+function generateTimeSlots(): string[] {
+  const slots: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (const m of [0, 30]) {
+      slots.push(`${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`);
+    }
+  }
+  return slots;
+}
+const TIME_SLOTS = generateTimeSlots();
 
 function formatDuration(minutes: number) {
   const h = Math.floor(minutes / 60);
   const m = minutes % 60;
-  return `${h}h ${String(m).padStart(2, "0")}m`;
+  return `${h}h${m > 0 ? ` ${String(m).padStart(2, "0")}m` : ""}`;
 }
 
-function ElapsedTimer({ startTime }: { startTime: Date }) {
-  const [elapsed, setElapsed] = useState(0);
-  useEffect(() => {
-    const update = () => setElapsed(Math.floor((Date.now() - startTime.getTime()) / 1000));
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, [startTime]);
-  const h = Math.floor(elapsed / 3600);
-  const m = Math.floor((elapsed % 3600) / 60);
-  const s = elapsed % 60;
-  return (
-    <span className="tabular-nums font-mono text-2xl font-bold text-[#221F1F]">
-      {String(h).padStart(2, "0")}:{String(m).padStart(2, "0")}:{String(s).padStart(2, "0")}
-    </span>
-  );
+function extractUTCTime(dateVal: Date | string | null | undefined): string {
+  if (!dateVal) return "";
+  const d = new Date(dateVal);
+  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
 }
 
-export default function TimeTracking() {
-  const utils = trpc.useUtils();
-  const [weekOffset, setWeekOffset] = useState(0);
-  const [addOpen, setAddOpen] = useState(false);
+function todayISO() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
 
-  // Manual entry form
-  const [manualForm, setManualForm] = useState({
-    projectId: "fara",
-    date: format(new Date(), "yyyy-MM-dd"),
-    hours: "1",
-    minutes: "0",
+function getActivityColor(activityType: string, projectColor?: string | null): string {
+  if (projectColor && projectColor !== "#FFCB09") return projectColor;
+  return ACTIVITY_TYPES.find(a => a.value === activityType)?.color ?? "#3B82F6";
+}
+
+// ─── Dialog state ─────────────────────────────────────────────────────────────
+interface EntryForm {
+  id?: number;
+  date: string;
+  startTime: string;
+  endTime: string;
+  activityType: ActivityType;
+  taskName: string;
+  description: string;
+  projectId: string;
+  isBillable: boolean;
+}
+
+function defaultForm(date: string, startTime?: string): EntryForm {
+  return {
+    date,
+    startTime: startTime ?? "09:00",
+    endTime: startTime ? nextHalfHour(startTime) : "10:00",
     activityType: "proiectare",
     taskName: "",
     description: "",
+    projectId: "",
     isBillable: true,
+  };
+}
+
+function nextHalfHour(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m + 30;
+  const nh = Math.floor(total / 60) % 24;
+  const nm = total % 60;
+  return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
+export default function TimeTracking() {
+  const utils = trpc.useUtils();
+  const [weekStart, setWeekStart] = useState(() =>
+    startOfWeek(new Date(), { weekStartsOn: 1 })
+  );
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [form, setForm] = useState<EntryForm>(defaultForm(todayISO()));
+  const [isEditing, setIsEditing] = useState(false);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  const dateFrom = format(weekStart, "yyyy-MM-dd");
+  const dateTo = format(weekEnd, "yyyy-MM-dd");
+
+  const { data: entries = [], isLoading } = trpc.timeTracking.myEntries.useQuery({ dateFrom, dateTo });
+  const { data: projects = [] } = trpc.projects.list.useQuery({ status: "activ" });
+
+  const addEntry = trpc.timeTracking.addCalendarEntry.useMutation({
+    onSuccess: () => {
+      toast.success("Activitate adăugată!");
+      utils.timeTracking.myEntries.invalidate();
+      setDialogOpen(false);
+    },
+    onError: (e) => toast.error("Eroare: " + e.message),
   });
 
-  // Timer form
-  const [timerForm, setTimerForm] = useState({
-    projectId: "fara",
-    taskName: "",
-    activityType: "proiectare",
-    isBillable: true,
+  const updateEntry = trpc.timeTracking.updateCalendarEntry.useMutation({
+    onSuccess: () => {
+      toast.success("Activitate actualizată!");
+      utils.timeTracking.myEntries.invalidate();
+      setDialogOpen(false);
+    },
+    onError: (e) => toast.error("Eroare: " + e.message),
   });
 
-  const weekStart = startOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 1 });
-  const weekEnd = endOfWeek(addWeeks(new Date(), weekOffset), { weekStartsOn: 1 });
-
-  const { data: entries } = trpc.timeTracking.myEntries.useQuery({
-    dateFrom: format(weekStart, "yyyy-MM-dd"),
-    dateTo: format(weekEnd, "yyyy-MM-dd"),
-  });
-  const { data: runningTimer } = trpc.timeTracking.runningTimer.useQuery();
-  const { data: projects } = trpc.projects.list.useQuery({ status: "activ" });
-
-  const startTimer = trpc.timeTracking.startTimer.useMutation({
-    onSuccess: () => { toast.success("Timer pornit!"); utils.timeTracking.runningTimer.invalidate(); utils.timeTracking.myEntries.invalidate(); },
-  });
-  const stopTimer = trpc.timeTracking.stopTimer.useMutation({
-    onSuccess: (d) => { toast.success(`Timer oprit — ${formatDuration(d.durationMinutes)}`); utils.timeTracking.runningTimer.invalidate(); utils.timeTracking.myEntries.invalidate(); },
-  });
-  const addManual = trpc.timeTracking.addManual.useMutation({
-    onSuccess: () => { toast.success("Intrare adăugată!"); setAddOpen(false); utils.timeTracking.myEntries.invalidate(); },
+  const deleteEntry = trpc.timeTracking.deleteEntry.useMutation({
+    onSuccess: () => {
+      toast.success("Activitate ștearsă.");
+      utils.timeTracking.myEntries.invalidate();
+      setDialogOpen(false);
+    },
+    onError: (e) => toast.error("Eroare: " + e.message),
   });
 
-  // Weekly stats by activity
-  const weeklyByActivity = ACTIVITY_TYPES.map(type => {
-    const mins = entries?.filter(e => e.activityType === type.value).reduce((acc, e) => acc + (e.durationMinutes ?? 0), 0) ?? 0;
-    return { ...type, minutes: mins };
-  }).filter(t => t.minutes > 0).sort((a, b) => b.minutes - a.minutes);
+  // Group entries by date
+  const entriesByDate = useMemo(() => {
+    const map: Record<string, typeof entries> = {};
+    for (const e of entries) {
+    const rawDate = e.date as unknown;
+    const dateStr = typeof rawDate === "string" ? (rawDate as string).slice(0, 10) : format(new Date(rawDate as Date), "yyyy-MM-dd");
+    if (!map[dateStr]) map[dateStr] = [];
+    map[dateStr].push(e);
+    }
+    return map;
+  }, [entries]);
 
-  const totalWeekMinutes = entries?.reduce((acc, e) => acc + (e.durationMinutes ?? 0), 0) ?? 0;
-  const normWeekMinutes = 5 * 8 * 60; // 40h
+  // Weekly totals
+  const weeklyTotal = useMemo(() =>
+    entries.reduce((acc, e) => acc + (e.durationMinutes ?? 0), 0),
+    [entries]
+  );
 
-  // Group entries by project
-  const byProject = entries?.reduce((acc, e) => {
-    const key = e.projectId ? String(e.projectId) : "intern";
-    if (!acc[key]) acc[key] = { projectId: e.projectId, minutes: 0, entries: [] };
-    acc[key].minutes += e.durationMinutes ?? 0;
-    acc[key].entries.push(e);
-    return acc;
-  }, {} as Record<string, { projectId: number | null; minutes: number; entries: typeof entries }>) ?? {};
+  const prevWeek = () => setWeekStart(w => subWeeks(w, 1));
+  const nextWeek = () => setWeekStart(w => addWeeks(w, 1));
+  const goToday = () => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+
+  // Click on empty slot → open dialog with pre-filled time
+  const handleSlotClick = useCallback((date: Date, slotIndex: number) => {
+    const h = START_HOUR + Math.floor(slotIndex / 2);
+    const m = slotIndex % 2 === 0 ? 0 : 30;
+    const startTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+    const dateStr = format(date, "yyyy-MM-dd");
+    setForm(defaultForm(dateStr, startTime));
+    setIsEditing(false);
+    setDialogOpen(true);
+  }, []);
+
+  // Click on existing entry → open edit dialog
+  const handleEntryClick = useCallback((e: React.MouseEvent, entry: typeof entries[number]) => {
+    e.stopPropagation();
+    const rawDate = entry.date as unknown;
+    const dateStr = typeof rawDate === "string" ? (rawDate as string).slice(0, 10) : format(new Date(rawDate as Date), "yyyy-MM-dd");
+    setForm({
+      id: entry.id,
+      date: dateStr,
+      startTime: extractUTCTime(entry.startTime),
+      endTime: extractUTCTime(entry.endTime),
+      activityType: (entry.activityType as ActivityType) ?? "proiectare",
+      taskName: entry.taskName ?? "",
+      description: entry.description ?? "",
+      projectId: entry.projectId ? String(entry.projectId) : "",
+      isBillable: entry.isBillable ?? true,
+    });
+    setIsEditing(true);
+    setDialogOpen(true);
+  }, []);
+
+  const handleSave = () => {
+    if (!form.startTime || !form.endTime) {
+      toast.error("Selectează ora de start și de final");
+      return;
+    }
+    const payload = {
+      date: form.date,
+      startTime: form.startTime,
+      endTime: form.endTime,
+      activityType: form.activityType,
+      taskName: form.taskName || undefined,
+      description: form.description || undefined,
+      projectId: form.projectId && form.projectId !== "fara" ? Number(form.projectId) : undefined,
+      isBillable: form.isBillable,
+    };
+    if (isEditing && form.id) {
+      updateEntry.mutate({ id: form.id, ...payload });
+    } else {
+      addEntry.mutate(payload);
+    }
+  };
+
+  const handleDelete = () => {
+    if (!form.id) return;
+    if (confirm("Ștergi această activitate?")) {
+      deleteEntry.mutate({ id: form.id });
+    }
+  };
+
+  // Compute entry position and height in the grid
+  function getEntryStyle(entry: typeof entries[number]) {
+    const startStr = extractUTCTime(entry.startTime);
+    const endStr = extractUTCTime(entry.endTime);
+    if (!startStr || !endStr) return null;
+    const [sh, sm] = startStr.split(":").map(Number);
+    const [eh, em] = endStr.split(":").map(Number);
+    const startMinutes = sh * 60 + sm - START_HOUR * 60;
+    const endMinutes = eh * 60 + em - START_HOUR * 60;
+    if (startMinutes < 0 || endMinutes <= startMinutes) return null;
+    const top = (startMinutes / 30) * SLOT_HEIGHT;
+    const height = Math.max(SLOT_HEIGHT, ((endMinutes - startMinutes) / 30) * SLOT_HEIGHT);
+    return { top, height };
+  }
+
+  const projectMap = useMemo(() => {
+    const m: Record<number, { name: string; color: string | null }> = {};
+    for (const p of projects) m[p.id] = { name: p.name, color: p.color ?? null };
+    return m;
+  }, [projects]);
+
+  const isCurrentWeek = isSameDay(weekStart, startOfWeek(new Date(), { weekStartsOn: 1 }));
+
+  const checkoutSlots = useMemo(() => {
+    if (!form.startTime) return TIME_SLOTS;
+    const [h, m] = form.startTime.split(":").map(Number);
+    const minMinutes = h * 60 + m + 30;
+    return TIME_SLOTS.filter(t => {
+      const [th, tm] = t.split(":").map(Number);
+      return th * 60 + tm >= minMinutes;
+    });
+  }, [form.startTime]);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-bold text-foreground">Time-Tracking</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">Înregistrează și monitorizează activitățile</p>
+    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background shrink-0">
+        <div className="flex items-center gap-3">
+          <h1 className="text-lg font-bold text-foreground">Time-Tracking</h1>
+          <Badge variant="outline" className="text-xs font-medium">
+            {formatDuration(weeklyTotal)} săptămâna aceasta
+          </Badge>
         </div>
-        <Dialog open={addOpen} onOpenChange={setAddOpen}>
-          <DialogTrigger asChild>
-            <Button className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold gap-2">
-              <Plus className="h-4 w-4" />
-              Adaugă manual
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={goToday} disabled={isCurrentWeek}>
+            Azi
+          </Button>
+          <div className="flex items-center border border-border rounded-lg overflow-hidden">
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none" onClick={prevWeek}>
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Adaugă intrare manuală</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-2">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Data</Label>
-                  <Input type="date" value={manualForm.date} onChange={e => setManualForm(f => ({ ...f, date: e.target.value }))} className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">Proiect</Label>
-                  <Select value={manualForm.projectId} onValueChange={v => setManualForm(f => ({ ...f, projectId: v }))}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue placeholder="Selectează" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="fara">Intern / Fără proiect</SelectItem>
-                      {projects?.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Tip activitate</Label>
-                <Select value={manualForm.activityType} onValueChange={v => setManualForm(f => ({ ...f, activityType: v }))}>
-                  <SelectTrigger className="mt-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {ACTIVITY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="text-xs">Denumire sarcină</Label>
-                <Input value={manualForm.taskName} onChange={e => setManualForm(f => ({ ...f, taskName: e.target.value }))} placeholder="ex: Proiect tehnic PT Faza 2" className="mt-1" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Ore</Label>
-                  <Input type="number" min="0" max="24" value={manualForm.hours} onChange={e => setManualForm(f => ({ ...f, hours: e.target.value }))} className="mt-1" />
-                </div>
-                <div>
-                  <Label className="text-xs">Minute</Label>
-                  <Select value={manualForm.minutes} onValueChange={v => setManualForm(f => ({ ...f, minutes: v }))}>
-                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      {[0, 15, 30, 45].map(m => <SelectItem key={m} value={String(m)}>{m} min</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <Label className="text-xs">Descriere</Label>
-                <Textarea value={manualForm.description} onChange={e => setManualForm(f => ({ ...f, description: e.target.value }))} rows={2} className="mt-1" />
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={manualForm.isBillable} onCheckedChange={v => setManualForm(f => ({ ...f, isBillable: v }))} />
-                <Label className="text-xs">Facturabil</Label>
-              </div>
-              <Button
-                className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-                onClick={() => addManual.mutate({
-                  projectId: (manualForm.projectId && manualForm.projectId !== "fara") ? Number(manualForm.projectId) : undefined,
-                  date: manualForm.date,
-                  durationMinutes: Number(manualForm.hours) * 60 + Number(manualForm.minutes),
-                  activityType: manualForm.activityType as any,
-                  taskName: manualForm.taskName || undefined,
-                  description: manualForm.description || undefined,
-                  isBillable: manualForm.isBillable,
-                })}
-                disabled={addManual.isPending}
-              >
-                Salvează
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            <span className="px-3 text-sm font-medium min-w-[160px] text-center">
+              {format(weekStart, "d MMM", { locale: ro })} – {format(weekEnd, "d MMM yyyy", { locale: ro })}
+            </span>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-none" onClick={nextWeek}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <Button
+            size="sm"
+            className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold gap-1.5"
+            onClick={() => {
+              setForm(defaultForm(todayISO()));
+              setIsEditing(false);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="h-4 w-4" /> Adaugă
+          </Button>
+        </div>
       </div>
 
-      {/* Running Timer */}
-      {runningTimer ? (
-        <Card className="border-2 border-[#FFCB09] bg-yellow-50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="h-10 w-10 rounded-full bg-[#FFCB09] flex items-center justify-center">
-                  <Timer className="h-5 w-5 text-[#221F1F]" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[#221F1F]">
-                    {runningTimer.taskName ?? "Activitate în desfășurare"}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {ACTIVITY_TYPES.find(t => t.value === runningTimer.activityType)?.label} ·{" "}
-                    {runningTimer.isBillable ? "Facturabil" : "Non-facturabil"}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-4">
-                {runningTimer.startTime && <ElapsedTimer startTime={new Date(runningTimer.startTime)} />}
-                <Button
-                  onClick={() => stopTimer.mutate({ id: runningTimer.id })}
-                  disabled={stopTimer.isPending}
-                  variant="outline"
-                  className="border-[#221F1F] text-[#221F1F] gap-2 hover:bg-[#221F1F] hover:text-white"
-                >
-                  <Square className="h-4 w-4" />
-                  Stop
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ) : (
-        <Card className="border-border">
-          <CardContent className="p-4">
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-3">Pornește timer</p>
-            <div className="flex flex-col sm:flex-row gap-2">
-              <Input
-                placeholder="Denumire sarcină..."
-                value={timerForm.taskName}
-                onChange={e => setTimerForm(f => ({ ...f, taskName: e.target.value }))}
-                className="flex-1"
-              />
-              <Select value={timerForm.activityType} onValueChange={v => setTimerForm(f => ({ ...f, activityType: v }))}>
-                <SelectTrigger className="w-40">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {ACTIVITY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={timerForm.projectId} onValueChange={v => setTimerForm(f => ({ ...f, projectId: v }))}>
-                <SelectTrigger className="w-48">
-                  <SelectValue placeholder="Proiect (opțional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fara">Fără proiect</SelectItem>
-                  {projects?.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Button
-                onClick={() => startTimer.mutate({
-                  projectId: (timerForm.projectId && timerForm.projectId !== "fara") ? Number(timerForm.projectId) : undefined,
-                  taskName: timerForm.taskName || undefined,
-                  activityType: timerForm.activityType as any,
-                  isBillable: timerForm.isBillable,
-                })}
-                disabled={startTimer.isPending}
-                className="bg-[#221F1F] hover:bg-gray-800 text-white gap-2"
+      {/* ── Calendar grid ── */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Time gutter */}
+        <div className="w-14 shrink-0 border-r border-border bg-background overflow-hidden">
+          <div className="h-10 border-b border-border" /> {/* header spacer */}
+          <div className="relative" style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}>
+            {Array.from({ length: TOTAL_HOURS }, (_, i) => (
+              <div
+                key={i}
+                className="absolute left-0 right-0 flex items-start justify-end pr-2"
+                style={{ top: i * HOUR_HEIGHT, height: HOUR_HEIGHT }}
               >
-                <Play className="h-4 w-4" />
-                Start
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+                <span className="text-[10px] text-muted-foreground font-medium -mt-2 tabular-nums">
+                  {String(START_HOUR + i).padStart(2, "0")}:00
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
 
-      {/* Weekly Summary */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Stats */}
-        <Card className="border-border">
-          <CardHeader className="pb-2">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-sm flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-[#FFCB09]" />
-                Săptămâna curentă
-              </CardTitle>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setWeekOffset(o => o - 1)}>
-                  <ChevronLeft className="h-3 w-3" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => setWeekOffset(o => o + 1)}>
-                  <ChevronRight className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {format(weekStart, "d MMM", { locale: ro })} – {format(weekEnd, "d MMM yyyy", { locale: ro })}
-            </p>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            <div>
-              <div className="flex justify-between text-xs mb-1">
-                <span className="text-muted-foreground">Ore înregistrate</span>
-                <span className="font-semibold">{formatDuration(totalWeekMinutes)}</span>
-              </div>
-              <Progress value={Math.min(100, (totalWeekMinutes / normWeekMinutes) * 100)} className="h-2" />
-              <p className="text-xs text-muted-foreground mt-1">din 40h normă</p>
-            </div>
-            <div className="pt-2 border-t border-border">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Pe activități</p>
-              {weeklyByActivity.length > 0 ? weeklyByActivity.map(type => (
-                <div key={type.value} className="flex items-center gap-2 mb-1.5">
-                  <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: type.color }} />
-                  <span className="text-xs text-muted-foreground flex-1 truncate">{type.label}</span>
-                  <span className="text-xs font-medium tabular-nums">{formatDuration(type.minutes)}</span>
+        {/* Days columns */}
+        <div className="flex flex-1 overflow-x-auto overflow-y-auto" ref={gridRef}>
+          {weekDays.map((day) => {
+            const dateStr = format(day, "yyyy-MM-dd");
+            const dayEntries = entriesByDate[dateStr] ?? [];
+            const isToday = isSameDay(day, new Date());
+            const isWeekend = day.getDay() === 0 || day.getDay() === 6;
+
+            return (
+              <div key={dateStr} className="flex-1 min-w-[120px] border-r border-border last:border-r-0 flex flex-col">
+                {/* Day header */}
+                <div className={`h-10 border-b border-border flex flex-col items-center justify-center shrink-0 sticky top-0 z-10 ${isWeekend ? "bg-muted/40" : "bg-background"}`}>
+                  <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wide">
+                    {format(day, "EEE", { locale: ro })}
+                  </span>
+                  <span className={`text-sm font-bold leading-none ${isToday ? "bg-[#FFCB09] text-[#221F1F] rounded-full w-6 h-6 flex items-center justify-center mt-0.5" : "text-foreground"}`}>
+                    {format(day, "d")}
+                  </span>
                 </div>
-              )) : (
-                <p className="text-xs text-muted-foreground">Nicio înregistrare</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
 
-        {/* Entries by project */}
-        <Card className="border-border lg:col-span-2">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm flex items-center gap-2">
-              <Clock className="h-4 w-4 text-[#FFCB09]" />
-              Distribuție pe proiecte
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {Object.entries(byProject).length > 0 ? (
-              <div className="space-y-3">
-                {Object.entries(byProject)
-                  .sort(([, a], [, b]) => b.minutes - a.minutes)
-                  .map(([key, data]) => {
-                    const project = projects?.find(p => p.id === data.projectId);
-                    const pct = totalWeekMinutes > 0 ? Math.round((data.minutes / totalWeekMinutes) * 100) : 0;
+                {/* Slots */}
+                <div
+                  className={`relative flex-1 ${isWeekend ? "bg-muted/20" : ""}`}
+                  style={{ height: TOTAL_HOURS * HOUR_HEIGHT }}
+                  onClick={(e) => {
+                    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    const slotIndex = Math.floor(y / SLOT_HEIGHT);
+                    handleSlotClick(day, slotIndex);
+                  }}
+                >
+                  {/* Hour lines */}
+                  {Array.from({ length: TOTAL_HOURS }, (_, i) => (
+                    <div
+                      key={i}
+                      className="absolute left-0 right-0 border-t border-border/50"
+                      style={{ top: i * HOUR_HEIGHT }}
+                    />
+                  ))}
+                  {/* Half-hour lines */}
+                  {Array.from({ length: TOTAL_HOURS }, (_, i) => (
+                    <div
+                      key={`half-${i}`}
+                      className="absolute left-0 right-0 border-t border-border/20 border-dashed"
+                      style={{ top: i * HOUR_HEIGHT + SLOT_HEIGHT }}
+                    />
+                  ))}
+
+                  {/* Entries */}
+                  {dayEntries.map((entry) => {
+                    const style = getEntryStyle(entry);
+                    if (!style) return null;
+                    const proj = entry.projectId ? projectMap[entry.projectId] : null;
+                    const color = getActivityColor(entry.activityType ?? "proiectare", proj?.color);
+                    const actLabel = ACTIVITY_TYPES.find(a => a.value === entry.activityType)?.label ?? entry.activityType;
+                    const duration = entry.durationMinutes ?? 0;
+                    const isShort = style.height < SLOT_HEIGHT * 1.5;
+
                     return (
-                      <div key={key}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-medium truncate max-w-[200px]">
-                            {project?.name ?? "Intern / Fără proiect"}
-                          </span>
-                          <div className="flex items-center gap-2">
-                            <span className="text-xs text-muted-foreground">{pct}%</span>
-                            <span className="text-xs font-semibold tabular-nums">{formatDuration(data.minutes)}</span>
-                          </div>
-                        </div>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
-                          <div
-                            className="h-full rounded-full transition-all"
-                            style={{ width: `${pct}%`, backgroundColor: project?.color ?? "#FFCB09" }}
-                          />
+                      <div
+                        key={entry.id}
+                        className="absolute left-0.5 right-0.5 rounded overflow-hidden cursor-pointer group transition-all hover:brightness-90 hover:shadow-md z-10"
+                        style={{
+                          top: style.top,
+                          height: style.height,
+                          backgroundColor: color + "22",
+                          borderLeft: `3px solid ${color}`,
+                        }}
+                        onClick={(e) => handleEntryClick(e, entry)}
+                      >
+                        <div className="px-1.5 py-0.5 h-full flex flex-col justify-start overflow-hidden">
+                          {isShort ? (
+                            <span className="text-[10px] font-semibold truncate leading-tight" style={{ color }}>
+                              {entry.taskName || actLabel}
+                            </span>
+                          ) : (
+                            <>
+                              <span className="text-[11px] font-bold truncate leading-tight" style={{ color }}>
+                                {entry.taskName || actLabel}
+                              </span>
+                              {proj && (
+                                <span className="text-[9px] truncate text-muted-foreground leading-tight">
+                                  {proj.name}
+                                </span>
+                              )}
+                              <span className="text-[9px] text-muted-foreground leading-tight mt-auto">
+                                {formatDuration(duration)}
+                              </span>
+                            </>
+                          )}
                         </div>
                       </div>
                     );
                   })}
+                </div>
               </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Timer className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">Nicio intrare pentru această săptămână</p>
-                <p className="text-xs mt-1">Pornește un timer sau adaugă manual</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Entries list */}
-      {entries && entries.length > 0 && (
-        <Card className="border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Intrări detaliate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-1">
-              {entries.map(entry => {
-                const actType = ACTIVITY_TYPES.find(t => t.value === entry.activityType);
-                const project = projects?.find(p => p.id === entry.projectId);
-                return (
-                  <div key={entry.id} className="flex items-center gap-3 py-2 border-b border-border/50 last:border-0">
-                    <div className="h-2 w-2 rounded-full shrink-0" style={{ backgroundColor: actType?.color ?? "#9CA3AF" }} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{entry.taskName ?? actType?.label}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {format(new Date(entry.date), "EEE, d MMM", { locale: ro })}
-                        {project ? ` · ${project.name}` : ""}
-                        {entry.isBillable ? " · Facturabil" : " · Non-facturabil"}
-                      </p>
-                    </div>
-                    <span className="text-sm font-semibold tabular-nums shrink-0">
-                      {formatDuration(entry.durationMinutes ?? 0)}
-                    </span>
-                  </div>
-                );
-              })}
+      {/* ── Legend ── */}
+      <div className="shrink-0 border-t border-border bg-background px-4 py-2 flex items-center gap-4 overflow-x-auto">
+        <span className="text-xs text-muted-foreground font-medium shrink-0">Tipuri:</span>
+        {ACTIVITY_TYPES.map(a => (
+          <div key={a.value} className="flex items-center gap-1 shrink-0">
+            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: a.color }} />
+            <span className="text-xs text-muted-foreground">{a.label}</span>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Add / Edit Dialog ── */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {isEditing ? <Pencil className="h-4 w-4 text-[#FFCB09]" /> : <Plus className="h-4 w-4 text-[#FFCB09]" />}
+              {isEditing ? "Editează activitate" : "Adaugă activitate"}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-1">
+            {/* Task name */}
+            <div>
+              <Label className="text-sm font-semibold mb-1.5 block">Titlu activitate</Label>
+              <Input
+                placeholder="ex: Redactare plan arhitectural NOVV B2..."
+                value={form.taskName}
+                onChange={e => setForm(f => ({ ...f, taskName: e.target.value }))}
+                className="text-sm"
+              />
             </div>
-          </CardContent>
-        </Card>
-      )}
+
+            {/* Date */}
+            <div>
+              <Label className="text-sm font-semibold mb-1.5 block">Data</Label>
+              <input
+                type="date"
+                value={form.date}
+                onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
+                max={todayISO()}
+                className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-[#FFCB09]"
+              />
+            </div>
+
+            {/* Time range */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-sm font-semibold mb-1.5 block">Ora start</Label>
+                <Select value={form.startTime} onValueChange={v => {
+                  setForm(f => {
+                    const [h, m] = v.split(":").map(Number);
+                    const minEnd = h * 60 + m + 30;
+                    const [eh, em] = f.endTime.split(":").map(Number);
+                    const endOk = eh * 60 + em >= minEnd;
+                    return { ...f, startTime: v, endTime: endOk ? f.endTime : nextHalfHour(v) };
+                  });
+                }}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {TIME_SLOTS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-semibold mb-1.5 block">Ora final</Label>
+                <Select value={form.endTime} onValueChange={v => setForm(f => ({ ...f, endTime: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {checkoutSlots.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Duration preview */}
+            {form.startTime && form.endTime && (() => {
+              const [sh, sm] = form.startTime.split(":").map(Number);
+              const [eh, em] = form.endTime.split(":").map(Number);
+              const dur = (eh * 60 + em) - (sh * 60 + sm);
+              if (dur <= 0) return null;
+              return (
+                <div className="flex items-center gap-2 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+                  <Clock className="h-3.5 w-3.5 text-yellow-600" />
+                  <span className="text-sm font-semibold text-yellow-700">Durată: {formatDuration(dur)}</span>
+                </div>
+              );
+            })()}
+
+            {/* Activity type */}
+            <div>
+              <Label className="text-sm font-semibold mb-2 block">Tip activitate</Label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {ACTIVITY_TYPES.map(a => (
+                  <button
+                    key={a.value}
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, activityType: a.value }))}
+                    className={`flex flex-col items-center gap-1 p-2 rounded-lg border-2 text-xs font-medium transition-all ${
+                      form.activityType === a.value
+                        ? "border-current shadow-sm"
+                        : "border-gray-200 hover:border-gray-300"
+                    }`}
+                    style={form.activityType === a.value ? { borderColor: a.color, backgroundColor: a.color + "15", color: a.color } : {}}
+                  >
+                    <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: a.color }} />
+                    <span className="leading-tight text-center">{a.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Project */}
+            <div>
+              <Label className="text-sm font-semibold mb-1.5 block">Proiect</Label>
+              <Select value={form.projectId || "fara"} onValueChange={v => setForm(f => ({ ...f, projectId: v === "fara" ? "" : v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selectează proiect..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="fara">— Fără proiect specific —</SelectItem>
+                  {projects.map(p => (
+                    <SelectItem key={p.id} value={String(p.id)}>
+                      {p.name}{p.code ? ` (${p.code})` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Description */}
+            <div>
+              <Label className="text-sm font-semibold mb-1.5 block">Descriere <span className="font-normal text-muted-foreground text-xs">(opțional)</span></Label>
+              <Textarea
+                value={form.description}
+                onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                rows={2}
+                className="resize-none text-sm"
+                placeholder="Detalii suplimentare..."
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            {isEditing && (
+              <Button
+                variant="outline"
+                className="text-red-600 border-red-200 hover:bg-red-50 mr-auto"
+                onClick={handleDelete}
+                disabled={deleteEntry.isPending}
+              >
+                <Trash2 className="h-4 w-4 mr-1" /> Șterge
+              </Button>
+            )}
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Anulează</Button>
+            <Button
+              onClick={handleSave}
+              disabled={addEntry.isPending || updateEntry.isPending}
+              className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
+            >
+              {(addEntry.isPending || updateEntry.isPending) ? (
+                <span className="animate-spin inline-block h-4 w-4 border-2 border-[#221F1F] border-t-transparent rounded-full mr-2" />
+              ) : null}
+              {isEditing ? "Salvează" : "Adaugă"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

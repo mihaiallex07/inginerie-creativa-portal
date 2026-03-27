@@ -122,24 +122,43 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   if (loading) return <DashboardLayoutSkeleton />;
 
-  if (!user) {
+  // Check for unauthorized domain error from OAuth redirect
+  const urlParams = new URLSearchParams(window.location.search);
+  const authError = urlParams.get("error");
+  const authEmail = urlParams.get("email");
+
+  if (!user || authError === "unauthorized_domain") {
+    const isUnauthorized = authError === "unauthorized_domain";
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#221F1F]">
         <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
           <img src={LOGO_YELLOW} alt="Inginerie Creativă" className="h-12 object-contain" />
           <div className="flex flex-col items-center gap-3 text-center">
             <h1 className="text-2xl font-bold text-white tracking-tight">Portal Intern</h1>
-            <p className="text-sm text-gray-400 max-w-xs">
-              Accesul este restricționat exclusiv angajaților cu adresă{" "}
-              <span className="text-[#FFCB09] font-medium">@ingineriecreativa.ro</span>
-            </p>
+            {isUnauthorized ? (
+              <>
+                <div className="bg-red-900/30 border border-red-500/40 rounded-lg px-4 py-3 text-center">
+                  <p className="text-red-400 text-sm font-semibold mb-1">Acces refuzat</p>
+                  <p className="text-gray-300 text-xs">
+                    Contul <span className="text-white font-medium">{authEmail}</span> nu aparține domeniului{" "}
+                    <span className="text-[#FFCB09] font-medium">@ingineriecreativa.ro</span>.
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">Folosește contul tău de firmă pentru a accesa portalul.</p>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-gray-400 max-w-xs">
+                Accesul este restricționat exclusiv angajaților cu adresă{" "}
+                <span className="text-[#FFCB09] font-medium">@ingineriecreativa.ro</span>
+              </p>
+            )}
           </div>
           <Button
             onClick={() => { window.location.href = getLoginUrl(); }}
             size="lg"
             className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold shadow-lg"
           >
-            Autentificare cu Google
+            {isUnauthorized ? "Încearcă cu alt cont" : "Autentificare cu Google"}
           </Button>
         </div>
       </div>

@@ -159,3 +159,14 @@
 - [x] AdminUtilizatori: buton ștergere completă utilizator + dialog confirmare cu avertisment
 - [x] AdminUtilizatori: sortare alfabetică — activi primii, inactivi la final
 - [x] AdminUtilizatori: dropdown departamente în dialogul de editare profil
+
+## Sprint 12 — Time-Tracking Calendar View + Restricție Login
+- [x] Time-Tracking: instalare react-big-calendar + date-fns adaptor
+- [x] Time-Tracking: backend — proceduri tRPC pentru calendar entries (săptămânal, creare, editare, ștergere)
+- [x] Time-Tracking: UI calendar săptămânal cu sloturi 30 min (06:00–21:00)
+- [x] Time-Tracking: click pe slot gol → dialog rapid creare intrare (proiect + titlu + durată)
+- [x] Time-Tracking: blocuri colorate per tip activitate + proiect
+- [ ] Time-Tracking: drag & drop pentru redimensionare/mutare blocuri (backlog)
+- [ ] Time-Tracking: vedere zi + lună (backlog)
+- [ ] Time-Tracking: integrare cu pontaj zilnic (backlog)
+- [x] Restricție login: verificare email @ingineriecreativa.ro în OAuth callback

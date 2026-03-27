@@ -28,6 +28,18 @@ export function registerOAuthRoutes(app: Express) {
         return;
       }
 
+      // Restrict access to @ingineriecreativa.ro accounts only
+      const email = userInfo.email ?? "";
+      if (!email.endsWith("@ingineriecreativa.ro")) {
+        // Redirect to a friendly error page instead of raw JSON
+        // Decode origin from state (base64 encoded redirect URI)
+        let origin = "/";
+        try { origin = new URL(atob(state)).origin; } catch { origin = "/"; }
+        const errorUrl = `${origin}/?error=unauthorized_domain&email=${encodeURIComponent(email)}`;
+        res.redirect(302, errorUrl);
+        return;
+      }
+
       await db.upsertUser({
         openId: userInfo.openId,
         name: userInfo.name || null,
