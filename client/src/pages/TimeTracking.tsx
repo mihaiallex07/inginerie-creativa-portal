@@ -273,7 +273,16 @@ export default function TimeTracking() {
           </Badge>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={goToday} disabled={isCurrentWeek}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToday}
+            className={isCurrentWeek
+              ? "opacity-40 cursor-not-allowed"
+              : "bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-bold border-[#FFCB09] hover:border-yellow-400"
+            }
+            disabled={isCurrentWeek}
+          >
             Azi
           </Button>
           <div className="flex items-center border border-border rounded-lg overflow-hidden">
@@ -332,11 +341,17 @@ export default function TimeTracking() {
             return (
               <div key={dateStr} className="flex-1 min-w-[120px] border-r border-border last:border-r-0 flex flex-col">
                 {/* Day header */}
-                <div className={`h-10 border-b border-border flex flex-col items-center justify-center shrink-0 sticky top-0 z-10 ${isWeekend ? "bg-muted/40" : "bg-background"}`}>
-                  <span className="text-[10px] uppercase font-semibold text-muted-foreground tracking-wide">
+                <div className={`h-10 border-b border-border flex flex-col items-center justify-center shrink-0 sticky top-0 z-10 ${
+                  isToday ? "bg-[#FFCB09]" : isWeekend ? "bg-[#2a2727]" : "bg-[#221F1F]"
+                }`}>
+                  <span className={`text-[10px] uppercase font-semibold tracking-wide ${
+                    isToday ? "text-[#221F1F]" : "text-[#FFCB09]"
+                  }`}>
                     {format(day, "EEE", { locale: ro })}
                   </span>
-                  <span className={`text-sm font-bold leading-none ${isToday ? "bg-[#FFCB09] text-[#221F1F] rounded-full w-6 h-6 flex items-center justify-center mt-0.5" : "text-foreground"}`}>
+                  <span className={`text-sm font-bold leading-none ${
+                    isToday ? "text-[#221F1F]" : "text-white"
+                  }`}>
                     {format(day, "d")}
                   </span>
                 </div>
@@ -386,27 +401,28 @@ export default function TimeTracking() {
                         style={{
                           top: style.top,
                           height: style.height,
-                          backgroundColor: color + "22",
+                          backgroundColor: color + "55",
                           borderLeft: `3px solid ${color}`,
+                          boxShadow: `inset 0 0 0 1px ${color}44`,
                         }}
                         onClick={(e) => handleEntryClick(e, entry)}
                       >
                         <div className="px-1.5 py-0.5 h-full flex flex-col justify-start overflow-hidden">
                           {isShort ? (
-                            <span className="text-[10px] font-semibold truncate leading-tight" style={{ color }}>
+                            <span className="text-[10px] font-semibold truncate leading-tight text-white">
                               {entry.taskName || actLabel}
                             </span>
                           ) : (
                             <>
-                              <span className="text-[11px] font-bold truncate leading-tight" style={{ color }}>
+                              <span className="text-[11px] font-bold truncate leading-tight text-white">
                                 {entry.taskName || actLabel}
                               </span>
                               {proj && (
-                                <span className="text-[9px] truncate text-muted-foreground leading-tight">
+                                <span className="text-[9px] truncate leading-tight" style={{ color: color + "cc" }}>
                                   {proj.name}
                                 </span>
                               )}
-                              <span className="text-[9px] text-muted-foreground leading-tight mt-auto">
+                              <span className="text-[9px] leading-tight mt-auto" style={{ color: color + "cc" }}>
                                 {formatDuration(duration)}
                               </span>
                             </>

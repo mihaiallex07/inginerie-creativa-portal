@@ -170,3 +170,8 @@
 - [ ] Time-Tracking: vedere zi + lună (backlog)
 - [ ] Time-Tracking: integrare cu pontaj zilnic (backlog)
 - [x] Restricție login: verificare email @ingineriecreativa.ro în OAuth callback
+
+## Sprint 13 — Fix-uri vizuale TimeTracking
+- [x] TimeTracking: culori calendar mai puternice (fundal întunecat #221F1F pe zile, text alb, blocuri mai opace)
+- [x] TimeTracking: fundal galben #FFCB09 + text negru pe ziua curentă; zile normale fundal întunecat + text galben
+- [x] TimeTracking: buton "Azi" galben vizibil când ești pe altă săptămână, gri când ești pe săptămâna curentă
