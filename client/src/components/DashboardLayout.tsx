@@ -398,7 +398,7 @@ function DashboardLayoutContent({
           </div>
         )}
 
-        <main className="flex-1 p-4 md:p-6">{children}</main>
+        <main className="flex-1 p-2 md:p-3 overflow-hidden">{children}</main>
       </SidebarInset>
     </>
   );

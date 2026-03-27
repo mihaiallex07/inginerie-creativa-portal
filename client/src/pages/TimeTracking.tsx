@@ -250,7 +250,8 @@ export default function TimeTracking() {
     return m;
   }, [projects]);
 
-  const isCurrentWeek = isSameDay(weekStart, startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const todayWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+  const isCurrentWeek = weekStart.getTime() === todayWeekStart.getTime();
 
   const checkoutSlots = useMemo(() => {
     if (!form.startTime) return TIME_SLOTS;
@@ -263,9 +264,9 @@ export default function TimeTracking() {
   }, [form.startTime]);
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] overflow-hidden">
+    <div className="flex flex-col h-[calc(100vh-3rem)] overflow-hidden">
       {/* ── Header ── */}
-      <div className="flex items-center justify-between px-4 py-3 border-b border-border bg-background shrink-0">
+      <div className="flex items-center justify-between px-3 py-2 border-b border-border bg-background shrink-0">
         <div className="flex items-center gap-3">
           <h1 className="text-lg font-bold text-foreground">Time-Tracking</h1>
           <Badge variant="outline" className="text-xs font-medium">
@@ -397,13 +398,12 @@ export default function TimeTracking() {
                     return (
                       <div
                         key={entry.id}
-                        className="absolute left-0.5 right-0.5 rounded overflow-hidden cursor-pointer group transition-all hover:brightness-90 hover:shadow-md z-10"
+                        className="absolute left-0.5 right-0.5 rounded overflow-hidden cursor-pointer group transition-all hover:opacity-90 hover:shadow-md z-10"
                         style={{
                           top: style.top,
                           height: style.height,
-                          backgroundColor: color + "55",
-                          borderLeft: `3px solid ${color}`,
-                          boxShadow: `inset 0 0 0 1px ${color}44`,
+                          backgroundColor: color,
+                          border: `1px solid ${color}`,
                         }}
                         onClick={(e) => handleEntryClick(e, entry)}
                       >
@@ -438,16 +438,7 @@ export default function TimeTracking() {
         </div>
       </div>
 
-      {/* ── Legend ── */}
-      <div className="shrink-0 border-t border-border bg-background px-4 py-2 flex items-center gap-4 overflow-x-auto">
-        <span className="text-xs text-muted-foreground font-medium shrink-0">Tipuri:</span>
-        {ACTIVITY_TYPES.map(a => (
-          <div key={a.value} className="flex items-center gap-1 shrink-0">
-            <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: a.color }} />
-            <span className="text-xs text-muted-foreground">{a.label}</span>
-          </div>
-        ))}
-      </div>
+
 
       {/* ── Add / Edit Dialog ── */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>

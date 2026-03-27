@@ -175,3 +175,9 @@
 - [x] TimeTracking: culori calendar mai puternice (fundal întunecat #221F1F pe zile, text alb, blocuri mai opace)
 - [x] TimeTracking: fundal galben #FFCB09 + text negru pe ziua curentă; zile normale fundal întunecat + text galben
 - [x] TimeTracking: buton "Azi" galben vizibil când ești pe altă săptămână, gri când ești pe săptămâna curentă
+
+## Sprint 14 — Fix-uri vizuale TimeTracking + Layout compact
+- [x] TimeTracking: fix buton "Azi" — comparație corectă cu getTime() în loc de isSameDay
+- [x] TimeTracking: blocuri activitate cu culoare solidă (100% opacitate, chenar solid)
+- [x] TimeTracking: eliminată legenda de tipuri activitate de jos
+- [x] TimeTracking/DashboardLayout: calendar mai compact (padding redus, header mai mic, înălțime optimizată)
