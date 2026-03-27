@@ -181,3 +181,17 @@
 - [x] TimeTracking: blocuri activitate cu culoare solidă (100% opacitate, chenar solid)
 - [x] TimeTracking: eliminată legenda de tipuri activitate de jos
 - [x] TimeTracking/DashboardLayout: calendar mai compact (padding redus, header mai mic, înălțime optimizată)
+
+## Sprint 15 — Reproiectare completă Time-Tracking (Google Calendar style)
+- [x] Backend: tabel company_events creat în DB
+- [x] Backend: proceduri tRPC CRUD company_events (admin only)
+- [x] Backend: sărbători legale România hardcodate (Paste ortodox 2024-2027 + zile fixe)
+- [x] Backend: zile naștere colegi via trpc.people.upcomingBirthdays
+- [x] Frontend: layout 3 coloane — sidebar stânga (mini-cal + insights + birthdays) + grid săptămânal
+- [x] Frontend: grid săptămânal ore 06:00-23:00, număr săptămână în header
+- [x] Frontend: zile naștere colegi în sidebar + header coloane calendar
+- [x] Frontend: sărbători legale România în header coloane calendar
+- [x] Frontend: blocuri evenimente admin (non-editabile, cu icon lackat + link clickabil)
+- [x] Frontend: dialog creare eveniment admin (titlu, ore, link, culoare, alocare)
+- [x] Frontend: time insights panel (ore azi/săptămână + bar chart per tip activitate)
+- [x] Frontend: text alb pe blocuri colorate cu drop-shadow pentru lizibilitate

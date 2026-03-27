@@ -61,6 +61,10 @@ import {
   updateFullProfile,
   getUpcomingBirthdays,
   getOrgChartData,
+  getCompanyEvents,
+  createCompanyEvent,
+  updateCompanyEvent,
+  deleteCompanyEvent,
 } from "./db";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -883,7 +887,76 @@ export const appRouter = router({
         return updateFullProfile(userId, data);
       }),
   }),
-  people: peopleRouter,
-});
+   people: peopleRouter,
 
+  // ─── COMPANY EVENTS ──────────────────────────────────────────────────────────────────
+  companyEvents: router({
+    list: protectedProcedure
+      .input(z.object({ dateFrom: z.string(), dateTo: z.string() }))
+      .query(async ({ input }) => {
+        return getCompanyEvents(input.dateFrom, input.dateTo);
+      }),
+
+    create: protectedProcedure
+      .input(z.object({
+        title: z.string().min(1),
+        description: z.string().optional(),
+        link: z.string().optional(),
+        startTime: z.string(), // ISO string
+        endTime: z.string(),
+        isRecurring: z.boolean().optional(),
+        recurringRule: z.string().optional(),
+        recurringUntil: z.string().optional().nullable(),
+        color: z.string().optional(),
+        targetType: z.enum(["all", "department", "users"]).default("all"),
+        targetDepartment: z.string().optional(),
+        targetUserIds: z.array(z.number()).optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new Error("Acces interzis — doar adminii pot crea evenimente");
+        return createCompanyEvent({
+          ...input,
+          startTime: new Date(input.startTime),
+          endTime: new Date(input.endTime),
+          createdBy: ctx.user.id,
+        });
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().optional(),
+        description: z.string().optional(),
+        link: z.string().optional(),
+        startTime: z.string().optional(),
+        endTime: z.string().optional(),
+        isRecurring: z.boolean().optional(),
+        recurringRule: z.string().optional(),
+        recurringUntil: z.string().optional().nullable(),
+        color: z.string().optional(),
+        targetType: z.enum(["all", "department", "users"]).optional(),
+        targetDepartment: z.string().optional(),
+        targetUserIds: z.array(z.number()).optional(),
+        isActive: z.boolean().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+        const { id, startTime, endTime, ...rest } = input;
+        const { recurringUntil: ru, ...restClean } = rest;
+        return updateCompanyEvent(id, {
+          ...restClean,
+          ...(ru != null ? { recurringUntil: ru } : {}),
+          ...(startTime ? { startTime: new Date(startTime) } : {}),
+          ...(endTime ? { endTime: new Date(endTime) } : {}),
+        } as any);
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+        return deleteCompanyEvent(input.id);
+      }),
+  }),
+});
 export type AppRouter = typeof appRouter;

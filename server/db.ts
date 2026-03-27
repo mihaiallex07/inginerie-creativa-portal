@@ -1,6 +1,7 @@
 import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
+  companyEvents,
   documentAuditLog,
   documents,
   InsertUser,
@@ -933,7 +934,73 @@ export async function getOrgChartData() {
     .where(eq(users.isActive, true));
 }
 
-// ─── DELETE USER COMPLETELY ──────────────────────────────────────────────────
+// ─── COMPANY EVENTS ──────────────────────────────────────────────────────────────────
+export async function getCompanyEvents(dateFrom: string, dateTo: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(companyEvents)
+    .where(and(
+      eq(companyEvents.isActive, true),
+      sql`DATE(${companyEvents.startTime}) <= ${dateTo}`,
+      sql`DATE(${companyEvents.endTime}) >= ${dateFrom}`,
+    ));
+  return rows;
+}
+
+export async function createCompanyEvent(data: {
+  title: string;
+  description?: string;
+  link?: string;
+  startTime: Date;
+  endTime: Date;
+  isRecurring?: boolean;
+  recurringRule?: string;
+  recurringUntil?: string | null;
+  color?: string;
+  targetType: "all" | "department" | "users";
+  targetDepartment?: string;
+  targetUserIds?: number[];
+  createdBy: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const { targetUserIds, recurringUntil, ...rest } = data;
+  await db.insert(companyEvents).values({
+    ...rest,
+    recurringUntil: recurringUntil ?? null,
+  } as any);
+  return { success: true };
+}
+
+export async function updateCompanyEvent(id: number, data: Partial<{
+  title: string;
+  description: string;
+  link: string;
+  startTime: Date;
+  endTime: Date;
+  isRecurring: boolean;
+  recurringRule: string;
+  recurringUntil: string;
+  color: string;
+  targetType: "all" | "department" | "users";
+  targetDepartment: string;
+  targetUserIds: number[];
+  isActive: boolean;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(companyEvents).set(data as any).where(eq(companyEvents.id, id));
+  return { success: true };
+}
+
+export async function deleteCompanyEvent(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(companyEvents).set({ isActive: false }).where(eq(companyEvents.id, id));
+  return { success: true };
+}
+
+// ─── DELETE USER COMPLETELY ──────────────────────────────────────────────
 export async function deleteUserCompletely(userId: number) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");

@@ -293,3 +293,27 @@ export const leaveRequests = mysqlTable("leave_requests", {
 
 export type LeaveRequest = typeof leaveRequests.$inferSelect;
 export type InsertLeaveRequest = typeof leaveRequests.$inferInsert;
+
+// ─── COMPANY EVENTS (admin-managed, non-editable by employees) ────────────────────
+export const companyEvents = mysqlTable("company_events", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  link: text("link"),                          // zoom / address / etc.
+  startTime: timestamp("startTime").notNull(),
+  endTime: timestamp("endTime").notNull(),
+  isRecurring: boolean("isRecurring").default(false),
+  recurringRule: varchar("recurringRule", { length: 128 }), // 'daily','weekly','RRULE:...'
+  recurringUntil: date("recurringUntil"),
+  color: varchar("color", { length: 16 }).default("#FFCB09"),
+  targetType: mysqlEnum("targetType", ["all", "department", "users"]).default("all").notNull(),
+  targetDepartment: varchar("targetDepartment", { length: 128 }),
+  targetUserIds: json("targetUserIds").$type<number[]>().default([]),
+  createdBy: int("createdBy").notNull(),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CompanyEvent = typeof companyEvents.$inferSelect;
+export type InsertCompanyEvent = typeof companyEvents.$inferInsert;
