@@ -601,25 +601,33 @@ export default function TimeTracking() {
                     const isShort = style.height <= SLOT_HEIGHT;
                     const duration = entry.durationMinutes ?? 0;
 
+                    // Alternare galben/negru per tip activitate conform brand
+                    const actIndex = ACTIVITY_TYPES.findIndex(a => a.value === entry.activityType);
+                    const useYellow = actIndex % 2 === 0;
+                    const bgColor = useYellow ? "#FFCB09" : "#221F1F";
+                    const textColor = useYellow ? "#221F1F" : "#FFCB09";
+                    const textColorSub = useYellow ? "#221F1F99" : "#FFCB0999";
+                    const borderColor = useYellow ? "#FFCB09" : "#FFCB0933";
+
                     return (
                       <div key={entry.id}
                         className="absolute left-0.5 right-0.5 rounded overflow-hidden cursor-pointer group transition-all hover:opacity-90 hover:shadow-md z-10"
-                        style={{ top: style.top, height: style.height, backgroundColor: color, border: `1px solid ${color}` }}
+                        style={{ top: style.top, height: style.height, backgroundColor: bgColor, border: `1.5px solid ${borderColor}` }}
                         onClick={(e) => handleEntryClick(e, entry)}>
                         <div className="px-1.5 py-0.5 h-full flex flex-col justify-start overflow-hidden">
                           {isShort ? (
-                            <span className="text-[10px] font-semibold truncate leading-tight text-white drop-shadow-sm">
+                            <span className="text-[10px] font-semibold truncate leading-tight" style={{ color: textColor }}>
                               {entry.taskName || actLabel}
                             </span>
                           ) : (
                             <>
-                              <span className="text-[11px] font-bold truncate leading-tight text-white drop-shadow-sm">
+                              <span className="text-[11px] font-bold truncate leading-tight" style={{ color: textColor }}>
                                 {entry.taskName || actLabel}
                               </span>
                               {proj && (
-                                <span className="text-[9px] truncate leading-tight text-white/80">{proj.name}</span>
+                                <span className="text-[9px] truncate leading-tight" style={{ color: textColorSub }}>{proj.name}</span>
                               )}
-                              <span className="text-[9px] leading-tight mt-auto text-white/70">{formatDuration(duration)}</span>
+                              <span className="text-[9px] leading-tight mt-auto" style={{ color: textColorSub }}>{formatDuration(duration)}</span>
                             </>
                           )}
                         </div>

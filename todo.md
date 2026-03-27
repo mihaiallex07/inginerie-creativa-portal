@@ -195,3 +195,6 @@
 - [x] Frontend: dialog creare eveniment admin (titlu, ore, link, culoare, alocare)
 - [x] Frontend: time insights panel (ore azi/săptămână + bar chart per tip activitate)
 - [x] Frontend: text alb pe blocuri colorate cu drop-shadow pentru lizibilitate
+
+## Sprint 16 — Fix vizual blocuri activitate
+- [x] TimeTracking: fundal blocuri activitate alternant galben #FFCB09 (text negru) / negru #221F1F (text galben) conform brand
