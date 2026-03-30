@@ -7,7 +7,6 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import DashboardLayout from "./components/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import Pontaj from "./pages/Pontaj";
-import TimeTracking from "./pages/TimeTracking";
 import Stiri from "./pages/Stiri";
 import StireDetaliu from "./pages/StireDetaliu";
 import StireNou from "./pages/StireNou";
@@ -24,6 +23,7 @@ import AprobariConcediu from "./pages/AprobariConcediu";
 import AdminUtilizatori from "./pages/AdminUtilizatori";
 import DashboardHR from "./pages/DashboardHR";
 import Organigrama from "./pages/Organigrama";
+import TimeTracking from "./pages/TimeTracking";
 
 function Router() {
   return (

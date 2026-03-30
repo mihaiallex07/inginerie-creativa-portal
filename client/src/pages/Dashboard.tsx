@@ -162,7 +162,7 @@ export default function Dashboard() {
             <Button
               size="sm"
               variant="outline"
-              onClick={() => setLocation("/time-tracking")}
+              onClick={() => setLocation("/pontaj")}
               className="border-[#221F1F] text-[#221F1F] text-xs"
             >
               Gestionează

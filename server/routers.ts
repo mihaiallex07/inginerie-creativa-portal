@@ -409,34 +409,34 @@ export const appRouter = router({
         return getTimeEntriesForProject(input.projectId);
       }),
 
-    // Calendar-style entry: with explicit startTime + endTime (UTC strings)
+
+    // ── Calendar entry: timezone-safe — receives integers for hours/minutes ──
     addCalendarEntry: protectedProcedure
       .input(z.object({
         projectId: z.number().optional(),
-        date: z.string(), // "YYYY-MM-DD"
-        startTime: z.string(), // "HH:MM" local time
-        endTime: z.string(),   // "HH:MM" local time
+        date: z.string(),       // "YYYY-MM-DD"
+        startHour: z.number(),  // 0-23
+        startMin: z.number(),   // 0-59
+        endHour: z.number(),    // 0-23
+        endMin: z.number(),     // 0-59
         activityType: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).optional(),
         taskName: z.string().optional(),
         description: z.string().optional(),
         isBillable: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        const [year, month, day] = input.date.split("-").map(Number);
-        const [sh, sm] = input.startTime.split(":").map(Number);
-        const [eh, em] = input.endTime.split(":").map(Number);
-        // Store as local time (not UTC) — use new Date(year, month-1, day, h, m) so the
-        // wall-clock time is preserved regardless of server timezone
-        const startDate = new Date(year, month - 1, day, sh, sm, 0);
-        const endDate = new Date(year, month - 1, day, eh, em, 0);
-        const durationMinutes = Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / 60000));
+        // Build ISO strings WITHOUT timezone so JS Date parses as local
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        const startISO = `${input.date}T${pad(input.startHour)}:${pad(input.startMin)}:00`;
+        const endISO = `${input.date}T${pad(input.endHour)}:${pad(input.endMin)}:00`;
+        const durationMinutes = (input.endHour * 60 + input.endMin) - (input.startHour * 60 + input.startMin);
         const id = await createTimeEntry({
           userId: ctx.user.id,
           projectId: input.projectId,
-          date: new Date(year, month - 1, day),
-          startTime: startDate,
-          endTime: endDate,
-          durationMinutes,
+          date: new Date(input.date + "T00:00:00"),
+          startTime: new Date(startISO),
+          endTime: new Date(endISO),
+          durationMinutes: Math.max(0, durationMinutes),
           activityType: input.activityType ?? "proiectare",
           taskName: input.taskName,
           description: input.description,
@@ -452,8 +452,10 @@ export const appRouter = router({
         id: z.number(),
         projectId: z.number().optional().nullable(),
         date: z.string(),
-        startTime: z.string(),
-        endTime: z.string(),
+        startHour: z.number(),
+        startMin: z.number(),
+        endHour: z.number(),
+        endMin: z.number(),
         activityType: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).optional(),
         taskName: z.string().optional(),
         description: z.string().optional(),
@@ -463,19 +465,16 @@ export const appRouter = router({
         const entries = await getTimeEntriesForUser(ctx.user.id);
         const entry = entries.find(e => e.id === input.id);
         if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
-        const [year, month, day] = input.date.split("-").map(Number);
-        const [sh, sm] = input.startTime.split(":").map(Number);
-        const [eh, em] = input.endTime.split(":").map(Number);
-        // Store as local time (not UTC)
-        const startDate = new Date(year, month - 1, day, sh, sm, 0);
-        const endDate = new Date(year, month - 1, day, eh, em, 0);
-        const durationMinutes = Math.max(0, Math.floor((endDate.getTime() - startDate.getTime()) / 60000));
+        const pad = (n: number) => n.toString().padStart(2, "0");
+        const startISO = `${input.date}T${pad(input.startHour)}:${pad(input.startMin)}:00`;
+        const endISO = `${input.date}T${pad(input.endHour)}:${pad(input.endMin)}:00`;
+        const durationMinutes = (input.endHour * 60 + input.endMin) - (input.startHour * 60 + input.startMin);
         await updateTimeEntry(input.id, {
           projectId: input.projectId ?? undefined,
-          date: new Date(year, month - 1, day),
-          startTime: startDate,
-          endTime: endDate,
-          durationMinutes,
+          date: new Date(input.date + "T00:00:00"),
+          startTime: new Date(startISO),
+          endTime: new Date(endISO),
+          durationMinutes: Math.max(0, durationMinutes),
           activityType: input.activityType ?? "proiectare",
           taskName: input.taskName,
           description: input.description,

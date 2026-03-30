@@ -40,7 +40,6 @@ import {
   PanelLeft,
   Settings,
   Shield,
-  Timer,
   User,
   Users,
 } from "lucide-react";
@@ -64,7 +63,7 @@ const navSections = [
     label: "TIMP & PREZENȚĂ",
     items: [
       { icon: Clock, label: "Pontaj zilnic", path: "/pontaj", badge: "NOU" },
-      { icon: Timer, label: "Time-Tracking", path: "/time-tracking", badge: "NOU" },
+      { icon: Clock, label: "Time-Tracking", path: "/time-tracking" },
       { icon: FileText, label: "Cereri concediu", path: "/cereri" },
     ],
   },

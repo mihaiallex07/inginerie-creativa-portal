@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from "react";
 import {
-  format, startOfWeek, endOfWeek, addDays, subWeeks, addWeeks,
-  getWeek, parseISO, isToday,
+  startOfWeek, endOfWeek, addDays, addWeeks, subWeeks, format, isSameDay,
+  startOfMonth, endOfMonth, getISOWeek, isSameMonth, isToday, getDay,
 } from "date-fns";
 import { ro } from "date-fns/locale";
 import { trpc } from "@/lib/trpc";
@@ -12,163 +12,128 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Flag, Lock, GripVertical } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Lock } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
-import { DndContext, useDraggable, DragEndEvent, DragOverlay, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { CSS } from "@dnd-kit/utilities";
 
-// ─── Constants ────────────────────────────────────────────────────────────────
-const START_HOUR = 6;
-const END_HOUR = 23;
-const TOTAL_HOURS = END_HOUR - START_HOUR + 1;
-// SLOT_HEIGHT is computed dynamically to fill the viewport — see below
-// Each slot = 30 minutes. We show TOTAL_HOURS * 2 slots.
-const TOTAL_SLOTS = TOTAL_HOURS * 2;
-// Fixed pixel height per 30-min slot — compact enough to fit without outer scroll
-const SLOT_H = 24; // px
-
-const GUTTER_W = 44; // px — time gutter width, shared by header + grid
+// ─── Constants ─────────────────────────────────────────────────────────────
+const HOUR_START = 6;
+const HOUR_END = 23;
+const TOTAL_HOURS = HOUR_END - HOUR_START;
+const SLOT_H = 48; // px per hour — compact but readable
+const GRID_H = TOTAL_HOURS * SLOT_H;
 
 const ACTIVITY_TYPES = [
-  { value: "proiectare",   label: "Proiectare",   color: "#3B82F6" },
-  { value: "consultanta",  label: "Consultanță",  color: "#8B5CF6" },
-  { value: "sedinta",      label: "Ședință",      color: "#F59E0B" },
-  { value: "documentare",  label: "Documentare",  color: "#10B981" },
-  { value: "deplasare",    label: "Deplasare",    color: "#EF4444" },
-  { value: "administrativ",label: "Administrativ",color: "#6B7280" },
-  { value: "verificare",   label: "Verificare",   color: "#EC4899" },
-  { value: "executie",     label: "Execuție",     color: "#14B8A6" },
+  "proiectare", "consultanta", "sedinta", "documentare",
+  "deplasare", "administrativ", "verificare", "executie",
 ] as const;
-type ActivityType = typeof ACTIVITY_TYPES[number]["value"];
 
-// ─── Romanian public holidays ─────────────────────────────────────────────────
-function getRomanianHolidays(year: number): Record<string, string> {
-  const h: Record<string, string> = {};
-  const add = (m: number, d: number, name: string) => {
-    h[`${year}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`] = name;
+// Brand colors for entries — alternating yellow/black
+const ENTRY_COLORS = [
+  { bg: "#FFCB09", text: "#221F1F" }, // yellow
+  { bg: "#221F1F", text: "#FFCB09" }, // black
+];
+
+// Romanian public holidays (fixed + Easter-based)
+function getRomanianHolidays(year: number) {
+  const fixed = [
+    { m: 1, d: 1, name: "Anul Nou" }, { m: 1, d: 2, name: "Anul Nou" },
+    { m: 1, d: 24, name: "Ziua Unirii" }, { m: 5, d: 1, name: "Ziua Muncii" },
+    { m: 6, d: 1, name: "Ziua Copilului" }, { m: 8, d: 15, name: "Adormirea Maicii Domnului" },
+    { m: 11, d: 30, name: "Sf. Andrei" }, { m: 12, d: 1, name: "Ziua Națională" },
+    { m: 12, d: 25, name: "Crăciun" }, { m: 12, d: 26, name: "Crăciun" },
+  ];
+  // Orthodox Easter dates
+  const easterMap: Record<number, [number, number]> = {
+    2024: [5, 5], 2025: [4, 20], 2026: [4, 12], 2027: [5, 2],
   };
-  add(1, 1, "Anul Nou"); add(1, 2, "Anul Nou");
-  add(1, 24, "Unirea Principatelor");
-  add(5, 1, "Ziua Muncii");
-  add(6, 1, "Ziua Copilului");
-  add(8, 15, "Adormirea Maicii Domnului");
-  add(11, 30, "Sf. Andrei");
-  add(12, 1, "Ziua Națională");
-  add(12, 25, "Crăciun"); add(12, 26, "Crăciun");
-  const easterDates: Record<number, [number, number]> = { 2024: [5, 5], 2025: [4, 20], 2026: [4, 5], 2027: [4, 25] };
-  const e = easterDates[year];
-  if (e) {
-    const easter = new Date(year, e[0] - 1, e[1]);
-    const fmt = (d: Date) => format(d, "yyyy-MM-dd");
-    h[fmt(addDays(easter, -2))] = "Vinerea Mare";
-    h[fmt(easter)] = "Paști";
-    h[fmt(addDays(easter, 1))] = "Paști";
-    h[fmt(addDays(easter, 49))] = "Rusalii";
-    h[fmt(addDays(easter, 50))] = "Rusalii";
+  const holidays = fixed.map(h => ({ date: `${year}-${String(h.m).padStart(2, "0")}-${String(h.d).padStart(2, "0")}`, name: h.name }));
+  const easter = easterMap[year];
+  if (easter) {
+    const easterDate = new Date(year, easter[0] - 1, easter[1]);
+    const goodFriday = addDays(easterDate, -2);
+    const easterMon = addDays(easterDate, 1);
+    const rusalii = addDays(easterDate, 49);
+    const rusaliiMon = addDays(easterDate, 50);
+    [goodFriday, easterDate, easterMon, rusalii, rusaliiMon].forEach((d, i) => {
+      holidays.push({ date: format(d, "yyyy-MM-dd"), name: ["Vinerea Mare", "Paște", "Paște", "Rusalii", "Rusalii"][i] });
+    });
   }
-  return h;
+  return holidays;
 }
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function todayISO() { return format(new Date(), "yyyy-MM-dd"); }
-function extractLocalTime(ts: Date | string | null | undefined): string {
-  if (!ts) return "";
-  const d = typeof ts === "string" ? new Date(ts) : ts;
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-// Keep alias for backward compat
-const extractUTCTime = extractLocalTime;
-function formatDuration(minutes: number) {
-  if (!minutes) return "0m";
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  return h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ""}` : `${m}m`;
-}
-function addMinutes(time: string, mins: number): string {
-  const [h, m] = time.split(":").map(Number);
-  const total = h * 60 + m + mins;
-  const nh = Math.floor(total / 60) % 24;
-  const nm = total % 60;
-  return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
-}
-function timeToMinutes(t: string) {
-  const [h, m] = t.split(":").map(Number);
-  return h * 60 + m;
-}
-// All 15-min slots for 00:00–23:45
-const ALL_TIME_SLOTS = Array.from({ length: 24 * 4 }, (_, i) => {
-  const h = Math.floor(i / 4);
-  const m = (i % 4) * 15;
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-});
+const pad2 = (n: number) => n.toString().padStart(2, "0");
 
-type EntryForm = {
-  id?: number; date: string; startTime: string; endTime: string;
-  activityType: ActivityType; taskName: string; description: string;
-  projectId: string; isBillable: boolean;
-};
-function defaultForm(date = todayISO(), startTime = "09:00"): EntryForm {
-  return { date, startTime, endTime: addMinutes(startTime, 60), activityType: "proiectare", taskName: "", description: "", projectId: "", isBillable: true };
+// Extract hour/minute from a Date or string — always treat as wall-clock (no UTC conversion)
+function extractTime(d: Date | string | null | undefined): { h: number; m: number } {
+  if (!d) return { h: 0, m: 0 };
+  const dt = typeof d === "string" ? new Date(d) : d;
+  // Use getHours/getMinutes which return local time
+  return { h: dt.getHours(), m: dt.getMinutes() };
 }
 
-// ─── Windowed time slot list: show ±3h around anchor ─────────────────────────
-function getWindowedSlots(anchor: string, windowHours = 3): string[] {
-  const anchorMin = timeToMinutes(anchor);
-  const lo = Math.max(0, anchorMin - windowHours * 60);
-  const hi = Math.min(23 * 60 + 45, anchorMin + windowHours * 60);
-  return ALL_TIME_SLOTS.filter(t => {
-    const m = timeToMinutes(t);
-    return m >= lo && m <= hi;
-  });
+function formatDuration(mins: number) {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h > 0 ? `${h}h ${m > 0 ? `${pad2(m)}m` : ""}` : `${m}m`;
 }
 
-// ─── Mini Calendar ────────────────────────────────────────────────────────────
-function MiniCalendar({ selectedDate, onSelectDate, weekStart }: {
-  selectedDate: Date; onSelectDate: (d: Date) => void; weekStart: Date;
+// ─── Mini Calendar ─────────────────────────────────────────────────────────
+function MiniCalendar({ currentDate, onDateSelect, onMonthChange }: {
+  currentDate: Date;
+  onDateSelect: (d: Date) => void;
+  onMonthChange?: (d: Date) => void;
 }) {
-  const [viewMonth, setViewMonth] = useState(() => new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1));
-  const days = useMemo(() => {
-    const start = startOfWeek(viewMonth, { weekStartsOn: 1 });
-    return Array.from({ length: 42 }, (_, i) => addDays(start, i));
-  }, [viewMonth]);
-  const weekDayLabels = ["L", "M", "M", "J", "V", "S", "D"];
+  const [viewMonth, setViewMonth] = useState(startOfMonth(currentDate));
+
+  useEffect(() => { setViewMonth(startOfMonth(currentDate)); }, [currentDate]);
+
+  const monthStart = startOfMonth(viewMonth);
+  const monthEnd = endOfMonth(viewMonth);
+  const calStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const weeks: Date[][] = [];
+  let day = calStart;
+  while (day <= monthEnd || weeks.length < 6) {
+    const week: Date[] = [];
+    for (let i = 0; i < 7; i++) { week.push(day); day = addDays(day, 1); }
+    weeks.push(week);
+    if (day > monthEnd && weeks.length >= 5) break;
+  }
+
+  const goMonth = (dir: number) => {
+    const next = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + dir, 1);
+    setViewMonth(next);
+    onMonthChange?.(next);
+  };
+
   return (
     <div className="select-none">
-      <div className="flex items-center justify-between mb-1">
-        <button onClick={() => setViewMonth(m => new Date(m.getFullYear(), m.getMonth() - 1, 1))}
-          className="p-0.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-          <ChevronLeft className="h-3 w-3" />
-        </button>
-        <span className="text-[11px] font-bold text-foreground capitalize">
-          {format(viewMonth, "MMMM yyyy", { locale: ro })}
-        </span>
-        <button onClick={() => setViewMonth(m => new Date(m.getFullYear(), m.getMonth() + 1, 1))}
-          className="p-0.5 rounded hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-          <ChevronRight className="h-3 w-3" />
-        </button>
+      <div className="flex items-center justify-between mb-2">
+        <button onClick={() => goMonth(-1)} className="p-1 hover:bg-gray-100 rounded"><ChevronLeft className="h-3.5 w-3.5" /></button>
+        <span className="text-xs font-semibold capitalize">{format(viewMonth, "MMMM yyyy", { locale: ro })}</span>
+        <button onClick={() => goMonth(1)} className="p-1 hover:bg-gray-100 rounded"><ChevronRight className="h-3.5 w-3.5" /></button>
       </div>
-      <div className="grid grid-cols-7 gap-0">
-        {weekDayLabels.map((l, i) => (
-          <div key={i} className="text-center text-[9px] font-bold text-muted-foreground pb-0.5">{l}</div>
+      <div className="grid grid-cols-7 gap-0 text-center">
+        {["L", "M", "M", "J", "V", "S", "D"].map((d, i) => (
+          <div key={i} className="text-[10px] font-medium text-gray-400 py-0.5">{d}</div>
         ))}
-        {days.map((day, i) => {
-          const isCurrentMonth = day.getMonth() === viewMonth.getMonth();
-          const isTodayDay = isToday(day);
-          const isSelected = format(day, "yyyy-MM-dd") === format(selectedDate, "yyyy-MM-dd");
-          const isInWeek = day >= weekStart && day <= addDays(weekStart, 6);
+        {weeks.flat().map((d, i) => {
+          const inMonth = isSameMonth(d, viewMonth);
+          const today = isToday(d);
+          const selected = isSameDay(d, currentDate);
           return (
-            <button key={i} onClick={() => onSelectDate(day)}
+            <button
+              key={i}
+              onClick={() => onDateSelect(d)}
               className={cn(
-                "text-center text-[10px] h-5 w-full rounded transition-colors",
-                !isCurrentMonth && "text-muted-foreground/40",
-                isCurrentMonth && !isTodayDay && !isSelected && "hover:bg-muted text-foreground",
-                isInWeek && !isTodayDay && !isSelected && "bg-[#FFCB09]/10",
-                isTodayDay && !isSelected && "bg-[#FFCB09] text-[#221F1F] font-bold rounded-full",
-                isSelected && "bg-[#221F1F] text-[#FFCB09] font-bold rounded-full",
-              )}>
-              {format(day, "d")}
+                "text-[10px] w-6 h-6 rounded-full mx-auto flex items-center justify-center transition-colors",
+                !inMonth && "text-gray-300",
+                inMonth && !today && !selected && "text-gray-700 hover:bg-gray-100",
+                today && !selected && "bg-[#FFCB09] text-[#221F1F] font-bold",
+                selected && "bg-[#221F1F] text-white font-bold",
+              )}
+            >
+              {d.getDate()}
             </button>
           );
         })}
@@ -177,852 +142,747 @@ function MiniCalendar({ selectedDate, onSelectDate, weekStart }: {
   );
 }
 
-// ─── Time Insights ─────────────────────────────────────────────────────────────
-function TimeInsights({ entries, weekStart }: { entries: any[]; weekStart: Date }) {
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-  const weekEnd = addDays(weekStart, 6);
+// ─── Time Picker (dropdown ±3h window, 15min increments) ──────────────────
+function TimePicker({ value, onChange, label, minTime }: {
+  value: { h: number; m: number };
+  onChange: (v: { h: number; m: number }) => void;
+  label: string;
+  minTime?: { h: number; m: number };
+}) {
+  // Generate options: 15min increments, 0:00 to 23:45
+  const allOptions: { h: number; m: number }[] = [];
+  for (let h = 0; h < 24; h++) for (let m = 0; m < 60; m += 15) allOptions.push({ h, m });
 
-  const todayMins = useMemo(() => entries.filter(e => {
-    const ds = typeof e.date === "string" ? e.date.slice(0, 10) : format(new Date(e.date), "yyyy-MM-dd");
-    return ds === todayStr;
-  }).reduce((s, e) => s + (e.durationMinutes ?? 0), 0), [entries, todayStr]);
+  // Filter: show ±3h window around current value
+  const currentMins = value.h * 60 + value.m;
+  const windowMins = 3 * 60;
+  let filtered = allOptions.filter(o => {
+    const oMins = o.h * 60 + o.m;
+    return oMins >= currentMins - windowMins && oMins <= currentMins + windowMins;
+  });
 
-  const weekMins = useMemo(() => entries.filter(e => {
-    const d = typeof e.date === "string" ? parseISO(e.date.slice(0, 10)) : new Date(e.date);
-    return d >= weekStart && d <= weekEnd;
-  }).reduce((s, e) => s + (e.durationMinutes ?? 0), 0), [entries, weekStart, weekEnd]);
+  // If minTime is set (for end time), filter out anything <= minTime + 15min
+  if (minTime) {
+    const minMins = minTime.h * 60 + minTime.m + 15;
+    filtered = filtered.filter(o => o.h * 60 + o.m >= minMins);
+  }
 
-  const byType = useMemo(() => {
-    const map: Record<string, number> = {};
-    for (const e of entries) {
-      const t = e.activityType ?? "proiectare";
-      map[t] = (map[t] ?? 0) + (e.durationMinutes ?? 0);
-    }
-    return Object.entries(map).sort((a, b) => b[1] - a[1]);
-  }, [entries]);
+  // Ensure current value is in the list
+  if (!filtered.find(o => o.h === value.h && o.m === value.m)) {
+    filtered.push(value);
+    filtered.sort((a, b) => (a.h * 60 + a.m) - (b.h * 60 + b.m));
+  }
 
-  const totalWeekMins = byType.reduce((s, [, m]) => s + m, 0);
+  const valStr = `${pad2(value.h)}:${pad2(value.m)}`;
 
   return (
-    <div className="space-y-2">
-      <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Time Insights</div>
-      <div className="grid grid-cols-2 gap-1.5">
-        <div className="bg-[#221F1F] rounded p-1.5 text-center">
-          <div className="text-[9px] text-white">Azi</div>
-          <div className="text-xs font-bold text-[#FFCB09]">{formatDuration(todayMins)}</div>
+    <div>
+      <Label className="text-xs text-gray-500 mb-1">{label}</Label>
+      <Select value={valStr} onValueChange={(v) => {
+        const [hh, mm] = v.split(":").map(Number);
+        onChange({ h: hh, m: mm });
+      }}>
+        <SelectTrigger className="h-8 text-sm w-24">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent className="max-h-48">
+          {filtered.map(o => {
+            const s = `${pad2(o.h)}:${pad2(o.m)}`;
+            return <SelectItem key={s} value={s}>{s}</SelectItem>;
+          })}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────
+export default function TimeTracking() {
+  const { user } = useAuth();
+  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const isCurrentWeek = isSameDay(weekStart, startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
+  const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
+  const weekNum = getISOWeek(weekStart);
+  const gridRef = useRef<HTMLDivElement>(null);
+
+  // ── Dialog state ──
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingEntry, setEditingEntry] = useState<any>(null);
+  const [formDate, setFormDate] = useState("");
+  const [formStart, setFormStart] = useState<{ h: number; m: number }>({ h: 8, m: 0 });
+  const [formEnd, setFormEnd] = useState<{ h: number; m: number }>({ h: 9, m: 0 });
+  const [formTask, setFormTask] = useState("");
+  const [formType, setFormType] = useState<string>("proiectare");
+  const [formProject, setFormProject] = useState<string>("");
+  const [formDesc, setFormDesc] = useState("");
+
+  // ── Admin event dialog ──
+  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [adminTitle, setAdminTitle] = useState("");
+  const [adminLink, setAdminLink] = useState("");
+  const [adminColor, setAdminColor] = useState("#FFCB09");
+  const [adminDate, setAdminDate] = useState("");
+  const [adminStart, setAdminStart] = useState<{ h: number; m: number }>({ h: 10, m: 0 });
+  const [adminEnd, setAdminEnd] = useState<{ h: number; m: number }>({ h: 10, m: 15 });
+
+  // ── Resize state ──
+  const resizeRef = useRef<{ entryId: number; startY: number; origEndH: number; origEndM: number } | null>(null);
+
+  // ── Data queries ──
+  const dateFrom = format(weekStart, "yyyy-MM-dd");
+  const dateTo = format(weekEnd, "yyyy-MM-dd");
+  const { data: entries = [], refetch: refetchEntries } = trpc.timeTracking.myEntries.useQuery({});
+  const { data: projects = [] } = trpc.projects.list.useQuery({});
+  const { data: companyEvents = [] } = trpc.companyEvents.list.useQuery({ dateFrom, dateTo });
+  const { data: birthdays = [] } = trpc.people.upcomingBirthdays.useQuery({ daysAhead: 14 });
+
+  const holidays = useMemo(() => {
+    const y1 = weekStart.getFullYear();
+    const y2 = weekEnd.getFullYear();
+    const h = getRomanianHolidays(y1);
+    if (y2 !== y1) h.push(...getRomanianHolidays(y2));
+    return h;
+  }, [weekStart, weekEnd]);
+
+  // Filter entries for current week
+  const weekEntries = useMemo(() => {
+    return (entries as any[]).filter((e: any) => {
+      if (!e.startTime || !e.endTime) return false;
+      const d = new Date(e.date);
+      return d >= weekStart && d <= weekEnd;
+    });
+  }, [entries, weekStart, weekEnd]);
+
+  // ── Mutations ──
+  const addEntry = trpc.timeTracking.addCalendarEntry.useMutation({
+    onSuccess: () => { refetchEntries(); toast.success("Activitate adăugată"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateEntry = trpc.timeTracking.updateCalendarEntry.useMutation({
+    onSuccess: () => { refetchEntries(); toast.success("Activitate actualizată"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteEntry = trpc.timeTracking.deleteEntry.useMutation({
+    onSuccess: () => { refetchEntries(); toast.success("Activitate ștearsă"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const createEvent = trpc.companyEvents.create.useMutation({
+    onSuccess: () => { toast.success("Eveniment creat"); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  // ── Scroll to 8:00 on mount ──
+  useEffect(() => {
+    if (gridRef.current) {
+      gridRef.current.scrollTop = (8 - HOUR_START) * SLOT_H;
+    }
+  }, []);
+
+  // ── Resize handler ──
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!resizeRef.current || !gridRef.current) return;
+      const gridRect = gridRef.current.getBoundingClientRect();
+      const relY = e.clientY - gridRect.top + gridRef.current.scrollTop;
+      const totalMinutes = (relY / GRID_H) * TOTAL_HOURS * 60 + HOUR_START * 60;
+      // Snap to 15min
+      const snapped = Math.round(totalMinutes / 15) * 15;
+      const newH = Math.floor(snapped / 60);
+      const newM = snapped % 60;
+      resizeRef.current.origEndH = Math.max(HOUR_START, Math.min(HOUR_END, newH));
+      resizeRef.current.origEndM = newM;
+      // Visual feedback via data attribute
+      const el = document.getElementById(`entry-${resizeRef.current.entryId}`);
+      if (el) {
+        const entry = weekEntries.find((e: any) => e.id === resizeRef.current!.entryId);
+        if (entry) {
+          const st = extractTime(entry.startTime);
+          const startMins = (st.h - HOUR_START) * 60 + st.m;
+          const endMins = (resizeRef.current.origEndH - HOUR_START) * 60 + resizeRef.current.origEndM;
+          const topPx = (startMins / (TOTAL_HOURS * 60)) * GRID_H;
+          const heightPx = Math.max(12, ((endMins - startMins) / (TOTAL_HOURS * 60)) * GRID_H);
+          el.style.top = `${topPx}px`;
+          el.style.height = `${heightPx}px`;
+        }
+      }
+    };
+    const handleMouseUp = () => {
+      if (!resizeRef.current) return;
+      const { entryId, origEndH, origEndM } = resizeRef.current;
+      const entry = weekEntries.find((e: any) => e.id === entryId);
+      if (entry) {
+        const st = extractTime(entry.startTime);
+        const d = new Date(entry.date);
+        updateEntry.mutate({
+          id: entryId,
+          date: format(d, "yyyy-MM-dd"),
+          startHour: st.h, startMin: st.m,
+          endHour: origEndH, endMin: origEndM,
+        });
+      }
+      resizeRef.current = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.addEventListener("mousemove", handleMouseMove);
+    document.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [weekEntries, updateEntry]);
+
+  // ── Handlers ──
+  const goToday = () => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const goPrev = () => setWeekStart(w => subWeeks(w, 1));
+  const goNext = () => setWeekStart(w => addWeeks(w, 1));
+
+  const openNewEntry = (dayIdx: number, hour: number, min: number) => {
+    setEditingEntry(null);
+    setFormDate(format(weekDays[dayIdx], "yyyy-MM-dd"));
+    setFormStart({ h: hour, m: min });
+    setFormEnd({ h: Math.min(hour + 1, HOUR_END), m: min });
+    setFormTask("");
+    setFormType("proiectare");
+    setFormProject("");
+    setFormDesc("");
+    setDialogOpen(true);
+  };
+
+  const openEditEntry = (entry: any) => {
+    setEditingEntry(entry);
+    const st = extractTime(entry.startTime);
+    const en = extractTime(entry.endTime);
+    setFormDate(format(new Date(entry.date), "yyyy-MM-dd"));
+    setFormStart(st);
+    setFormEnd(en);
+    setFormTask(entry.taskName || "");
+    setFormType(entry.activityType || "proiectare");
+    setFormProject(entry.projectId ? String(entry.projectId) : "");
+    setFormDesc(entry.description || "");
+    setDialogOpen(true);
+  };
+
+  const handleSave = () => {
+    const payload = {
+      date: formDate,
+      startHour: formStart.h,
+      startMin: formStart.m,
+      endHour: formEnd.h,
+      endMin: formEnd.m,
+      activityType: formType as any,
+      taskName: formTask || undefined,
+      description: formDesc || undefined,
+      projectId: formProject ? Number(formProject) : undefined,
+    };
+    if (editingEntry) {
+      updateEntry.mutate({ id: editingEntry.id, ...payload });
+    } else {
+      addEntry.mutate(payload);
+    }
+    setDialogOpen(false);
+  };
+
+  const handleDelete = () => {
+    if (editingEntry) {
+      deleteEntry.mutate({ id: editingEntry.id });
+      setDialogOpen(false);
+    }
+  };
+
+  // ── Drag & drop (simple: mousedown on entry body → move to new slot) ──
+  const dragRef = useRef<{ entryId: number; startY: number; startX: number; origDayIdx: number; origStartMins: number; origDurMins: number } | null>(null);
+
+  useEffect(() => {
+    const handleDragMove = (e: MouseEvent) => {
+      if (!dragRef.current || !gridRef.current) return;
+      const el = document.getElementById(`entry-${dragRef.current.entryId}`);
+      if (!el) return;
+      el.style.opacity = "0.7";
+      el.style.zIndex = "50";
+    };
+    const handleDragEnd = (e: MouseEvent) => {
+      if (!dragRef.current || !gridRef.current) return;
+      const { entryId, origDayIdx, origStartMins, origDurMins } = dragRef.current;
+      const gridRect = gridRef.current.getBoundingClientRect();
+
+      // Calculate new day from X position
+      const colWidth = gridRect.width / 7;
+      const relX = e.clientX - gridRect.left;
+      let newDayIdx = Math.floor(relX / colWidth);
+      newDayIdx = Math.max(0, Math.min(6, newDayIdx));
+
+      // Calculate new start time from Y position
+      const relY = e.clientY - gridRect.top + gridRef.current.scrollTop;
+      const totalMinutes = (relY / GRID_H) * TOTAL_HOURS * 60 + HOUR_START * 60;
+      const snappedStart = Math.round(totalMinutes / 15) * 15;
+      const newStartH = Math.floor(snappedStart / 60);
+      const newStartM = snappedStart % 60;
+      const newEndMins = snappedStart + origDurMins;
+      const newEndH = Math.floor(newEndMins / 60);
+      const newEndM = newEndMins % 60;
+
+      if (newStartH >= HOUR_START && newEndH <= HOUR_END) {
+        const entry = weekEntries.find((e: any) => e.id === entryId);
+        if (entry) {
+          updateEntry.mutate({
+            id: entryId,
+            date: format(weekDays[newDayIdx], "yyyy-MM-dd"),
+            startHour: newStartH, startMin: newStartM,
+            endHour: newEndH, endMin: newEndM,
+          });
+        }
+      }
+
+      const el = document.getElementById(`entry-${entryId}`);
+      if (el) { el.style.opacity = "1"; el.style.zIndex = ""; }
+      dragRef.current = null;
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+    document.addEventListener("mousemove", handleDragMove);
+    document.addEventListener("mouseup", handleDragEnd);
+    return () => {
+      document.removeEventListener("mousemove", handleDragMove);
+      document.removeEventListener("mouseup", handleDragEnd);
+    };
+  }, [weekEntries, weekDays, updateEntry]);
+
+  // ── Time insights ──
+  const todayEntries = weekEntries.filter((e: any) => isToday(new Date(e.date)));
+  const todayMins = todayEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0);
+  const weekMins = weekEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0);
+
+  // ── Admin event save ──
+  const handleAdminSave = () => {
+    if (!adminTitle.trim()) { toast.error("Titlul este obligatoriu"); return; }
+    createEvent.mutate({
+      title: adminTitle,
+      link: adminLink || undefined,
+      color: adminColor,
+      startTime: `${adminDate}T${pad2(adminStart.h)}:${pad2(adminStart.m)}:00`,
+      endTime: `${adminDate}T${pad2(adminEnd.h)}:${pad2(adminEnd.m)}:00`,
+      targetType: "all",
+    });
+    setAdminDialogOpen(false);
+  };
+
+  // ── Header month label ──
+  const headerLabel = useMemo(() => {
+    const m1 = format(weekStart, "MMM", { locale: ro });
+    const m2 = format(weekEnd, "MMM", { locale: ro });
+    const y1 = weekStart.getFullYear();
+    const y2 = weekEnd.getFullYear();
+    if (y1 !== y2) return `${m1} ${y1} – ${m2} ${y2}`;
+    if (m1 !== m2) return `${m1} – ${m2} ${y1}`;
+    return `${m1} ${y1}`;
+  }, [weekStart, weekEnd]);
+
+  return (
+    <div className="flex h-[calc(100vh-48px)] overflow-hidden bg-white">
+      {/* ═══ LEFT SIDEBAR ═══ */}
+      <div className="w-56 shrink-0 border-r border-gray-200 flex flex-col p-3 gap-3 overflow-y-auto">
+        {/* Add activity button */}
+        <Button
+          onClick={() => {
+            const now = new Date();
+            openNewEntry(
+              Math.max(0, weekDays.findIndex(d => isSameDay(d, now))),
+              now.getHours(),
+              Math.floor(now.getMinutes() / 15) * 15
+            );
+          }}
+          className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold shadow-md"
+        >
+          <Plus className="h-4 w-4 mr-1" /> Adaugă activitate
+        </Button>
+
+        {/* Admin: add company event */}
+        {user?.role === "admin" && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setAdminDate(format(new Date(), "yyyy-MM-dd"));
+              setAdminTitle("");
+              setAdminLink("");
+              setAdminColor("#FFCB09");
+              setAdminStart({ h: 10, m: 0 });
+              setAdminEnd({ h: 10, m: 15 });
+              setAdminDialogOpen(true);
+            }}
+            className="w-full text-xs border-[#221F1F]"
+          >
+            <Lock className="h-3 w-3 mr-1" /> Eveniment firmă
+          </Button>
+        )}
+
+        {/* Mini calendar */}
+        <MiniCalendar
+          currentDate={weekStart}
+          onDateSelect={(d) => setWeekStart(startOfWeek(d, { weekStartsOn: 1 }))}
+        />
+
+        {/* Time Insights */}
+        <div className="bg-[#221F1F] rounded-lg p-3 text-white">
+          <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2">Time Insights</p>
+          <div className="flex justify-between text-xs mb-1">
+            <span className="text-white">Azi</span>
+            <span className="font-bold text-[#FFCB09]">{formatDuration(todayMins)}</span>
+          </div>
+          <div className="w-full bg-gray-700 rounded-full h-1.5 mb-2">
+            <div className="bg-[#FFCB09] h-1.5 rounded-full transition-all" style={{ width: `${Math.min(100, (todayMins / 480) * 100)}%` }} />
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-white">Săptămână</span>
+            <span className="font-bold text-[#FFCB09]">{formatDuration(weekMins)}</span>
+          </div>
+          <div className="w-full bg-gray-700 rounded-full h-1.5">
+            <div className="bg-[#FFCB09] h-1.5 rounded-full transition-all" style={{ width: `${Math.min(100, (weekMins / 2400) * 100)}%` }} />
+          </div>
         </div>
-        <div className="bg-[#221F1F] rounded p-1.5 text-center">
-          <div className="text-[9px] text-white">Săpt.</div>
-          <div className="text-xs font-bold text-[#FFCB09]">{formatDuration(weekMins)}</div>
-        </div>
+
+        {/* Birthdays */}
+        {(birthdays as any[]).length > 0 && (
+          <div className="bg-gray-50 rounded-lg p-3">
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Cake className="h-3 w-3" /> Zile de naștere
+            </p>
+            {(birthdays as any[]).slice(0, 4).map((b: any, i: number) => (
+              <div key={i} className="text-xs text-gray-600 py-0.5">{b.name} · {b.date}</div>
+            ))}
+          </div>
+        )}
       </div>
-      {byType.length > 0 && (
-        <div className="space-y-1">
-          {byType.slice(0, 4).map(([type, mins]) => {
-            const act = ACTIVITY_TYPES.find(a => a.value === type);
-            const pct = totalWeekMins > 0 ? Math.round((mins / totalWeekMins) * 100) : 0;
+
+      {/* ═══ MAIN CALENDAR ═══ */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Top bar */}
+        <div className="h-12 shrink-0 border-b border-gray-200 flex items-center px-4 gap-3">
+          <Button
+            variant={isCurrentWeek ? "ghost" : "default"}
+            size="sm"
+            onClick={goToday}
+            disabled={isCurrentWeek}
+            className={cn(
+              "text-xs font-semibold",
+              !isCurrentWeek && "bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F]"
+            )}
+          >
+            Azi
+          </Button>
+          <button onClick={goPrev} className="p-1 hover:bg-gray-100 rounded"><ChevronLeft className="h-4 w-4" /></button>
+          <button onClick={goNext} className="p-1 hover:bg-gray-100 rounded"><ChevronRight className="h-4 w-4" /></button>
+          <span className="text-sm font-semibold capitalize">{headerLabel}</span>
+          <span className="text-xs text-gray-400 bg-gray-100 px-2 py-0.5 rounded">Săpt. {weekNum}</span>
+        </div>
+
+        {/* Day headers */}
+        <div className="shrink-0 border-b border-gray-200 flex">
+          <div className="w-12 shrink-0" /> {/* gutter for hour labels */}
+          {weekDays.map((d, i) => {
+            const today = isToday(d);
+            const holiday = holidays.find(h => h.date === format(d, "yyyy-MM-dd"));
+            const bday = (birthdays as any[]).find((b: any) => {
+              if (!b.birthDate) return false;
+              const bd = new Date(b.birthDate);
+              return bd.getDate() === d.getDate() && bd.getMonth() === d.getMonth();
+            });
             return (
-              <div key={type}>
-                <div className="flex justify-between text-[9px] mb-0.5">
-                  <span className="text-foreground/80 truncate">{act?.label ?? type}</span>
-                  <span className="text-muted-foreground ml-1 shrink-0">{formatDuration(mins)}</span>
+              <div key={i} className="flex-1 text-center py-1.5 min-w-0">
+                <div className="text-[10px] font-medium text-gray-400 uppercase">
+                  {format(d, "EEE", { locale: ro })}
                 </div>
-                <div className="h-1 bg-border rounded-full overflow-hidden">
-                  <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: act?.color ?? "#FFCB09" }} />
+                <div className={cn(
+                  "text-lg font-bold mx-auto w-8 h-8 flex items-center justify-center rounded-full",
+                  today ? "bg-[#FFCB09] text-[#221F1F]" : "text-gray-800"
+                )}>
+                  {d.getDate()}
                 </div>
+                {holiday && <div className="text-[8px] text-red-500 font-medium truncate px-1">{holiday.name}</div>}
+                {bday && <div className="text-[8px] text-pink-500 flex items-center justify-center gap-0.5"><Cake className="h-2.5 w-2.5" />{(bday as any).name?.split(" ")[0]}</div>}
               </div>
             );
           })}
         </div>
-      )}
-    </div>
-  );
-}
 
-// ─── Draggable Entry Block ─────────────────────────────────────────────────────
-function DraggableEntry({ entry, style, onClick, projectName, onResizeStart }: {
-  entry: any; style: { top: number; height: number };
-  onClick: (e: React.MouseEvent) => void; projectName?: string;
-  onResizeStart?: (e: React.MouseEvent) => void;
-}) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `entry-${entry.id}`,
-    data: { entry },
-  });
-
-  const actIndex = ACTIVITY_TYPES.findIndex(a => a.value === entry.activityType);
-  const useYellow = actIndex % 2 === 0;
-  const bgColor = useYellow ? "#FFCB09" : "#221F1F";
-  const textColor = useYellow ? "#221F1F" : "#FFCB09";
-  const textColorSub = useYellow ? "#221F1F99" : "#FFCB0999";
-  const act = ACTIVITY_TYPES.find(a => a.value === entry.activityType);
-  const actLabel = act?.label ?? entry.activityType;
-  const isShort = style.height <= SLOT_H;
-  const duration = entry.durationMinutes ?? 0;
-
-  const cssTransform = CSS.Translate.toString(transform);
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        "absolute left-0.5 right-0.5 rounded overflow-hidden cursor-pointer group transition-opacity z-10 flex",
-        isDragging && "opacity-40"
-      )}
-      style={{
-        top: style.top,
-        height: style.height,
-        backgroundColor: bgColor,
-        border: `1.5px solid ${useYellow ? "#e6b800" : "#444"}`,
-        transform: cssTransform,
-      }}
-      onClick={onClick}
-    >
-      {/* Drag handle */}
-      <div
-        {...attributes}
-        {...listeners}
-        className="shrink-0 flex items-center justify-center w-4 cursor-grab active:cursor-grabbing opacity-0 group-hover:opacity-60 transition-opacity"
-        onClick={e => e.stopPropagation()}
-      >
-        <GripVertical className="h-3 w-3" style={{ color: textColor }} />
-      </div>
-      <div className="flex-1 px-1 py-0.5 overflow-hidden flex flex-col justify-start min-w-0">
-        {isShort ? (
-          <span className="text-[10px] font-semibold truncate leading-tight" style={{ color: textColor }}>
-            {entry.taskName || actLabel}
-          </span>
-        ) : (
-          <>
-            <span className="text-[11px] font-bold truncate leading-tight" style={{ color: textColor }}>
-              {entry.taskName || actLabel}
-            </span>
-            {projectName && (
-              <span className="text-[9px] truncate leading-tight" style={{ color: textColorSub }}>{projectName}</span>
-            )}
-            <span className="text-[9px] leading-tight mt-auto" style={{ color: textColorSub }}>{formatDuration(duration)}</span>
-          </>
-        )}
-      </div>
-      {/* Resize handle at bottom */}
-      {onResizeStart && (
-        <div
-          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
-          style={{ backgroundColor: useYellow ? "#e6b800" : "#333" }}
-          onMouseDown={e => { e.stopPropagation(); onResizeStart(e); }}
-        >
-          <div className="w-6 h-0.5 rounded" style={{ backgroundColor: textColor }} />
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Main Component ────────────────────────────────────────────────────────────
-export default function TimeTracking() {
-  const { user } = useAuth();
-  const utils = trpc.useUtils();
-  const isAdmin = user?.role === "admin";
-
-  const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
-  const [selectedDate, setSelectedDate] = useState(new Date());
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [adminDialogOpen, setAdminDialogOpen] = useState(false);
-  const [form, setForm] = useState<EntryForm>(defaultForm());
-  const [isEditing, setIsEditing] = useState(false);
-  const [draggingEntry, setDraggingEntry] = useState<any>(null);
-  const [resizingEntry, setResizingEntry] = useState<{ entry: any; startY: number; origEndMin: number } | null>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-  const weekDays = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
-  const dateFrom = format(weekStart, "yyyy-MM-dd");
-  const dateTo = format(weekEnd, "yyyy-MM-dd");
-  const weekNumber = getWeek(weekStart, { weekStartsOn: 1 });
-
-  const { data: entries = [] } = trpc.timeTracking.myEntries.useQuery({ dateFrom, dateTo });
-  const { data: projects = [] } = trpc.projects.list.useQuery({ status: "activ" });
-  const { data: companyEvents = [] } = trpc.companyEvents.list.useQuery({ dateFrom, dateTo });
-  const { data: birthdays = [] } = trpc.people.upcomingBirthdays.useQuery({ daysAhead: 365 });
-
-  const holidays = useMemo(() => {
-    const year = weekStart.getFullYear();
-    return { ...getRomanianHolidays(year), ...getRomanianHolidays(year + 1) };
-  }, [weekStart]);
-
-  const birthdaysThisWeek = useMemo(() => {
-    const map: Record<string, string[]> = {};
-    for (const b of birthdays) {
-      if (!b.birthDate) continue;
-      const bd = typeof b.birthDate === "string" ? b.birthDate : format(new Date(b.birthDate as any), "yyyy-MM-dd");
-      const monthDay = bd.slice(5);
-      for (const day of weekDays) {
-        if (format(day, "MM-dd") === monthDay) {
-          const key = format(day, "yyyy-MM-dd");
-          if (!map[key]) map[key] = [];
-          map[key].push(b.name ?? "Coleg");
-        }
-      }
-    }
-    return map;
-  }, [birthdays, weekDays]);
-
-  const addEntry = trpc.timeTracking.addCalendarEntry.useMutation({
-    onSuccess: () => { toast.success("Activitate adăugată!"); utils.timeTracking.myEntries.invalidate(); setDialogOpen(false); },
-    onError: (e) => toast.error("Eroare: " + e.message),
-  });
-  const updateEntry = trpc.timeTracking.updateCalendarEntry.useMutation({
-    onSuccess: () => { toast.success("Activitate actualizată!"); utils.timeTracking.myEntries.invalidate(); setDialogOpen(false); },
-    onError: (e) => toast.error("Eroare: " + e.message),
-  });
-  const deleteEntry = trpc.timeTracking.deleteEntry.useMutation({
-    onSuccess: () => { toast.success("Activitate ștearsă."); utils.timeTracking.myEntries.invalidate(); setDialogOpen(false); },
-    onError: (e) => toast.error("Eroare: " + e.message),
-  });
-  const createEvent = trpc.companyEvents.create.useMutation({
-    onSuccess: () => { toast.success("Eveniment creat!"); utils.companyEvents.list.invalidate(); setAdminDialogOpen(false); },
-    onError: (e) => toast.error("Eroare: " + e.message),
-  });
-  const deleteEvent = trpc.companyEvents.delete.useMutation({
-    onSuccess: () => { toast.success("Eveniment șters."); utils.companyEvents.list.invalidate(); },
-    onError: (e) => toast.error("Eroare: " + e.message),
-  });
-
-  // ─── Resize logic (after updateEntry is declared) ────────────────────────────────
-  const handleResizeStart = useCallback((e: React.MouseEvent, entry: any) => {
-    e.preventDefault();
-    const endStr = extractUTCTime(entry.endTime);
-    const origEndMin = timeToMinutes(endStr);
-    setResizingEntry({ entry, startY: e.clientY, origEndMin });
-  }, []);
-
-  useEffect(() => {
-    if (!resizingEntry) return;
-    const onMouseMove = (e: MouseEvent) => {
-      const deltaY = e.clientY - resizingEntry.startY;
-      const deltaSlots = Math.round(deltaY / SLOT_H);
-      const newEndMin = Math.max(resizingEntry.origEndMin + 15, resizingEntry.origEndMin + deltaSlots * 30);
-      const clampedEndMin = Math.min(newEndMin, END_HOUR * 60 + 30);
-      const el = document.getElementById(`resize-preview-${resizingEntry.entry.id}`);
-      if (el) {
-        const startStr = extractUTCTime(resizingEntry.entry.startTime);
-        const startMin = timeToMinutes(startStr);
-        const newHeight = Math.max(SLOT_H, ((clampedEndMin - startMin) / 30) * SLOT_H);
-        el.style.height = `${newHeight}px`;
-      }
-    };
-    const onMouseUp = (e: MouseEvent) => {
-      const deltaY = e.clientY - resizingEntry.startY;
-      const deltaSlots = Math.round(deltaY / SLOT_H);
-      const newEndMin = Math.max(resizingEntry.origEndMin + 15, resizingEntry.origEndMin + deltaSlots * 30);
-      const clampedEndMin = Math.min(newEndMin, END_HOUR * 60 + 30);
-      const newEndStr = `${String(Math.floor(clampedEndMin / 60)).padStart(2, "0")}:${String(clampedEndMin % 60).padStart(2, "0")}`;
-      const entry = resizingEntry.entry;
-      const ds = typeof entry.date === "string" ? (entry.date as string).slice(0, 10) : format(new Date(entry.date as any), "yyyy-MM-dd");
-      const startStr = extractUTCTime(entry.startTime);
-      if (newEndStr !== extractUTCTime(entry.endTime)) {
-        updateEntry.mutate({
-          id: entry.id, date: ds,
-          startTime: startStr, endTime: newEndStr,
-          activityType: entry.activityType ?? "proiectare",
-          taskName: entry.taskName ?? undefined,
-          description: entry.description ?? undefined,
-          projectId: entry.projectId ?? undefined,
-          isBillable: entry.isBillable ?? true,
-        });
-      }
-      setResizingEntry(null);
-    };
-    window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      window.removeEventListener("mouseup", onMouseUp);
-    };
-  }, [resizingEntry, updateEntry]);
-
-  const entriesByDate = useMemo(() => {
-    const map: Record<string, typeof entries> = {};
-    for (const e of entries) {
-      const ds = typeof e.date === "string" ? (e.date as string).slice(0, 10) : format(new Date(e.date as any), "yyyy-MM-dd");
-      if (!map[ds]) map[ds] = [];
-      map[ds].push(e);
-    }
-    return map;
-  }, [entries]);
-
-  const eventsByDate = useMemo(() => {
-    const map: Record<string, typeof companyEvents> = {};
-    for (const ev of companyEvents) {
-      const ds = format(new Date(ev.startTime), "yyyy-MM-dd");
-      if (!map[ds]) map[ds] = [];
-      map[ds].push(ev);
-    }
-    return map;
-  }, [companyEvents]);
-
-  const projectMap = useMemo(() => {
-    const m: Record<number, { name: string; color: string | null }> = {};
-    for (const p of projects) m[p.id] = { name: p.name, color: p.color ?? null };
-    return m;
-  }, [projects]);
-
-  const todayWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
-  const isCurrentWeek = weekStart.getTime() === todayWeekStart.getTime();
-
-  const prevWeek = () => setWeekStart(w => subWeeks(w, 1));
-  const nextWeek = () => setWeekStart(w => addWeeks(w, 1));
-  const goToday = () => { setWeekStart(todayWeekStart); setSelectedDate(new Date()); };
-
-  const handleSlotClick = useCallback((date: Date, slotIndex: number) => {
-    const h = START_HOUR + Math.floor(slotIndex / 2);
-    const m = slotIndex % 2 === 0 ? 0 : 30;
-    const startTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-    setForm({ ...defaultForm(format(date, "yyyy-MM-dd"), startTime) });
-    setIsEditing(false);
-    setDialogOpen(true);
-  }, []);
-
-  const handleEntryClick = useCallback((e: React.MouseEvent, entry: typeof entries[number]) => {
-    e.stopPropagation();
-    const ds = typeof entry.date === "string" ? (entry.date as string).slice(0, 10) : format(new Date(entry.date as any), "yyyy-MM-dd");
-    setForm({
-      id: entry.id, date: ds,
-      startTime: extractUTCTime(entry.startTime),
-      endTime: extractUTCTime(entry.endTime),
-      activityType: (entry.activityType as ActivityType) ?? "proiectare",
-      taskName: entry.taskName ?? "", description: entry.description ?? "",
-      projectId: entry.projectId ? String(entry.projectId) : "",
-      isBillable: entry.isBillable ?? true,
-    });
-    setIsEditing(true);
-    setDialogOpen(true);
-  }, []);
-
-  const handleSave = () => {
-    if (!form.startTime || !form.endTime) { toast.error("Selectează ora de start și de final"); return; }
-    const [sh, sm] = form.startTime.split(":").map(Number);
-    const [eh, em] = form.endTime.split(":").map(Number);
-    if (eh * 60 + em <= sh * 60 + sm) { toast.error("Ora de final trebuie să fie după ora de start"); return; }
-    const payload = {
-      date: form.date, startTime: form.startTime, endTime: form.endTime,
-      activityType: form.activityType, taskName: form.taskName || undefined,
-      description: form.description || undefined,
-      projectId: (form.projectId && form.projectId !== "" && form.projectId !== "fara") ? Number(form.projectId) : undefined,
-      isBillable: form.isBillable,
-    };
-    if (isEditing && form.id) updateEntry.mutate({ id: form.id, ...payload });
-    else addEntry.mutate(payload);
-  };
-
-  function getEntryStyle(entry: typeof entries[number]) {
-    const startStr = extractUTCTime(entry.startTime);
-    const endStr = extractUTCTime(entry.endTime);
-    if (!startStr || !endStr) return null;
-    const [sh, sm] = startStr.split(":").map(Number);
-    const [eh, em] = endStr.split(":").map(Number);
-    const startMinutes = sh * 60 + sm - START_HOUR * 60;
-    const endMinutes = eh * 60 + em - START_HOUR * 60;
-    if (startMinutes < 0 || endMinutes <= startMinutes) return null;
-    const top = (startMinutes / 30) * SLOT_H;
-    const height = Math.max(SLOT_H, ((endMinutes - startMinutes) / 30) * SLOT_H);
-    return { top, height };
-  }
-
-  function getEventStyle(ev: typeof companyEvents[number]) {
-    const start = new Date(ev.startTime);
-    const end = new Date(ev.endTime);
-    const startMinutes = start.getHours() * 60 + start.getMinutes() - START_HOUR * 60;
-    const endMinutes = end.getHours() * 60 + end.getMinutes() - START_HOUR * 60;
-    if (startMinutes < 0 || endMinutes <= startMinutes) return null;
-    const top = (startMinutes / 30) * SLOT_H;
-    const height = Math.max(SLOT_H, ((endMinutes - startMinutes) / 30) * SLOT_H);
-    return { top, height };
-  }
-
-  // Windowed slots for dropdowns — ±3h around selected time
-  const startSlots = useMemo(() => getWindowedSlots(form.startTime || "09:00"), [form.startTime]);
-  const endSlots = useMemo(() => {
-    const anchor = form.startTime || "09:00";
-    const anchorMin = timeToMinutes(anchor);
-    const lo = anchorMin + 15; // minimum 15 min after start
-    const hi = Math.min(23 * 60 + 45, anchorMin + 3 * 60);
-    return ALL_TIME_SLOTS.filter(t => {
-      const m = timeToMinutes(t);
-      return m >= lo && m <= hi;
-    });
-  }, [form.startTime]);
-
-  // DnD sensors — require 5px movement before drag starts (prevents accidental drags)
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
-
-  const handleDragStart = useCallback((event: any) => {
-    const entry = event.active.data.current?.entry;
-    if (entry) setDraggingEntry(entry);
-  }, []);
-
-  const handleDragEnd = useCallback((event: DragEndEvent) => {
-    setDraggingEntry(null);
-    const { active, delta } = event;
-    const entry = active.data.current?.entry;
-    if (!entry || !gridRef.current) return;
-
-    // Calculate how many slots (30min each) were moved vertically
-    const deltaSlots = Math.round(delta.y / SLOT_H);
-    const deltaDays = Math.round(delta.x / (gridRef.current.clientWidth / 7));
-
-    if (deltaSlots === 0 && deltaDays === 0) return;
-
-    const startStr = extractUTCTime(entry.startTime);
-    const endStr = extractUTCTime(entry.endTime);
-    if (!startStr || !endStr) return;
-
-    const startMin = timeToMinutes(startStr) + deltaSlots * 30;
-    const endMin = timeToMinutes(endStr) + deltaSlots * 30;
-
-    if (startMin < 0 || endMin > 24 * 60) return;
-
-    const newStart = `${String(Math.floor(startMin / 60)).padStart(2, "0")}:${String(startMin % 60).padStart(2, "0")}`;
-    const newEnd = `${String(Math.floor(endMin / 60)).padStart(2, "0")}:${String(endMin % 60).padStart(2, "0")}`;
-
-    const ds = typeof entry.date === "string" ? (entry.date as string).slice(0, 10) : format(new Date(entry.date as any), "yyyy-MM-dd");
-    const newDate = deltaDays !== 0
-      ? format(addDays(parseISO(ds), deltaDays), "yyyy-MM-dd")
-      : ds;
-
-    updateEntry.mutate({
-      id: entry.id,
-      date: newDate,
-      startTime: newStart,
-      endTime: newEnd,
-      activityType: entry.activityType,
-      taskName: entry.taskName ?? undefined,
-      description: entry.description ?? undefined,
-      projectId: entry.projectId ?? undefined,
-      isBillable: entry.isBillable ?? true,
-    });
-  }, [updateEntry]);
-
-  // Admin event form
-  const [adminForm, setAdminForm] = useState({
-    title: "", description: "", link: "", startDate: todayISO(), startTime: "10:00",
-    endTime: "10:15", isRecurring: false, recurringRule: "weekly", color: "#FFCB09",
-    targetType: "all" as "all" | "department" | "users",
-  });
-
-  // Scroll to 8am on mount
-  useEffect(() => {
-    if (gridRef.current) {
-      gridRef.current.scrollTop = ((8 - START_HOUR) * 2) * SLOT_H;
-    }
-  }, []);
-
-  const DAY_LABELS = ["Lun", "Mar", "Mie", "Joi", "Vin", "Sâm", "Dum"];
-  const GRID_TOTAL_H = TOTAL_SLOTS * SLOT_H;
-
-  return (
-    // Use fixed height = 100vh minus the sidebar top bar (48px = h-12)
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-      <div className="flex overflow-hidden bg-background" style={{ height: "calc(100vh - 48px)" }}>
-
-        {/* ── Left Sidebar ── */}
-        <div className="w-44 shrink-0 border-r border-border flex flex-col gap-2 p-2 overflow-y-auto">
-          <Button size="sm" className="w-full bg-[#FFCB09] text-[#221F1F] hover:bg-[#FFCB09]/90 font-bold text-xs h-7"
-            onClick={() => { setForm(defaultForm(format(selectedDate, "yyyy-MM-dd"))); setIsEditing(false); setDialogOpen(true); }}>
-            <Plus className="h-3 w-3 mr-1" /> Adaugă activitate
-          </Button>
-
-          <MiniCalendar
-            selectedDate={selectedDate}
-            onSelectDate={(d) => { setSelectedDate(d); setWeekStart(startOfWeek(d, { weekStartsOn: 1 })); }}
-            weekStart={weekStart}
-          />
-
-          <div className="border-t border-border pt-2">
-            <TimeInsights entries={entries} weekStart={weekStart} />
-          </div>
-
-          {Object.keys(birthdaysThisWeek).length > 0 && (
-            <div className="border-t border-border pt-2">
-              <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Cake className="h-3 w-3" /> Zile de naștere
-              </div>
-              {Object.entries(birthdaysThisWeek).map(([date, names]) => (
-                <div key={date} className="text-[9px] mb-0.5">
-                  <span className="text-muted-foreground">{format(parseISO(date), "d MMM", { locale: ro })}: </span>
-                  <span className="text-foreground font-medium">{names.join(", ")}</span>
+        {/* Grid */}
+        <div ref={gridRef} className="flex-1 overflow-y-auto overflow-x-hidden relative" style={{ scrollbarGutter: "stable" }}>
+          <div className="flex relative" style={{ height: `${GRID_H}px` }}>
+            {/* Hour labels */}
+            <div className="w-12 shrink-0 relative">
+              {Array.from({ length: TOTAL_HOURS }, (_, i) => (
+                <div
+                  key={i}
+                  className="absolute right-2 text-[10px] text-gray-400 leading-none"
+                  style={{ top: `${i * SLOT_H - 5}px` }}
+                >
+                  {pad2(HOUR_START + i)}:00
                 </div>
               ))}
             </div>
-          )}
 
-          {isAdmin && (
-            <div className="border-t border-border pt-2">
-              <Button size="sm" variant="outline" className="w-full text-xs h-7 border-[#FFCB09]/50 text-[#FFCB09] hover:bg-[#FFCB09]/10"
-                onClick={() => setAdminDialogOpen(true)}>
-                <Flag className="h-3 w-3 mr-1" /> Eveniment firmă
-              </Button>
-            </div>
-          )}
-        </div>
-
-        {/* ── Main Calendar Area ── */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-
-          {/* Top nav bar */}
-          <div className="flex items-center justify-between px-2 py-1.5 border-b border-border bg-background shrink-0">
-            <div className="flex items-center gap-1.5">
-              <Button size="sm" variant="outline" onClick={goToday}
-                className={cn("h-6 text-xs font-semibold px-2.5", !isCurrentWeek ? "border-[#FFCB09] text-[#FFCB09] bg-[#FFCB09]/10" : "text-muted-foreground")}>
-                Azi
-              </Button>
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={prevWeek}><ChevronLeft className="h-3.5 w-3.5" /></Button>
-              <Button size="icon" variant="ghost" className="h-6 w-6" onClick={nextWeek}><ChevronRight className="h-3.5 w-3.5" /></Button>
-              <span className="text-xs font-semibold text-foreground">
-                {format(weekStart, "d MMM", { locale: ro })} – {format(weekEnd, "d MMM yyyy", { locale: ro })}
-              </span>
-              <Badge variant="outline" className="text-[9px] h-4 px-1 text-muted-foreground">Săpt. {weekNumber}</Badge>
-            </div>
-            <div className="text-[10px] text-muted-foreground">
-              {entries.length > 0 && `${formatDuration(entries.reduce((s, e) => s + (e.durationMinutes ?? 0), 0))} total`}
-            </div>
-          </div>
-
-          {/* Day headers — gutter must match grid gutter exactly */}
-          <div className="flex shrink-0 border-b border-border bg-background">
-            {/* Gutter placeholder — exact same width as grid gutter */}
-            <div style={{ width: GUTTER_W, minWidth: GUTTER_W }} className="shrink-0" />
-            {weekDays.map((day, i) => {
+            {/* Day columns */}
+            {weekDays.map((day, dayIdx) => {
               const dayStr = format(day, "yyyy-MM-dd");
-              const holiday = holidays[dayStr];
-              const bdays = birthdaysThisWeek[dayStr];
-              const isTodayDay = isToday(day);
-              const isWeekend = i >= 5;
+              const dayEntries = weekEntries.filter((e: any) => format(new Date(e.date), "yyyy-MM-dd") === dayStr);
+              const dayEvents = (companyEvents as any[]).filter((ev: any) => {
+                const evDate = format(new Date(ev.startTime), "yyyy-MM-dd");
+                return evDate === dayStr;
+              });
+
               return (
-                <div key={i} className={cn(
-                  "flex-1 min-w-0 text-center py-1 border-l border-border",
-                  isWeekend && "bg-muted/20",
-                )}>
-                  <div className={cn("text-[9px] font-bold uppercase tracking-wider",
-                    isTodayDay ? "text-[#221F1F]" : "text-muted-foreground"
-                  )}>{DAY_LABELS[i]}</div>
-                  <div className={cn(
-                    "mx-auto w-5 h-5 flex items-center justify-center rounded-full text-[10px] font-bold",
-                    isTodayDay ? "bg-[#FFCB09] text-[#221F1F]" : "text-foreground"
-                  )}>{format(day, "d")}</div>
-                  {holiday && <div className="text-[8px] text-red-400 truncate px-0.5 leading-none">{holiday}</div>}
-                  {bdays && (
-                    <div className="text-[8px] text-pink-400 truncate px-0.5 leading-none flex items-center justify-center gap-0.5">
-                      <Cake className="h-2 w-2" />{bdays[0]}
-                    </div>
-                  )}
+                <div key={dayIdx} className="flex-1 relative border-l border-gray-100 min-w-0">
+                  {/* Hour lines */}
+                  {Array.from({ length: TOTAL_HOURS }, (_, i) => (
+                    <div
+                      key={i}
+                      className="absolute w-full border-t border-gray-100"
+                      style={{ top: `${i * SLOT_H}px` }}
+                    />
+                  ))}
+                  {/* Half-hour lines */}
+                  {Array.from({ length: TOTAL_HOURS }, (_, i) => (
+                    <div
+                      key={`half-${i}`}
+                      className="absolute w-full border-t border-gray-50"
+                      style={{ top: `${i * SLOT_H + SLOT_H / 2}px` }}
+                    />
+                  ))}
+
+                  {/* Click to add */}
+                  <div
+                    className="absolute inset-0 cursor-pointer"
+                    onDoubleClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      const relY = e.clientY - rect.top;
+                      const totalMins = (relY / GRID_H) * TOTAL_HOURS * 60;
+                      const snapped = Math.round(totalMins / 15) * 15;
+                      const h = Math.floor(snapped / 60) + HOUR_START;
+                      const m = snapped % 60;
+                      openNewEntry(dayIdx, h, m);
+                    }}
+                  />
+
+                  {/* Company events (admin, non-editable) */}
+                  {dayEvents.map((ev: any) => {
+                    const st = extractTime(ev.startTime);
+                    const en = extractTime(ev.endTime);
+                    const startMins = (st.h - HOUR_START) * 60 + st.m;
+                    const endMins = (en.h - HOUR_START) * 60 + en.m;
+                    const topPx = (startMins / (TOTAL_HOURS * 60)) * GRID_H;
+                    const heightPx = Math.max(16, ((endMins - startMins) / (TOTAL_HOURS * 60)) * GRID_H);
+                    return (
+                      <div
+                        key={`ev-${ev.id}`}
+                        className="absolute left-0.5 right-0.5 rounded px-1 py-0.5 overflow-hidden border-l-2 opacity-80"
+                        style={{
+                          top: `${topPx}px`,
+                          height: `${heightPx}px`,
+                          backgroundColor: (ev.color || "#FFCB09") + "33",
+                          borderLeftColor: ev.color || "#FFCB09",
+                        }}
+                      >
+                        <div className="flex items-center gap-0.5 text-[9px] font-medium text-gray-700 truncate">
+                          <Lock className="h-2.5 w-2.5 shrink-0" />
+                          {ev.title}
+                          {ev.link && (
+                            <a href={ev.link} target="_blank" rel="noopener" className="ml-auto shrink-0" onClick={e => e.stopPropagation()}>
+                              <ExternalLink className="h-2.5 w-2.5 text-blue-500" />
+                            </a>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+
+                  {/* User entries */}
+                  {dayEntries.map((entry: any, eIdx: number) => {
+                    const st = extractTime(entry.startTime);
+                    const en = extractTime(entry.endTime);
+                    const startMins = (st.h - HOUR_START) * 60 + st.m;
+                    const endMins = (en.h - HOUR_START) * 60 + en.m;
+                    const topPx = (startMins / (TOTAL_HOURS * 60)) * GRID_H;
+                    const heightPx = Math.max(16, ((endMins - startMins) / (TOTAL_HOURS * 60)) * GRID_H);
+                    const colorIdx = eIdx % 2;
+                    const colors = ENTRY_COLORS[colorIdx];
+
+                    return (
+                      <div
+                        key={entry.id}
+                        id={`entry-${entry.id}`}
+                        className="absolute left-0.5 right-0.5 rounded px-1.5 py-0.5 cursor-pointer select-none group overflow-hidden"
+                        style={{
+                          top: `${topPx}px`,
+                          height: `${heightPx}px`,
+                          backgroundColor: colors.bg,
+                          color: colors.text,
+                          zIndex: 10,
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          openEditEntry(entry);
+                        }}
+                        onMouseDown={(e) => {
+                          // Start drag (not on resize handle)
+                          if ((e.target as HTMLElement).dataset.resize) return;
+                          e.preventDefault();
+                          dragRef.current = {
+                            entryId: entry.id,
+                            startY: e.clientY,
+                            startX: e.clientX,
+                            origDayIdx: dayIdx,
+                            origStartMins: startMins,
+                            origDurMins: endMins - startMins,
+                          };
+                          document.body.style.cursor = "grabbing";
+                          document.body.style.userSelect = "none";
+                        }}
+                      >
+                        <div className="text-[10px] font-semibold truncate leading-tight">
+                          {entry.taskName || entry.activityType}
+                        </div>
+                        {heightPx > 24 && (
+                          <div className="text-[9px] opacity-80 truncate">
+                            {pad2(st.h)}:{pad2(st.m)} – {pad2(en.h)}:{pad2(en.m)}
+                          </div>
+                        )}
+                        {/* Resize handle */}
+                        <div
+                          data-resize="true"
+                          className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover:opacity-100 transition-opacity"
+                          style={{ backgroundColor: colors.text + "33" }}
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            resizeRef.current = {
+                              entryId: entry.id,
+                              startY: e.clientY,
+                              origEndH: en.h,
+                              origEndM: en.m,
+                            };
+                            document.body.style.cursor = "s-resize";
+                            document.body.style.userSelect = "none";
+                          }}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
           </div>
-
-          {/* Scrollable grid — ONLY this div scrolls */}
-          <div ref={gridRef} className="flex-1 overflow-y-auto overflow-x-hidden">
-            <div className="flex" style={{ height: GRID_TOTAL_H }}>
-
-              {/* Time gutter — exact GUTTER_W px */}
-              <div style={{ width: GUTTER_W, minWidth: GUTTER_W }} className="shrink-0 relative border-r border-border/30">
-                {Array.from({ length: TOTAL_HOURS }, (_, i) => (
-                  <div key={i} className="absolute text-[9px] text-muted-foreground leading-none"
-                    style={{ top: i * 2 * SLOT_H - 5, right: 4 }}>
-                    {String(START_HOUR + i).padStart(2, "0")}:00
-                  </div>
-                ))}
-              </div>
-
-              {/* Day columns */}
-              {weekDays.map((day, di) => {
-                const dayStr = format(day, "yyyy-MM-dd");
-                const dayEntries = entriesByDate[dayStr] ?? [];
-                const dayEvents = eventsByDate[dayStr] ?? [];
-                const holiday = holidays[dayStr];
-                const isWeekend = di >= 5;
-
-                return (
-                  <div key={di} className={cn(
-                    "flex-1 min-w-0 relative border-l border-border",
-                    isWeekend && "bg-muted/10",
-                    holiday && "bg-red-500/5",
-                  )}>
-                    {/* Slot click zones + grid lines */}
-                    {Array.from({ length: TOTAL_SLOTS }, (_, si) => (
-                      <div key={si}
-                        className={cn(
-                          "absolute left-0 right-0 border-t cursor-pointer hover:bg-[#FFCB09]/5 transition-colors",
-                          si % 2 === 0 ? "border-border/60" : "border-border/20"
-                        )}
-                        style={{ top: si * SLOT_H, height: SLOT_H }}
-                        onClick={() => handleSlotClick(day, si)}
-                      />
-                    ))}
-
-                    {/* Company events */}
-                    {dayEvents.map(ev => {
-                      const evStyle = getEventStyle(ev);
-                      if (!evStyle) return null;
-                      const isShort = evStyle.height <= SLOT_H;
-                      return (
-                        <div key={`ev-${ev.id}`}
-                          className="absolute left-0.5 right-0.5 rounded overflow-hidden z-20 group"
-                          style={{ top: evStyle.top, height: evStyle.height, backgroundColor: ev.color ?? "#FFCB09", border: `1px solid ${ev.color ?? "#FFCB09"}` }}
-                          onClick={e => e.stopPropagation()}>
-                          <div className="px-1 py-0.5 h-full flex flex-col overflow-hidden">
-                            <div className="flex items-center gap-0.5">
-                              <Lock className="h-2 w-2 text-[#221F1F] shrink-0" />
-                              <span className="text-[9px] font-bold truncate text-[#221F1F]">{ev.title}</span>
-                            </div>
-                            {!isShort && ev.link && (
-                              <a href={ev.link} target="_blank" rel="noreferrer"
-                                className="text-[8px] text-[#221F1F]/80 underline truncate flex items-center gap-0.5 mt-0.5"
-                                onClick={e => e.stopPropagation()}>
-                                <ExternalLink className="h-2 w-2" /> Link
-                              </a>
-                            )}
-                            {isAdmin && (
-                              <button className="absolute top-0.5 right-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={e => { e.stopPropagation(); if (confirm("Ștergi evenimentul?")) deleteEvent.mutate({ id: ev.id }); }}>
-                                <Trash2 className="h-2.5 w-2.5 text-[#221F1F]" />
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-
-                    {/* User time entries — draggable */}
-                    {dayEntries.map(entry => {
-                      const entryStyle = getEntryStyle(entry);
-                      if (!entryStyle) return null;
-                      const proj = entry.projectId ? projectMap[entry.projectId] : null;
-                      return (
-                        <div key={entry.id} id={`resize-preview-${entry.id}`} style={{ position: "absolute", top: entryStyle.top, height: entryStyle.height, left: 2, right: 2, pointerEvents: "none" }}>
-                          <DraggableEntry
-                            entry={entry}
-                            style={{ top: 0, height: entryStyle.height }}
-                            onClick={(e) => handleEntryClick(e, entry)}
-                            projectName={proj?.name}
-                            onResizeStart={(e) => handleResizeStart(e, entry)}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
         </div>
       </div>
 
-      {/* DragOverlay — ghost block while dragging */}
-      <DragOverlay>
-        {draggingEntry && (() => {
-          const actIndex = ACTIVITY_TYPES.findIndex(a => a.value === draggingEntry.activityType);
-          const useYellow = actIndex % 2 === 0;
-          const bgColor = useYellow ? "#FFCB09" : "#221F1F";
-          const textColor = useYellow ? "#221F1F" : "#FFCB09";
-          const act = ACTIVITY_TYPES.find(a => a.value === draggingEntry.activityType);
-          const entryStyle = getEntryStyle(draggingEntry);
-          return (
-            <div className="rounded overflow-hidden opacity-80 shadow-xl"
-              style={{ width: 120, height: entryStyle?.height ?? SLOT_H * 2, backgroundColor: bgColor, border: `2px solid ${useYellow ? "#e6b800" : "#FFCB09"}` }}>
-              <div className="px-1.5 py-0.5">
-                <span className="text-[11px] font-bold truncate" style={{ color: textColor }}>
-                  {draggingEntry.taskName || act?.label}
-                </span>
-              </div>
-            </div>
-          );
-        })()}
-      </DragOverlay>
-
-      {/* ── Add/Edit Entry Dialog ── */}
+      {/* ═══ ADD/EDIT DIALOG ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              {isEditing ? <Pencil className="h-4 w-4 text-[#FFCB09]" /> : <Plus className="h-4 w-4 text-[#FFCB09]" />}
-              {isEditing ? "Editează activitate" : "Adaugă activitate"}
+            <DialogTitle className="flex items-center gap-2 text-[#221F1F]">
+              {editingEntry ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4 text-[#FFCB09]" />}
+              {editingEntry ? "Editează activitate" : "Adaugă activitate"}
             </DialogTitle>
           </DialogHeader>
-          <div className="space-y-3 py-1">
+          <div className="space-y-3">
             <div>
-              <Label className="text-sm font-semibold mb-1.5 block">Titlu activitate</Label>
-              <Input placeholder="ex: Redactare plan arhitectural..." value={form.taskName}
-                onChange={e => setForm(f => ({ ...f, taskName: e.target.value }))} className="text-sm" />
+              <Label className="text-xs">Titlu activitate</Label>
+              <Input value={formTask} onChange={e => setFormTask(e.target.value)} placeholder="ex: Redactare plan arhitectural..." className="h-8" />
             </div>
             <div>
-              <Label className="text-sm font-semibold mb-1.5 block">Data</Label>
-              <input type="date" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
+              <Label className="text-xs">Data</Label>
+              <Input type="date" value={formDate} onChange={e => setFormDate(e.target.value)} className="h-8" />
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <Label className="text-sm font-semibold mb-1.5 block">Ora start</Label>
-                <Select value={form.startTime} onValueChange={v => {
-                  // When start changes, auto-adjust end to start+1h if end would be invalid
-                  const newEnd = addMinutes(v, 60);
-                  setForm(f => ({ ...f, startTime: v, endTime: newEnd }));
-                }}>
-                  <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+            <div className="flex gap-4">
+              <TimePicker label="Ora start" value={formStart} onChange={(v) => {
+                setFormStart(v);
+                // Auto-adjust end if needed
+                const startMins = v.h * 60 + v.m;
+                const endMins = formEnd.h * 60 + formEnd.m;
+                if (endMins <= startMins) {
+                  const newEnd = startMins + 60;
+                  setFormEnd({ h: Math.floor(newEnd / 60), m: newEnd % 60 });
+                }
+              }} />
+              <TimePicker label="Ora final" value={formEnd} onChange={setFormEnd} minTime={formStart} />
+            </div>
+            <div className="flex gap-4">
+              <div className="flex-1">
+                <Label className="text-xs">Tip activitate</Label>
+                <Select value={formType} onValueChange={setFormType}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    {startSlots.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    {ACTIVITY_TYPES.map(t => <SelectItem key={t} value={t} className="text-xs capitalize">{t}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
-              <div>
-                <Label className="text-sm font-semibold mb-1.5 block">Ora final</Label>
-                <Select value={form.endTime} onValueChange={v => setForm(f => ({ ...f, endTime: v }))}>
-                  <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
+              <div className="flex-1">
+                <Label className="text-xs">Proiect (opțional)</Label>
+                <Select value={formProject} onValueChange={setFormProject}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fără proiect" /></SelectTrigger>
                   <SelectContent>
-                    {endSlots.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    <SelectItem value="none" className="text-xs">Fără proiect</SelectItem>
+                    {(projects as any[]).map((p: any) => (
+                      <SelectItem key={p.id} value={String(p.id)} className="text-xs">{p.name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
             <div>
-              <Label className="text-sm font-semibold mb-1.5 block">Tip activitate</Label>
-              <Select value={form.activityType} onValueChange={v => setForm(f => ({ ...f, activityType: v as ActivityType }))}>
-                <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                <SelectContent>{ACTIVITY_TYPES.map(a => (
-                  <SelectItem key={a.value} value={a.value}>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: a.color }} />
-                      {a.label}
-                    </div>
-                  </SelectItem>
-                ))}</SelectContent>
-              </Select>
+              <Label className="text-xs">Descriere (opțional)</Label>
+              <Textarea value={formDesc} onChange={e => setFormDesc(e.target.value)} placeholder="Detalii..." rows={2} className="text-xs" />
             </div>
-            <div>
-              <Label className="text-sm font-semibold mb-1.5 block">Proiect (opțional)</Label>
-              <Select value={form.projectId || "fara"} onValueChange={v => setForm(f => ({ ...f, projectId: v === "fara" ? "" : v }))}>
-                <SelectTrigger className="text-sm"><SelectValue placeholder="Fără proiect" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="fara">Fără proiect</SelectItem>
-                  {projects.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label className="text-sm font-semibold mb-1.5 block">Descriere (opțional)</Label>
-              <Textarea placeholder="Detalii suplimentare..." value={form.description}
-                onChange={e => setForm(f => ({ ...f, description: e.target.value }))} className="text-sm resize-none" rows={2} />
-            </div>
-          </div>
-          <div className="flex justify-between pt-2">
-            {isEditing ? (
-              <Button variant="destructive" size="sm" onClick={() => { if (form.id && confirm("Ștergi activitatea?")) deleteEntry.mutate({ id: form.id }); }}>
-                <Trash2 className="h-3.5 w-3.5 mr-1" /> Șterge
-              </Button>
-            ) : <div />}
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" onClick={() => setDialogOpen(false)}>Anulează</Button>
-              <Button size="sm" className="bg-[#FFCB09] text-[#221F1F] hover:bg-[#FFCB09]/90 font-bold"
-                onClick={handleSave} disabled={addEntry.isPending || updateEntry.isPending}>
-                {isEditing ? "Salvează" : "Adaugă"}
-              </Button>
+            <div className="flex justify-between pt-2">
+              {editingEntry && (
+                <Button variant="destructive" size="sm" onClick={handleDelete} className="text-xs">
+                  <Trash2 className="h-3 w-3 mr-1" /> Șterge
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button variant="ghost" size="sm" onClick={() => setDialogOpen(false)} className="text-xs">Anulează</Button>
+                <Button size="sm" onClick={handleSave} className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold">
+                  {editingEntry ? "Salvează" : "Adaugă"}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* ── Admin Event Dialog ── */}
-      {isAdmin && (
-        <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Flag className="h-4 w-4 text-[#FFCB09]" /> Eveniment firmă (admin)
-              </DialogTitle>
-            </DialogHeader>
-            <div className="space-y-3 py-1">
-              <div>
-                <Label className="text-sm font-semibold mb-1.5 block">Titlu eveniment</Label>
-                <Input placeholder="ex: Daily standup, Vinerea Tehnică..." value={adminForm.title}
-                  onChange={e => setAdminForm(f => ({ ...f, title: e.target.value }))} />
-              </div>
-              <div>
-                <Label className="text-sm font-semibold mb-1.5 block">Descriere</Label>
-                <Textarea placeholder="Detalii eveniment..." value={adminForm.description}
-                  onChange={e => setAdminForm(f => ({ ...f, description: e.target.value }))} rows={2} className="resize-none" />
-              </div>
-              <div>
-                <Label className="text-sm font-semibold mb-1.5 block">Link (Zoom, adresă etc.)</Label>
-                <Input placeholder="https://zoom.us/j/..." value={adminForm.link}
-                  onChange={e => setAdminForm(f => ({ ...f, link: e.target.value }))} />
-              </div>
-              <div className="grid grid-cols-3 gap-2">
-                <div>
-                  <Label className="text-sm font-semibold mb-1.5 block">Data</Label>
-                  <input type="date" value={adminForm.startDate}
-                    onChange={e => setAdminForm(f => ({ ...f, startDate: e.target.value }))}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm" />
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold mb-1.5 block">Ora start</Label>
-                  <Select value={adminForm.startTime} onValueChange={v => setAdminForm(f => ({ ...f, startTime: v }))}>
-                    <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>{ALL_TIME_SLOTS.filter(t => t >= "06:00" && t <= "22:00").map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold mb-1.5 block">Ora final</Label>
-                  <Select value={adminForm.endTime} onValueChange={v => setAdminForm(f => ({ ...f, endTime: v }))}>
-                    <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>{ALL_TIME_SLOTS.filter(t => t >= "06:15" && t <= "23:00").map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <Label className="text-sm font-semibold mb-1.5 block">Alocat pentru</Label>
-                  <Select value={adminForm.targetType} onValueChange={v => setAdminForm(f => ({ ...f, targetType: v as any }))}>
-                    <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Toți angajații</SelectItem>
-                      <SelectItem value="department">Departament</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-sm font-semibold mb-1.5 block">Culoare</Label>
-                  <div className="flex gap-1.5 flex-wrap pt-1">
-                    {["#FFCB09", "#3B82F6", "#EF4444", "#10B981", "#8B5CF6", "#F59E0B"].map(c => (
-                      <button key={c} onClick={() => setAdminForm(f => ({ ...f, color: c }))}
-                        className={cn("w-5 h-5 rounded-full border-2 transition-all", adminForm.color === c ? "border-foreground scale-110" : "border-transparent")}
-                        style={{ backgroundColor: c }} />
-                    ))}
-                  </div>
-                </div>
-              </div>
+      {/* ═══ ADMIN EVENT DIALOG ═══ */}
+      <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#221F1F]">
+              <Lock className="h-4 w-4" /> Eveniment firmă
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Titlu</Label>
+              <Input value={adminTitle} onChange={e => setAdminTitle(e.target.value)} placeholder="ex: Daily standup" className="h-8" />
             </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setAdminDialogOpen(false)}>Anulează</Button>
-              <Button size="sm" className="bg-[#FFCB09] text-[#221F1F] hover:bg-[#FFCB09]/90 font-bold"
-                disabled={createEvent.isPending}
-                onClick={() => {
-                  if (!adminForm.title) { toast.error("Titlul este obligatoriu"); return; }
-                  const startISO = `${adminForm.startDate}T${adminForm.startTime}:00`;
-                  const endISO = `${adminForm.startDate}T${adminForm.endTime}:00`;
-                  createEvent.mutate({
-                    title: adminForm.title, description: adminForm.description || undefined,
-                    link: adminForm.link || undefined,
-                    startTime: startISO, endTime: endISO,
-                    color: adminForm.color, targetType: adminForm.targetType,
-                  });
-                }}>
-                Creează eveniment
-              </Button>
+            <div>
+              <Label className="text-xs">Link (Zoom, adresă etc.)</Label>
+              <Input value={adminLink} onChange={e => setAdminLink(e.target.value)} placeholder="https://zoom.us/..." className="h-8" />
             </div>
-          </DialogContent>
-        </Dialog>
-      )}
-    </DndContext>
+            <div>
+              <Label className="text-xs">Data</Label>
+              <Input type="date" value={adminDate} onChange={e => setAdminDate(e.target.value)} className="h-8" />
+            </div>
+            <div className="flex gap-4">
+              <TimePicker label="Start" value={adminStart} onChange={setAdminStart} />
+              <TimePicker label="Final" value={adminEnd} onChange={setAdminEnd} minTime={adminStart} />
+            </div>
+            <div className="flex gap-2 justify-end pt-2">
+              <Button variant="ghost" size="sm" onClick={() => setAdminDialogOpen(false)} className="text-xs">Anulează</Button>
+              <Button size="sm" onClick={handleAdminSave} className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold">Creează</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

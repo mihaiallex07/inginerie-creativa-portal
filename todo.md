@@ -217,3 +217,27 @@
 - [x] Fix: task-urile se teleportează — backend folosea Date.UTC, acum folosește new Date local (ora României)
 - [x] Fix: extractUTCTime → extractLocalTime (getHours/getMinutes în loc de getUTCHours/getUTCMinutes)
 - [x] Fix: resize blocuri activitate prin handle la marginea de jos — drag mouse pentru a extinde/micșora durata
+
+## Sprint 22 — Ștergere completă Time-Tracking
+- [x] Ștergere pagina TimeTracking.tsx
+- [x] Ștergere proceduri tRPC vechi (addCalendarEntry, updateCalendarEntry)
+- [x] Ștergere rută /time-tracking din App.tsx
+- [x] Ștergere link "Time-Tracking" din sidebar DashboardLayout.tsx
+- [x] Ștergere import TimeTracking din App.tsx
+
+## Sprint 23 — Reconstruire completă Time-Tracking de la zero
+- [x] Curățare completă cod vechi Time-Tracking
+- [x] Backend: proceduri noi addCalendarEntry/updateCalendarEntry cu ore ca integeri (fără Date/UTC)
+- [x] Backend: proceduri companyEvents păstrate și funcționale
+- [x] Frontend: layout Google Calendar fidel — sidebar stânga + grid săptămânal
+- [x] Frontend: pagină fixă 100vh fără scroll dublu, coloane aliniate
+- [x] Frontend: click pe slot → dialog rapid cu ora pre-completată, increment 15min, dropdown ±3h
+- [x] Frontend: proiect opțional la adăugare activitate
+- [x] Frontend: drag & drop mutare blocuri pe altă zi/oră
+- [x] Frontend: resize blocuri prin tragere de marginea de jos
+- [x] Frontend: blocuri colorate galben/negru conform brand IC
+- [x] Frontend: text alb lizibil pe blocuri, buton Azi funcțional, nr săptămână vizibil
+- [x] Frontend: sărbători legale RO + zile naștere colegi subtil în header
+- [x] Frontend: evenimente admin (non-editabile, cu link clickabil, icon lacăt)
+- [x] Reconectare rută /time-tracking în App.tsx + link sidebar
+- [ ] Teste vitest (backlog)
