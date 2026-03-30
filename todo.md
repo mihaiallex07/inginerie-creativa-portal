@@ -201,3 +201,8 @@
 
 ## Sprint 17 — Fix eroare company_events
 - [x] Fix: tabel company_events lipsă în DB — creat manual cu structură corectă (17 coloane)
+
+## Sprint 19 — Fix bug-uri critice Time-Tracking
+- [x] Fix: proiect opțional — submit funcționează fără proiect selectat
+- [x] Fix: ora start pre-completată din slot-ul clickat, end = start+1h implicit, increment 15min
+- [x] Fix: layout compact (SLOT_HEIGHT 28px), gutter w-10 aliniat între header și grid, rânduri mai dense

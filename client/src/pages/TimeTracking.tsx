@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 const START_HOUR = 6;
 const END_HOUR = 23;
 const TOTAL_HOURS = END_HOUR - START_HOUR + 1; // 18 hours shown
-const SLOT_HEIGHT = 40; // px per 30-min slot
+const SLOT_HEIGHT = 28; // px per 30-min slot — compact
 const TOTAL_SLOTS = TOTAL_HOURS * 2;
 
 const ACTIVITY_TYPES = [
@@ -79,9 +79,11 @@ function formatDuration(minutes: number) {
   const m = minutes % 60;
   return h > 0 ? `${h}h${m > 0 ? ` ${m}m` : ""}` : `${m}m`;
 }
-const TIME_SLOTS = Array.from({ length: 24 * 2 }, (_, i) => {
-  const h = Math.floor(i / 2); const m = i % 2 === 0 ? "00" : "30";
-  return `${String(h).padStart(2, "0")}:${m}`;
+// Time slots with 15-min increments for better granularity
+const TIME_SLOTS = Array.from({ length: 24 * 4 }, (_, i) => {
+  const h = Math.floor(i / 4);
+  const m = (i % 4) * 15;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
 });
 
 type EntryForm = {
@@ -89,8 +91,17 @@ type EntryForm = {
   activityType: ActivityType; taskName: string; description: string;
   projectId: string; isBillable: boolean;
 };
+function addMinutes(time: string, mins: number): string {
+  const [h, m] = time.split(":").map(Number);
+  const total = h * 60 + m + mins;
+  const nh = Math.floor(total / 60) % 24;
+  const nm = total % 60;
+  return `${String(nh).padStart(2, "0")}:${String(nm).padStart(2, "0")}`;
+}
 function defaultForm(date = todayISO(), startTime = "09:00"): EntryForm {
-  return { date, startTime, endTime: "10:00", activityType: "proiectare", taskName: "", description: "", projectId: "", isBillable: true };
+  // Round startTime to nearest 15min, default end = start + 1h
+  const endTime = addMinutes(startTime, 60);
+  return { date, startTime, endTime, activityType: "proiectare", taskName: "", description: "", projectId: "", isBillable: true };
 }
 
 // ─── Mini Calendar ────────────────────────────────────────────────────────────
@@ -329,7 +340,8 @@ export default function TimeTracking() {
     const h = START_HOUR + Math.floor(slotIndex / 2);
     const m = slotIndex % 2 === 0 ? 0 : 30;
     const startTime = `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
-    setForm(defaultForm(format(date, "yyyy-MM-dd"), startTime));
+    const endTime = addMinutes(startTime, 60);
+    setForm({ ...defaultForm(format(date, "yyyy-MM-dd"), startTime), endTime });
     setIsEditing(false);
     setDialogOpen(true);
   }, []);
@@ -352,11 +364,16 @@ export default function TimeTracking() {
 
   const handleSave = () => {
     if (!form.startTime || !form.endTime) { toast.error("Selectează ora de start și de final"); return; }
+    // Validate end > start
+    const [sh, sm] = form.startTime.split(":").map(Number);
+    const [eh, em] = form.endTime.split(":").map(Number);
+    if (eh * 60 + em <= sh * 60 + sm) { toast.error("Ora de final trebuie să fie după ora de start"); return; }
     const payload = {
       date: form.date, startTime: form.startTime, endTime: form.endTime,
       activityType: form.activityType, taskName: form.taskName || undefined,
       description: form.description || undefined,
-      projectId: form.projectId && form.projectId !== "fara" ? Number(form.projectId) : undefined,
+      // projectId is truly optional — send undefined when empty or "fara"
+      projectId: (form.projectId && form.projectId !== "" && form.projectId !== "fara") ? Number(form.projectId) : undefined,
       isBillable: form.isBillable,
     };
     if (isEditing && form.id) updateEntry.mutate({ id: form.id, ...payload });
@@ -391,7 +408,7 @@ export default function TimeTracking() {
   const checkoutSlots = useMemo(() => {
     if (!form.startTime) return TIME_SLOTS;
     const [h, m] = form.startTime.split(":").map(Number);
-    const minMinutes = h * 60 + m + 30;
+    const minMinutes = h * 60 + m + 15; // minim 15 minute
     return TIME_SLOTS.filter(t => { const [th, tm] = t.split(":").map(Number); return th * 60 + tm >= minMinutes; });
   }, [form.startTime]);
 
@@ -483,9 +500,9 @@ export default function TimeTracking() {
           </div>
         </div>
 
-        {/* Day headers */}
+        {/* Day headers — must match grid gutter width exactly */}
         <div className="flex shrink-0 border-b border-border bg-background">
-          <div className="w-12 shrink-0" /> {/* time gutter */}
+          <div className="w-10 shrink-0" /> {/* time gutter — same as grid */}
           {weekDays.map((day, i) => {
             const dayStr = format(day, "yyyy-MM-dd");
             const holiday = holidays[dayStr];
@@ -494,22 +511,22 @@ export default function TimeTracking() {
             const isWeekend = i >= 5;
             return (
               <div key={i} className={cn(
-                "flex-1 min-w-0 text-center py-1.5 border-l border-border",
+                "flex-1 min-w-0 text-center py-1 border-l border-border",
                 isWeekend && "bg-muted/20",
               )}>
                 <div className={cn(
-                  "text-[10px] font-semibold uppercase tracking-wider",
+                  "text-[9px] font-bold uppercase tracking-wider",
                   isTodayDay ? "text-[#221F1F]" : "text-muted-foreground"
                 )}>{DAY_LABELS[i]}</div>
                 <div className={cn(
-                  "mx-auto w-7 h-7 flex items-center justify-center rounded-full text-sm font-bold mt-0.5",
+                  "mx-auto w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold",
                   isTodayDay ? "bg-[#FFCB09] text-[#221F1F]" : "text-foreground"
                 )}>{format(day, "d")}</div>
                 {holiday && (
-                  <div className="text-[9px] text-red-400 truncate px-1 leading-tight">{holiday}</div>
+                  <div className="text-[8px] text-red-400 truncate px-0.5 leading-tight">{holiday}</div>
                 )}
                 {bdays && (
-                  <div className="text-[9px] text-pink-400 truncate px-1 leading-tight flex items-center justify-center gap-0.5">
+                  <div className="text-[8px] text-pink-400 truncate px-0.5 leading-tight flex items-center justify-center gap-0.5">
                     <Cake className="h-2 w-2 inline" />{bdays[0]}
                   </div>
                 )}
@@ -521,11 +538,11 @@ export default function TimeTracking() {
         {/* Grid */}
         <div ref={gridRef} className="flex-1 overflow-y-auto overflow-x-hidden">
           <div className="flex" style={{ height: TOTAL_SLOTS * SLOT_HEIGHT }}>
-            {/* Time gutter */}
-            <div className="w-12 shrink-0 relative">
+            {/* Time gutter — w-10 matches header gutter */}
+            <div className="w-10 shrink-0 relative">
               {Array.from({ length: TOTAL_HOURS }, (_, i) => (
-                <div key={i} className="absolute right-2 text-[10px] text-muted-foreground leading-none"
-                  style={{ top: i * 2 * SLOT_HEIGHT - 6 }}>
+                <div key={i} className="absolute right-1 text-[9px] text-muted-foreground leading-none"
+                  style={{ top: i * 2 * SLOT_HEIGHT - 5 }}>
                   {String(START_HOUR + i).padStart(2, "0")}:00
                 </div>
               ))}
