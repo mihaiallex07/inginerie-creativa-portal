@@ -206,3 +206,9 @@
 - [x] Fix: proiect opțional — submit funcționează fără proiect selectat
 - [x] Fix: ora start pre-completată din slot-ul clickat, end = start+1h implicit, increment 15min
 - [x] Fix: layout compact (SLOT_HEIGHT 28px), gutter w-10 aliniat între header și grid, rânduri mai dense
+
+## Sprint 20 — Time-Tracking: Drag & Drop + Layout Fix + Dropdown ore
+- [x] Drag & drop blocuri activitate: mutare pe altă zi/oră cu @dnd-kit/core
+- [x] Layout fix 100vh fără scroll dublu — un singur scrollbar pe grila calendarului
+- [x] Dropdown ore: fereastră ±3h față de ora selectată, minim 15min la end
+- [x] Coloane perfect aliniate — GUTTER_W=44px constant în header și grid
