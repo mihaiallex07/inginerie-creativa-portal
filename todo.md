@@ -198,3 +198,6 @@
 
 ## Sprint 16 — Fix vizual blocuri activitate
 - [x] TimeTracking: fundal blocuri activitate alternant galben #FFCB09 (text negru) / negru #221F1F (text galben) conform brand
+
+## Sprint 17 — Fix eroare company_events
+- [x] Fix: tabel company_events lipsă în DB — creat manual cu structură corectă (17 coloane)

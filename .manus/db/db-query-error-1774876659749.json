@@ -1,0 +1,8 @@
+{
+  "query": "SHOW TABLES LIKE 'company_events'; DESCRIBE company_events;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute SHOW TABLES LIKE 'company_events'; DESCRIBE company_events;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1146 (42S02) at line 1: Table '2gvgk32mdheeic7drezbf4.company_events' doesn't exist"
+  ]
+}
