@@ -187,11 +187,11 @@ function TimeInsights({ entries, weekStart }: { entries: any[]; weekStart: Date 
       <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-wider">Time Insights</div>
       <div className="grid grid-cols-2 gap-2">
         <div className="bg-[#221F1F] rounded-lg p-2 text-center">
-          <div className="text-[10px] text-muted-foreground">Azi</div>
+          <div className="text-[10px]" style={{ color: '#ffffff' }}>Azi</div>
           <div className="text-sm font-bold text-[#FFCB09]">{formatDuration(todayMins)}</div>
         </div>
         <div className="bg-[#221F1F] rounded-lg p-2 text-center">
-          <div className="text-[10px] text-muted-foreground">Săptămână</div>
+          <div className="text-[10px]" style={{ color: '#ffffff' }}>Săptămână</div>
           <div className="text-sm font-bold text-[#FFCB09]">{formatDuration(weekMins)}</div>
         </div>
       </div>
