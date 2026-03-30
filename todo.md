@@ -212,3 +212,8 @@
 - [x] Layout fix 100vh fără scroll dublu — un singur scrollbar pe grila calendarului
 - [x] Dropdown ore: fereastră ±3h față de ora selectată, minim 15min la end
 - [x] Coloane perfect aliniate — GUTTER_W=44px constant în header și grid
+
+## Sprint 21 — Fix timezone + Resize blocuri
+- [x] Fix: task-urile se teleportează — backend folosea Date.UTC, acum folosește new Date local (ora României)
+- [x] Fix: extractUTCTime → extractLocalTime (getHours/getMinutes în loc de getUTCHours/getUTCMinutes)
+- [x] Fix: resize blocuri activitate prin handle la marginea de jos — drag mouse pentru a extinde/micșora durata

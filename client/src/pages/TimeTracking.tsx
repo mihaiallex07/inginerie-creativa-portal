@@ -73,11 +73,13 @@ function getRomanianHolidays(year: number): Record<string, string> {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function todayISO() { return format(new Date(), "yyyy-MM-dd"); }
-function extractUTCTime(ts: Date | string | null | undefined): string {
+function extractLocalTime(ts: Date | string | null | undefined): string {
   if (!ts) return "";
   const d = typeof ts === "string" ? new Date(ts) : ts;
-  return `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`;
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
+// Keep alias for backward compat
+const extractUTCTime = extractLocalTime;
 function formatDuration(minutes: number) {
   if (!minutes) return "0m";
   const h = Math.floor(minutes / 60);
@@ -238,9 +240,10 @@ function TimeInsights({ entries, weekStart }: { entries: any[]; weekStart: Date 
 }
 
 // ─── Draggable Entry Block ─────────────────────────────────────────────────────
-function DraggableEntry({ entry, style, onClick, projectName }: {
+function DraggableEntry({ entry, style, onClick, projectName, onResizeStart }: {
   entry: any; style: { top: number; height: number };
   onClick: (e: React.MouseEvent) => void; projectName?: string;
+  onResizeStart?: (e: React.MouseEvent) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
     id: `entry-${entry.id}`,
@@ -301,6 +304,16 @@ function DraggableEntry({ entry, style, onClick, projectName }: {
           </>
         )}
       </div>
+      {/* Resize handle at bottom */}
+      {onResizeStart && (
+        <div
+          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+          style={{ backgroundColor: useYellow ? "#e6b800" : "#333" }}
+          onMouseDown={e => { e.stopPropagation(); onResizeStart(e); }}
+        >
+          <div className="w-6 h-0.5 rounded" style={{ backgroundColor: textColor }} />
+        </div>
+      )}
     </div>
   );
 }
@@ -318,6 +331,7 @@ export default function TimeTracking() {
   const [form, setForm] = useState<EntryForm>(defaultForm());
   const [isEditing, setIsEditing] = useState(false);
   const [draggingEntry, setDraggingEntry] = useState<any>(null);
+  const [resizingEntry, setResizingEntry] = useState<{ entry: any; startY: number; origEndMin: number } | null>(null);
   const gridRef = useRef<HTMLDivElement>(null);
 
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
@@ -373,6 +387,59 @@ export default function TimeTracking() {
     onSuccess: () => { toast.success("Eveniment șters."); utils.companyEvents.list.invalidate(); },
     onError: (e) => toast.error("Eroare: " + e.message),
   });
+
+  // ─── Resize logic (after updateEntry is declared) ────────────────────────────────
+  const handleResizeStart = useCallback((e: React.MouseEvent, entry: any) => {
+    e.preventDefault();
+    const endStr = extractUTCTime(entry.endTime);
+    const origEndMin = timeToMinutes(endStr);
+    setResizingEntry({ entry, startY: e.clientY, origEndMin });
+  }, []);
+
+  useEffect(() => {
+    if (!resizingEntry) return;
+    const onMouseMove = (e: MouseEvent) => {
+      const deltaY = e.clientY - resizingEntry.startY;
+      const deltaSlots = Math.round(deltaY / SLOT_H);
+      const newEndMin = Math.max(resizingEntry.origEndMin + 15, resizingEntry.origEndMin + deltaSlots * 30);
+      const clampedEndMin = Math.min(newEndMin, END_HOUR * 60 + 30);
+      const el = document.getElementById(`resize-preview-${resizingEntry.entry.id}`);
+      if (el) {
+        const startStr = extractUTCTime(resizingEntry.entry.startTime);
+        const startMin = timeToMinutes(startStr);
+        const newHeight = Math.max(SLOT_H, ((clampedEndMin - startMin) / 30) * SLOT_H);
+        el.style.height = `${newHeight}px`;
+      }
+    };
+    const onMouseUp = (e: MouseEvent) => {
+      const deltaY = e.clientY - resizingEntry.startY;
+      const deltaSlots = Math.round(deltaY / SLOT_H);
+      const newEndMin = Math.max(resizingEntry.origEndMin + 15, resizingEntry.origEndMin + deltaSlots * 30);
+      const clampedEndMin = Math.min(newEndMin, END_HOUR * 60 + 30);
+      const newEndStr = `${String(Math.floor(clampedEndMin / 60)).padStart(2, "0")}:${String(clampedEndMin % 60).padStart(2, "0")}`;
+      const entry = resizingEntry.entry;
+      const ds = typeof entry.date === "string" ? (entry.date as string).slice(0, 10) : format(new Date(entry.date as any), "yyyy-MM-dd");
+      const startStr = extractUTCTime(entry.startTime);
+      if (newEndStr !== extractUTCTime(entry.endTime)) {
+        updateEntry.mutate({
+          id: entry.id, date: ds,
+          startTime: startStr, endTime: newEndStr,
+          activityType: entry.activityType ?? "proiectare",
+          taskName: entry.taskName ?? undefined,
+          description: entry.description ?? undefined,
+          projectId: entry.projectId ?? undefined,
+          isBillable: entry.isBillable ?? true,
+        });
+      }
+      setResizingEntry(null);
+    };
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [resizingEntry, updateEntry]);
 
   const entriesByDate = useMemo(() => {
     const map: Record<string, typeof entries> = {};
@@ -733,13 +800,15 @@ export default function TimeTracking() {
                       if (!entryStyle) return null;
                       const proj = entry.projectId ? projectMap[entry.projectId] : null;
                       return (
-                        <DraggableEntry
-                          key={entry.id}
-                          entry={entry}
-                          style={entryStyle}
-                          onClick={(e) => handleEntryClick(e, entry)}
-                          projectName={proj?.name}
-                        />
+                        <div key={entry.id} id={`resize-preview-${entry.id}`} style={{ position: "absolute", top: entryStyle.top, height: entryStyle.height, left: 2, right: 2, pointerEvents: "none" }}>
+                          <DraggableEntry
+                            entry={entry}
+                            style={{ top: 0, height: entryStyle.height }}
+                            onClick={(e) => handleEntryClick(e, entry)}
+                            projectName={proj?.name}
+                            onResizeStart={(e) => handleResizeStart(e, entry)}
+                          />
+                        </div>
                       );
                     })}
                   </div>
