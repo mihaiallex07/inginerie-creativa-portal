@@ -241,3 +241,10 @@
 - [x] Frontend: evenimente admin (non-editabile, cu link clickabil, icon lacăt)
 - [x] Reconectare rută /time-tracking în App.tsx + link sidebar
 - [ ] Teste vitest (backlog)
+
+## Sprint 24 — Fix bug-uri critice Time-Tracking
+- [x] Fix: evenimente firmă editabile/ștergabile de admin (click pe eveniment → dialog editare + buton șterge)
+- [x] Fix: mini-calendar — selectedDate separat de weekStart (galben = azi, negru = zi selectată)
+- [x] Fix: drag threshold 5px + activated flag — click simplu deschide dialog, nu mută task-ul
+- [x] Fix: double-click pe slot gol pentru adăugare (evită conflicte cu drag)
+- [x] Fix: overflow-hidden pe container exterior, un singur scrollbar pe grid

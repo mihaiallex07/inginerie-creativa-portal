@@ -20,21 +20,21 @@ import { cn } from "@/lib/utils";
 const HOUR_START = 6;
 const HOUR_END = 23;
 const TOTAL_HOURS = HOUR_END - HOUR_START;
-const SLOT_H = 48; // px per hour — compact but readable
+const SLOT_H = 48; // px per hour
 const GRID_H = TOTAL_HOURS * SLOT_H;
+const DRAG_THRESHOLD = 5; // px before drag activates
 
 const ACTIVITY_TYPES = [
   "proiectare", "consultanta", "sedinta", "documentare",
   "deplasare", "administrativ", "verificare", "executie",
 ] as const;
 
-// Brand colors for entries — alternating yellow/black
 const ENTRY_COLORS = [
-  { bg: "#FFCB09", text: "#221F1F" }, // yellow
-  { bg: "#221F1F", text: "#FFCB09" }, // black
+  { bg: "#FFCB09", text: "#221F1F" },
+  { bg: "#221F1F", text: "#FFCB09" },
 ];
 
-// Romanian public holidays (fixed + Easter-based)
+// Romanian public holidays
 function getRomanianHolidays(year: number) {
   const fixed = [
     { m: 1, d: 1, name: "Anul Nou" }, { m: 1, d: 2, name: "Anul Nou" },
@@ -43,7 +43,6 @@ function getRomanianHolidays(year: number) {
     { m: 11, d: 30, name: "Sf. Andrei" }, { m: 12, d: 1, name: "Ziua Națională" },
     { m: 12, d: 25, name: "Crăciun" }, { m: 12, d: 26, name: "Crăciun" },
   ];
-  // Orthodox Easter dates
   const easterMap: Record<number, [number, number]> = {
     2024: [5, 5], 2025: [4, 20], 2026: [4, 12], 2027: [5, 2],
   };
@@ -64,11 +63,10 @@ function getRomanianHolidays(year: number) {
 
 const pad2 = (n: number) => n.toString().padStart(2, "0");
 
-// Extract hour/minute from a Date or string — always treat as wall-clock (no UTC conversion)
+// Extract hour/minute — ALWAYS use local time (no UTC)
 function extractTime(d: Date | string | null | undefined): { h: number; m: number } {
   if (!d) return { h: 0, m: 0 };
   const dt = typeof d === "string" ? new Date(d) : d;
-  // Use getHours/getMinutes which return local time
   return { h: dt.getHours(), m: dt.getMinutes() };
 }
 
@@ -79,14 +77,13 @@ function formatDuration(mins: number) {
 }
 
 // ─── Mini Calendar ─────────────────────────────────────────────────────────
-function MiniCalendar({ currentDate, onDateSelect, onMonthChange }: {
-  currentDate: Date;
+function MiniCalendar({ selectedDate, onDateSelect }: {
+  selectedDate: Date;
   onDateSelect: (d: Date) => void;
-  onMonthChange?: (d: Date) => void;
 }) {
-  const [viewMonth, setViewMonth] = useState(startOfMonth(currentDate));
+  const [viewMonth, setViewMonth] = useState(startOfMonth(selectedDate));
 
-  useEffect(() => { setViewMonth(startOfMonth(currentDate)); }, [currentDate]);
+  useEffect(() => { setViewMonth(startOfMonth(selectedDate)); }, [selectedDate]);
 
   const monthStart = startOfMonth(viewMonth);
   const monthEnd = endOfMonth(viewMonth);
@@ -103,7 +100,6 @@ function MiniCalendar({ currentDate, onDateSelect, onMonthChange }: {
   const goMonth = (dir: number) => {
     const next = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + dir, 1);
     setViewMonth(next);
-    onMonthChange?.(next);
   };
 
   return (
@@ -120,7 +116,7 @@ function MiniCalendar({ currentDate, onDateSelect, onMonthChange }: {
         {weeks.flat().map((d, i) => {
           const inMonth = isSameMonth(d, viewMonth);
           const today = isToday(d);
-          const selected = isSameDay(d, currentDate);
+          const selected = isSameDay(d, selectedDate) && !today;
           return (
             <button
               key={i}
@@ -129,7 +125,7 @@ function MiniCalendar({ currentDate, onDateSelect, onMonthChange }: {
                 "text-[10px] w-6 h-6 rounded-full mx-auto flex items-center justify-center transition-colors",
                 !inMonth && "text-gray-300",
                 inMonth && !today && !selected && "text-gray-700 hover:bg-gray-100",
-                today && !selected && "bg-[#FFCB09] text-[#221F1F] font-bold",
+                today && "bg-[#FFCB09] text-[#221F1F] font-bold",
                 selected && "bg-[#221F1F] text-white font-bold",
               )}
             >
@@ -149,11 +145,9 @@ function TimePicker({ value, onChange, label, minTime }: {
   label: string;
   minTime?: { h: number; m: number };
 }) {
-  // Generate options: 15min increments, 0:00 to 23:45
   const allOptions: { h: number; m: number }[] = [];
   for (let h = 0; h < 24; h++) for (let m = 0; m < 60; m += 15) allOptions.push({ h, m });
 
-  // Filter: show ±3h window around current value
   const currentMins = value.h * 60 + value.m;
   const windowMins = 3 * 60;
   let filtered = allOptions.filter(o => {
@@ -161,13 +155,11 @@ function TimePicker({ value, onChange, label, minTime }: {
     return oMins >= currentMins - windowMins && oMins <= currentMins + windowMins;
   });
 
-  // If minTime is set (for end time), filter out anything <= minTime + 15min
   if (minTime) {
     const minMins = minTime.h * 60 + minTime.m + 15;
     filtered = filtered.filter(o => o.h * 60 + o.m >= minMins);
   }
 
-  // Ensure current value is in the list
   if (!filtered.find(o => o.h === value.h && o.m === value.m)) {
     filtered.push(value);
     filtered.sort((a, b) => (a.h * 60 + a.m) - (b.h * 60 + b.m));
@@ -199,6 +191,9 @@ function TimePicker({ value, onChange, label, minTime }: {
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function TimeTracking() {
   const { user } = useAuth();
+  // selectedDate = the actual date the user clicked in mini-cal (for highlighting)
+  const [selectedDate, setSelectedDate] = useState(() => new Date());
+  // weekStart = Monday of the displayed week
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const isCurrentWeek = isSameDay(weekStart, startOfWeek(new Date(), { weekStartsOn: 1 }));
   const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
@@ -206,7 +201,7 @@ export default function TimeTracking() {
   const weekNum = getISOWeek(weekStart);
   const gridRef = useRef<HTMLDivElement>(null);
 
-  // ── Dialog state ──
+  // ── Dialog state (user entries) ──
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEntry, setEditingEntry] = useState<any>(null);
   const [formDate, setFormDate] = useState("");
@@ -219,6 +214,7 @@ export default function TimeTracking() {
 
   // ── Admin event dialog ──
   const [adminDialogOpen, setAdminDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<any>(null);
   const [adminTitle, setAdminTitle] = useState("");
   const [adminLink, setAdminLink] = useState("");
   const [adminColor, setAdminColor] = useState("#FFCB09");
@@ -226,15 +222,12 @@ export default function TimeTracking() {
   const [adminStart, setAdminStart] = useState<{ h: number; m: number }>({ h: 10, m: 0 });
   const [adminEnd, setAdminEnd] = useState<{ h: number; m: number }>({ h: 10, m: 15 });
 
-  // ── Resize state ──
-  const resizeRef = useRef<{ entryId: number; startY: number; origEndH: number; origEndM: number } | null>(null);
-
   // ── Data queries ──
   const dateFrom = format(weekStart, "yyyy-MM-dd");
   const dateTo = format(weekEnd, "yyyy-MM-dd");
   const { data: entries = [], refetch: refetchEntries } = trpc.timeTracking.myEntries.useQuery({});
   const { data: projects = [] } = trpc.projects.list.useQuery({});
-  const { data: companyEvents = [] } = trpc.companyEvents.list.useQuery({ dateFrom, dateTo });
+  const { data: companyEvents = [], refetch: refetchEvents } = trpc.companyEvents.list.useQuery({ dateFrom, dateTo });
   const { data: birthdays = [] } = trpc.people.upcomingBirthdays.useQuery({ daysAhead: 14 });
 
   const holidays = useMemo(() => {
@@ -268,7 +261,15 @@ export default function TimeTracking() {
     onError: (e) => toast.error(e.message),
   });
   const createEvent = trpc.companyEvents.create.useMutation({
-    onSuccess: () => { toast.success("Eveniment creat"); },
+    onSuccess: () => { refetchEvents(); toast.success("Eveniment creat"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateEvent = trpc.companyEvents.update.useMutation({
+    onSuccess: () => { refetchEvents(); toast.success("Eveniment actualizat"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const deleteEvent = trpc.companyEvents.delete.useMutation({
+    onSuccess: () => { refetchEvents(); toast.success("Eveniment șters"); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -279,64 +280,155 @@ export default function TimeTracking() {
     }
   }, []);
 
-  // ── Resize handler ──
+  // ── Drag state with threshold ──
+  const dragRef = useRef<{
+    entryId: number;
+    startY: number;
+    startX: number;
+    origDayIdx: number;
+    origStartMins: number;
+    origDurMins: number;
+    activated: boolean;
+  } | null>(null);
+
+  // ── Resize state ──
+  const resizeRef = useRef<{
+    entryId: number;
+    startY: number;
+    origEndH: number;
+    origEndM: number;
+    activated: boolean;
+  } | null>(null);
+
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      if (!resizeRef.current || !gridRef.current) return;
-      const gridRect = gridRef.current.getBoundingClientRect();
-      const relY = e.clientY - gridRect.top + gridRef.current.scrollTop;
-      const totalMinutes = (relY / GRID_H) * TOTAL_HOURS * 60 + HOUR_START * 60;
-      // Snap to 15min
-      const snapped = Math.round(totalMinutes / 15) * 15;
-      const newH = Math.floor(snapped / 60);
-      const newM = snapped % 60;
-      resizeRef.current.origEndH = Math.max(HOUR_START, Math.min(HOUR_END, newH));
-      resizeRef.current.origEndM = newM;
-      // Visual feedback via data attribute
-      const el = document.getElementById(`entry-${resizeRef.current.entryId}`);
-      if (el) {
-        const entry = weekEntries.find((e: any) => e.id === resizeRef.current!.entryId);
-        if (entry) {
-          const st = extractTime(entry.startTime);
-          const startMins = (st.h - HOUR_START) * 60 + st.m;
-          const endMins = (resizeRef.current.origEndH - HOUR_START) * 60 + resizeRef.current.origEndM;
-          const topPx = (startMins / (TOTAL_HOURS * 60)) * GRID_H;
-          const heightPx = Math.max(12, ((endMins - startMins) / (TOTAL_HOURS * 60)) * GRID_H);
-          el.style.top = `${topPx}px`;
-          el.style.height = `${heightPx}px`;
+      // Handle resize
+      if (resizeRef.current && gridRef.current) {
+        if (!resizeRef.current.activated) {
+          const dy = Math.abs(e.clientY - resizeRef.current.startY);
+          if (dy < DRAG_THRESHOLD) return;
+          resizeRef.current.activated = true;
+        }
+        const gridRect = gridRef.current.getBoundingClientRect();
+        const relY = e.clientY - gridRect.top + gridRef.current.scrollTop;
+        const totalMinutes = (relY / GRID_H) * TOTAL_HOURS * 60 + HOUR_START * 60;
+        const snapped = Math.round(totalMinutes / 15) * 15;
+        const newH = Math.floor(snapped / 60);
+        const newM = snapped % 60;
+        resizeRef.current.origEndH = Math.max(HOUR_START, Math.min(HOUR_END, newH));
+        resizeRef.current.origEndM = newM;
+        // Visual feedback
+        const el = document.getElementById(`entry-${resizeRef.current.entryId}`);
+        if (el) {
+          const entry = weekEntries.find((en: any) => en.id === resizeRef.current!.entryId);
+          if (entry) {
+            const st = extractTime(entry.startTime);
+            const startMins = (st.h - HOUR_START) * 60 + st.m;
+            const endMins = (resizeRef.current.origEndH - HOUR_START) * 60 + resizeRef.current.origEndM;
+            const heightPx = Math.max(12, ((endMins - startMins) / (TOTAL_HOURS * 60)) * GRID_H);
+            el.style.height = `${heightPx}px`;
+          }
+        }
+        return;
+      }
+
+      // Handle drag
+      if (dragRef.current && gridRef.current) {
+        if (!dragRef.current.activated) {
+          const dx = Math.abs(e.clientX - dragRef.current.startX);
+          const dy = Math.abs(e.clientY - dragRef.current.startY);
+          if (dx < DRAG_THRESHOLD && dy < DRAG_THRESHOLD) return;
+          dragRef.current.activated = true;
+        }
+        const el = document.getElementById(`entry-${dragRef.current.entryId}`);
+        if (el) {
+          el.style.opacity = "0.6";
+          el.style.zIndex = "50";
         }
       }
     };
-    const handleMouseUp = () => {
-      if (!resizeRef.current) return;
-      const { entryId, origEndH, origEndM } = resizeRef.current;
-      const entry = weekEntries.find((e: any) => e.id === entryId);
-      if (entry) {
-        const st = extractTime(entry.startTime);
-        const d = new Date(entry.date);
-        updateEntry.mutate({
-          id: entryId,
-          date: format(d, "yyyy-MM-dd"),
-          startHour: st.h, startMin: st.m,
-          endHour: origEndH, endMin: origEndM,
-        });
+
+    const handleMouseUp = (e: MouseEvent) => {
+      // Handle resize end
+      if (resizeRef.current) {
+        if (resizeRef.current.activated) {
+          const { entryId, origEndH, origEndM } = resizeRef.current;
+          const entry = weekEntries.find((en: any) => en.id === entryId);
+          if (entry) {
+            const st = extractTime(entry.startTime);
+            const d = new Date(entry.date);
+            updateEntry.mutate({
+              id: entryId,
+              date: format(d, "yyyy-MM-dd"),
+              startHour: st.h, startMin: st.m,
+              endHour: origEndH, endMin: origEndM,
+            });
+          }
+        }
+        resizeRef.current = null;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        return;
       }
-      resizeRef.current = null;
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
+
+      // Handle drag end
+      if (dragRef.current) {
+        if (dragRef.current.activated && gridRef.current) {
+          const { entryId, origDurMins } = dragRef.current;
+          const gridRect = gridRef.current.getBoundingClientRect();
+          const colWidth = gridRect.width / 7;
+          const relX = e.clientX - gridRect.left;
+          let newDayIdx = Math.floor(relX / colWidth);
+          newDayIdx = Math.max(0, Math.min(6, newDayIdx));
+
+          const relY = e.clientY - gridRect.top + gridRef.current.scrollTop;
+          const totalMinutes = (relY / GRID_H) * TOTAL_HOURS * 60 + HOUR_START * 60;
+          const snappedStart = Math.round(totalMinutes / 15) * 15;
+          const newStartH = Math.floor(snappedStart / 60);
+          const newStartM = snappedStart % 60;
+          const newEndMins = snappedStart + origDurMins;
+          const newEndH = Math.floor(newEndMins / 60);
+          const newEndM = newEndMins % 60;
+
+          if (newStartH >= HOUR_START && newEndH <= HOUR_END) {
+            updateEntry.mutate({
+              id: entryId,
+              date: format(weekDays[newDayIdx], "yyyy-MM-dd"),
+              startHour: newStartH, startMin: newStartM,
+              endHour: newEndH, endMin: newEndM,
+            });
+          }
+        }
+        // Reset visual
+        const el = document.getElementById(`entry-${dragRef.current.entryId}`);
+        if (el) { el.style.opacity = "1"; el.style.zIndex = ""; }
+        dragRef.current = null;
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+      }
     };
+
     document.addEventListener("mousemove", handleMouseMove);
     document.addEventListener("mouseup", handleMouseUp);
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [weekEntries, updateEntry]);
+  }, [weekEntries, weekDays, updateEntry]);
 
   // ── Handlers ──
-  const goToday = () => setWeekStart(startOfWeek(new Date(), { weekStartsOn: 1 }));
+  const goToday = () => {
+    const today = new Date();
+    setSelectedDate(today);
+    setWeekStart(startOfWeek(today, { weekStartsOn: 1 }));
+  };
   const goPrev = () => setWeekStart(w => subWeeks(w, 1));
   const goNext = () => setWeekStart(w => addWeeks(w, 1));
+
+  const handleDateSelect = (d: Date) => {
+    setSelectedDate(d);
+    setWeekStart(startOfWeek(d, { weekStartsOn: 1 }));
+  };
 
   const openNewEntry = (dayIdx: number, hour: number, min: number) => {
     setEditingEntry(null);
@@ -374,7 +466,7 @@ export default function TimeTracking() {
       activityType: formType as any,
       taskName: formTask || undefined,
       description: formDesc || undefined,
-      projectId: formProject ? Number(formProject) : undefined,
+      projectId: formProject && formProject !== "none" ? Number(formProject) : undefined,
     };
     if (editingEntry) {
       updateEntry.mutate({ id: editingEntry.id, ...payload });
@@ -391,82 +483,68 @@ export default function TimeTracking() {
     }
   };
 
-  // ── Drag & drop (simple: mousedown on entry body → move to new slot) ──
-  const dragRef = useRef<{ entryId: number; startY: number; startX: number; origDayIdx: number; origStartMins: number; origDurMins: number } | null>(null);
+  // ── Admin event handlers ──
+  const openAdminEventNew = () => {
+    setEditingEvent(null);
+    setAdminDate(format(new Date(), "yyyy-MM-dd"));
+    setAdminTitle("");
+    setAdminLink("");
+    setAdminColor("#FFCB09");
+    setAdminStart({ h: 10, m: 0 });
+    setAdminEnd({ h: 10, m: 15 });
+    setAdminDialogOpen(true);
+  };
 
-  useEffect(() => {
-    const handleDragMove = (e: MouseEvent) => {
-      if (!dragRef.current || !gridRef.current) return;
-      const el = document.getElementById(`entry-${dragRef.current.entryId}`);
-      if (!el) return;
-      el.style.opacity = "0.7";
-      el.style.zIndex = "50";
-    };
-    const handleDragEnd = (e: MouseEvent) => {
-      if (!dragRef.current || !gridRef.current) return;
-      const { entryId, origDayIdx, origStartMins, origDurMins } = dragRef.current;
-      const gridRect = gridRef.current.getBoundingClientRect();
+  const openAdminEventEdit = (ev: any) => {
+    setEditingEvent(ev);
+    const st = extractTime(ev.startTime);
+    const en = extractTime(ev.endTime);
+    setAdminDate(format(new Date(ev.startTime), "yyyy-MM-dd"));
+    setAdminTitle(ev.title || "");
+    setAdminLink(ev.link || "");
+    setAdminColor(ev.color || "#FFCB09");
+    setAdminStart(st);
+    setAdminEnd(en);
+    setAdminDialogOpen(true);
+  };
 
-      // Calculate new day from X position
-      const colWidth = gridRect.width / 7;
-      const relX = e.clientX - gridRect.left;
-      let newDayIdx = Math.floor(relX / colWidth);
-      newDayIdx = Math.max(0, Math.min(6, newDayIdx));
+  const handleAdminSave = () => {
+    if (!adminTitle.trim()) { toast.error("Titlul este obligatoriu"); return; }
+    const startISO = `${adminDate}T${pad2(adminStart.h)}:${pad2(adminStart.m)}:00`;
+    const endISO = `${adminDate}T${pad2(adminEnd.h)}:${pad2(adminEnd.m)}:00`;
+    if (editingEvent) {
+      updateEvent.mutate({
+        id: editingEvent.id,
+        title: adminTitle,
+        link: adminLink || undefined,
+        color: adminColor,
+        startTime: startISO,
+        endTime: endISO,
+      });
+    } else {
+      createEvent.mutate({
+        title: adminTitle,
+        link: adminLink || undefined,
+        color: adminColor,
+        startTime: startISO,
+        endTime: endISO,
+        targetType: "all",
+      });
+    }
+    setAdminDialogOpen(false);
+  };
 
-      // Calculate new start time from Y position
-      const relY = e.clientY - gridRect.top + gridRef.current.scrollTop;
-      const totalMinutes = (relY / GRID_H) * TOTAL_HOURS * 60 + HOUR_START * 60;
-      const snappedStart = Math.round(totalMinutes / 15) * 15;
-      const newStartH = Math.floor(snappedStart / 60);
-      const newStartM = snappedStart % 60;
-      const newEndMins = snappedStart + origDurMins;
-      const newEndH = Math.floor(newEndMins / 60);
-      const newEndM = newEndMins % 60;
-
-      if (newStartH >= HOUR_START && newEndH <= HOUR_END) {
-        const entry = weekEntries.find((e: any) => e.id === entryId);
-        if (entry) {
-          updateEntry.mutate({
-            id: entryId,
-            date: format(weekDays[newDayIdx], "yyyy-MM-dd"),
-            startHour: newStartH, startMin: newStartM,
-            endHour: newEndH, endMin: newEndM,
-          });
-        }
-      }
-
-      const el = document.getElementById(`entry-${entryId}`);
-      if (el) { el.style.opacity = "1"; el.style.zIndex = ""; }
-      dragRef.current = null;
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-    document.addEventListener("mousemove", handleDragMove);
-    document.addEventListener("mouseup", handleDragEnd);
-    return () => {
-      document.removeEventListener("mousemove", handleDragMove);
-      document.removeEventListener("mouseup", handleDragEnd);
-    };
-  }, [weekEntries, weekDays, updateEntry]);
+  const handleAdminDelete = () => {
+    if (editingEvent) {
+      deleteEvent.mutate({ id: editingEvent.id });
+      setAdminDialogOpen(false);
+    }
+  };
 
   // ── Time insights ──
   const todayEntries = weekEntries.filter((e: any) => isToday(new Date(e.date)));
   const todayMins = todayEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0);
   const weekMins = weekEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0);
-
-  // ── Admin event save ──
-  const handleAdminSave = () => {
-    if (!adminTitle.trim()) { toast.error("Titlul este obligatoriu"); return; }
-    createEvent.mutate({
-      title: adminTitle,
-      link: adminLink || undefined,
-      color: adminColor,
-      startTime: `${adminDate}T${pad2(adminStart.h)}:${pad2(adminStart.m)}:00`,
-      endTime: `${adminDate}T${pad2(adminEnd.h)}:${pad2(adminEnd.m)}:00`,
-      targetType: "all",
-    });
-    setAdminDialogOpen(false);
-  };
 
   // ── Header month label ──
   const headerLabel = useMemo(() => {
@@ -482,13 +560,16 @@ export default function TimeTracking() {
   return (
     <div className="flex h-[calc(100vh-48px)] overflow-hidden bg-white">
       {/* ═══ LEFT SIDEBAR ═══ */}
-      <div className="w-56 shrink-0 border-r border-gray-200 flex flex-col p-3 gap-3 overflow-y-auto">
+      <div className="w-56 shrink-0 border-r border-gray-200 flex flex-col p-3 gap-3 overflow-y-auto"
+        style={{ scrollbarWidth: "none" }}
+      >
         {/* Add activity button */}
         <Button
           onClick={() => {
             const now = new Date();
+            const dayIdx = weekDays.findIndex(d => isSameDay(d, now));
             openNewEntry(
-              Math.max(0, weekDays.findIndex(d => isSameDay(d, now))),
+              dayIdx >= 0 ? dayIdx : 0,
               now.getHours(),
               Math.floor(now.getMinutes() / 15) * 15
             );
@@ -503,15 +584,7 @@ export default function TimeTracking() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => {
-              setAdminDate(format(new Date(), "yyyy-MM-dd"));
-              setAdminTitle("");
-              setAdminLink("");
-              setAdminColor("#FFCB09");
-              setAdminStart({ h: 10, m: 0 });
-              setAdminEnd({ h: 10, m: 15 });
-              setAdminDialogOpen(true);
-            }}
+            onClick={openAdminEventNew}
             className="w-full text-xs border-[#221F1F]"
           >
             <Lock className="h-3 w-3 mr-1" /> Eveniment firmă
@@ -520,8 +593,8 @@ export default function TimeTracking() {
 
         {/* Mini calendar */}
         <MiniCalendar
-          currentDate={weekStart}
-          onDateSelect={(d) => setWeekStart(startOfWeek(d, { weekStartsOn: 1 }))}
+          selectedDate={selectedDate}
+          onDateSelect={handleDateSelect}
         />
 
         {/* Time Insights */}
@@ -557,7 +630,7 @@ export default function TimeTracking() {
       </div>
 
       {/* ═══ MAIN CALENDAR ═══ */}
-      <div className="flex-1 flex flex-col min-w-0">
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {/* Top bar */}
         <div className="h-12 shrink-0 border-b border-gray-200 flex items-center px-4 gap-3">
           <Button
@@ -580,7 +653,7 @@ export default function TimeTracking() {
 
         {/* Day headers */}
         <div className="shrink-0 border-b border-gray-200 flex">
-          <div className="w-12 shrink-0" /> {/* gutter for hour labels */}
+          <div className="w-12 shrink-0" />
           {weekDays.map((d, i) => {
             const today = isToday(d);
             const holiday = holidays.find(h => h.date === format(d, "yyyy-MM-dd"));
@@ -607,8 +680,8 @@ export default function TimeTracking() {
           })}
         </div>
 
-        {/* Grid */}
-        <div ref={gridRef} className="flex-1 overflow-y-auto overflow-x-hidden relative" style={{ scrollbarGutter: "stable" }}>
+        {/* Grid — single scrollbar here */}
+        <div ref={gridRef} className="flex-1 overflow-y-auto overflow-x-hidden" style={{ scrollbarWidth: "thin" }}>
           <div className="flex relative" style={{ height: `${GRID_H}px` }}>
             {/* Hour labels */}
             <div className="w-12 shrink-0 relative">
@@ -636,22 +709,14 @@ export default function TimeTracking() {
                 <div key={dayIdx} className="flex-1 relative border-l border-gray-100 min-w-0">
                   {/* Hour lines */}
                   {Array.from({ length: TOTAL_HOURS }, (_, i) => (
-                    <div
-                      key={i}
-                      className="absolute w-full border-t border-gray-100"
-                      style={{ top: `${i * SLOT_H}px` }}
-                    />
+                    <div key={i} className="absolute w-full border-t border-gray-100" style={{ top: `${i * SLOT_H}px` }} />
                   ))}
                   {/* Half-hour lines */}
                   {Array.from({ length: TOTAL_HOURS }, (_, i) => (
-                    <div
-                      key={`half-${i}`}
-                      className="absolute w-full border-t border-gray-50"
-                      style={{ top: `${i * SLOT_H + SLOT_H / 2}px` }}
-                    />
+                    <div key={`half-${i}`} className="absolute w-full border-t border-gray-50" style={{ top: `${i * SLOT_H + SLOT_H / 2}px` }} />
                   ))}
 
-                  {/* Click to add */}
+                  {/* Click to add — DOUBLE CLICK only */}
                   <div
                     className="absolute inset-0 cursor-pointer"
                     onDoubleClick={(e) => {
@@ -665,7 +730,7 @@ export default function TimeTracking() {
                     }}
                   />
 
-                  {/* Company events (admin, non-editable) */}
+                  {/* Company events (admin can click to edit/delete) */}
                   {dayEvents.map((ev: any) => {
                     const st = extractTime(ev.startTime);
                     const en = extractTime(ev.endTime);
@@ -676,12 +741,22 @@ export default function TimeTracking() {
                     return (
                       <div
                         key={`ev-${ev.id}`}
-                        className="absolute left-0.5 right-0.5 rounded px-1 py-0.5 overflow-hidden border-l-2 opacity-80"
+                        className={cn(
+                          "absolute left-0.5 right-0.5 rounded px-1.5 py-0.5 overflow-hidden border-l-2",
+                          user?.role === "admin" ? "cursor-pointer hover:opacity-90" : "cursor-default"
+                        )}
                         style={{
                           top: `${topPx}px`,
                           height: `${heightPx}px`,
-                          backgroundColor: (ev.color || "#FFCB09") + "33",
+                          backgroundColor: (ev.color || "#FFCB09") + "44",
                           borderLeftColor: ev.color || "#FFCB09",
+                          zIndex: 5,
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (user?.role === "admin") {
+                            openAdminEventEdit(ev);
+                          }
                         }}
                       >
                         <div className="flex items-center gap-0.5 text-[9px] font-medium text-gray-700 truncate">
@@ -693,6 +768,9 @@ export default function TimeTracking() {
                             </a>
                           )}
                         </div>
+                        {heightPx > 20 && (
+                          <div className="text-[8px] text-gray-500">{pad2(st.h)}:{pad2(st.m)} – {pad2(en.h)}:{pad2(en.m)}</div>
+                        )}
                       </div>
                     );
                   })}
@@ -722,10 +800,12 @@ export default function TimeTracking() {
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          openEditEntry(entry);
+                          // Only open edit if drag was NOT activated
+                          if (!dragRef.current || !dragRef.current.activated) {
+                            openEditEntry(entry);
+                          }
                         }}
                         onMouseDown={(e) => {
-                          // Start drag (not on resize handle)
                           if ((e.target as HTMLElement).dataset.resize) return;
                           e.preventDefault();
                           dragRef.current = {
@@ -735,8 +815,8 @@ export default function TimeTracking() {
                             origDayIdx: dayIdx,
                             origStartMins: startMins,
                             origDurMins: endMins - startMins,
+                            activated: false,
                           };
-                          document.body.style.cursor = "grabbing";
                           document.body.style.userSelect = "none";
                         }}
                       >
@@ -761,6 +841,7 @@ export default function TimeTracking() {
                               startY: e.clientY,
                               origEndH: en.h,
                               origEndM: en.m,
+                              activated: false,
                             };
                             document.body.style.cursor = "s-resize";
                             document.body.style.userSelect = "none";
@@ -776,7 +857,7 @@ export default function TimeTracking() {
         </div>
       </div>
 
-      {/* ═══ ADD/EDIT DIALOG ═══ */}
+      {/* ═══ ADD/EDIT ENTRY DIALOG ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -797,7 +878,6 @@ export default function TimeTracking() {
             <div className="flex gap-4">
               <TimePicker label="Ora start" value={formStart} onChange={(v) => {
                 setFormStart(v);
-                // Auto-adjust end if needed
                 const startMins = v.h * 60 + v.m;
                 const endMins = formEnd.h * 60 + formEnd.m;
                 if (endMins <= startMins) {
@@ -851,12 +931,12 @@ export default function TimeTracking() {
         </DialogContent>
       </Dialog>
 
-      {/* ═══ ADMIN EVENT DIALOG ═══ */}
+      {/* ═══ ADMIN EVENT DIALOG (create + edit + delete) ═══ */}
       <Dialog open={adminDialogOpen} onOpenChange={setAdminDialogOpen}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[#221F1F]">
-              <Lock className="h-4 w-4" /> Eveniment firmă
+              <Lock className="h-4 w-4" /> {editingEvent ? "Editează eveniment firmă" : "Eveniment firmă"}
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
@@ -876,9 +956,31 @@ export default function TimeTracking() {
               <TimePicker label="Start" value={adminStart} onChange={setAdminStart} />
               <TimePicker label="Final" value={adminEnd} onChange={setAdminEnd} minTime={adminStart} />
             </div>
-            <div className="flex gap-2 justify-end pt-2">
-              <Button variant="ghost" size="sm" onClick={() => setAdminDialogOpen(false)} className="text-xs">Anulează</Button>
-              <Button size="sm" onClick={handleAdminSave} className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold">Creează</Button>
+            <div>
+              <Label className="text-xs">Culoare</Label>
+              <div className="flex gap-2 mt-1">
+                {["#FFCB09", "#221F1F", "#4285F4", "#34A853", "#EA4335", "#9333EA"].map(c => (
+                  <button
+                    key={c}
+                    className={cn("w-6 h-6 rounded-full border-2 transition-all", adminColor === c ? "border-gray-800 scale-110" : "border-transparent")}
+                    style={{ backgroundColor: c }}
+                    onClick={() => setAdminColor(c)}
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="flex justify-between pt-2">
+              {editingEvent && (
+                <Button variant="destructive" size="sm" onClick={handleAdminDelete} className="text-xs">
+                  <Trash2 className="h-3 w-3 mr-1" /> Șterge
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button variant="ghost" size="sm" onClick={() => setAdminDialogOpen(false)} className="text-xs">Anulează</Button>
+                <Button size="sm" onClick={handleAdminSave} className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold">
+                  {editingEvent ? "Salvează" : "Creează"}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
