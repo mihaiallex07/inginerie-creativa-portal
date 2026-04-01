@@ -425,7 +425,7 @@ export default function Dashboard() {
                   {(hasBirthday || hasEvent) && (
                     <div className="flex items-center justify-center gap-0.5 leading-none">
                       {hasBirthday && (
-                        <span className="text-[8px] leading-none" title="Zi de na\u0219tere">\ud83c\udf82</span>
+                        <span className="text-[8px] leading-none" title="Zi de naștere">🎂</span>
                       )}
                       {hasEvent && (
                         <span className="h-1 w-1 rounded-full bg-blue-500 inline-block" title="Eveniment" />

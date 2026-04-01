@@ -332,3 +332,4 @@
 - [x] Mutare știri recente sub pontaj zilnic (sidebar lângă pontaj)
 - [x] Layout compact: pontaj, documente, proiecte, propuneri, process overview, calendar IC — toate vizibile fără scroll
 - [x] Backend: folosire proceduri existente companyEvents.list + people.upcomingBirthdays combinate în frontend
+- [x] Fix: emoji-uri 🎂/📎 nu apar pe celulele calendarului — corectat encoding unicode escaped → emoji direct
