@@ -49,8 +49,8 @@ import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
-const LOGO_YELLOW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/LOGOtipgalben_c557a302.png";
-const LOGO_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/logogalben_d1fef82c.png";
+const LOGO_YELLOW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/LOGOtipgalben_transparent_fdda5790.png";
+const LOGO_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/LOGOtipgalben_transparent_fdda5790.png";
 
 type NavItem = {
   icon: any;
