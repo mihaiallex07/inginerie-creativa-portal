@@ -325,3 +325,10 @@
 - [x] Fix: reordonare angajați în Process Overview nu persistă — query-ul getProcessOverview sorta doar după name, acum sortează după displayOrder
 - [x] Simplificare legendă Process Overview: păstrate doar CO, Weekend, Liber stat (eliminat CM și LL)
 - [x] Înlocuire logo peste tot cu noul PNG galben cu fundal transparent
+
+## Sprint 34 — Redesign Tablou de bord
+- [x] Adăugare card "Process Overview" în stilul celorlalte carduri
+- [x] Înlocuire "Zile de naștere" cu "Calendarul IC" — calendar interactiv cu evenimente firmă + zile naștere, emoji tort, inițiale, click pentru detalii
+- [x] Mutare știri recente sub pontaj zilnic (sidebar lângă pontaj)
+- [x] Layout compact: pontaj, documente, proiecte, propuneri, process overview, calendar IC — toate vizibile fără scroll
+- [x] Backend: folosire proceduri existente companyEvents.list + people.upcomingBirthdays combinate în frontend
