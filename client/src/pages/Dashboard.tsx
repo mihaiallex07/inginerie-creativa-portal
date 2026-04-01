@@ -446,7 +446,7 @@ export default function Dashboard() {
           {/* Legend */}
           <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1">🎂 Zi de naștere</span>
-            <span className="flex items-center gap-1"><span className="h-1.5 w-1.5 rounded-full bg-blue-500 inline-block" /> Eveniment firmă</span>
+            <span className="flex items-center gap-1">📎 Eveniment firmă</span>
           </div>
         </CardContent>
       </Card>
