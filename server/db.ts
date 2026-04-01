@@ -257,6 +257,21 @@ export async function createNews(data: typeof news.$inferInsert) {
   return (result[0] as any).insertId;
 }
 
+export async function updateNews(id: number, data: Partial<typeof news.$inferInsert>) {
+  const db = await getDb();
+  if (!db) return;
+  await db.update(news).set(data).where(eq(news.id, id));
+}
+
+export async function deleteNews(id: number) {
+  const db = await getDb();
+  if (!db) return;
+  // Delete related reactions and comments first
+  await db.delete(newsReactions).where(eq(newsReactions.newsId, id));
+  await db.delete(newsComments).where(eq(newsComments.newsId, id));
+  await db.delete(news).where(eq(news.id, id));
+}
+
 export async function getNewsComments(newsId: number) {
   const db = await getDb();
   if (!db) return [];

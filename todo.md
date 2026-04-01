@@ -342,3 +342,10 @@
 - [x] Process Overview: înlocuire date time-tracking cu proiecte înrolate (project_members)
 - [x] Process Overview: afișare format "cod abreviere" (ex: 255 MVT) pe zilele lucrătoare
 - [x] Process Overview: respectare CO, weekend, liber stat — doar zile lucrătoare
+
+## Sprint 36 — Editare și ștergere știri publicate
+- [x] Backend: procedură update știre (news.update) — doar admin sau autorul pot edita
+- [x] Backend: procedură ștergere știre (news.delete) — șterge și reacții/comentarii asociate
+- [x] Frontend: butoane Editează/Șterge pe pagina de detaliu știre (vizibile doar pentru admin/autor)
+- [x] Frontend: dialog editare știre (titlu, rezumat, conținut, categorie, tag-uri, fixat, important)
+- [x] Frontend: dialog confirmare ștergere cu avertisment ireversibil

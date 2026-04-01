@@ -26,6 +26,8 @@ import {
   getNews,
   getNewsById,
   createNews,
+  updateNews,
+  deleteNews,
   getNewsComments,
   addNewsReaction,
   getDocumentsForUser,
@@ -682,6 +684,43 @@ export const appRouter = router({
         }
         const id = await createNews({ ...input, authorId: ctx.user.id });
         return { success: true, id };
+      }),
+
+    update: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        title: z.string().min(1),
+        content: z.string().min(1),
+        excerpt: z.string().optional(),
+        category: z.enum(["companie", "proiecte", "hr", "it", "evenimente", "realizari"]),
+        tags: z.array(z.string()).optional(),
+        isPinned: z.boolean().optional(),
+        isImportant: z.boolean().optional(),
+        imageUrl: z.string().optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        // Only admin or the author can edit
+        const existing = await getNewsById(input.id);
+        if (!existing) throw new Error("Știrea nu a fost găsită");
+        if (ctx.user.role !== "admin" && existing.news.authorId !== ctx.user.id) {
+          throw new Error("Nu ai permisiunea de a edita această știre");
+        }
+        const { id, ...data } = input;
+        await updateNews(id, data);
+        return { success: true };
+      }),
+
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        // Only admin or the author can delete
+        const existing = await getNewsById(input.id);
+        if (!existing) throw new Error("Știrea nu a fost găsită");
+        if (ctx.user.role !== "admin" && existing.news.authorId !== ctx.user.id) {
+          throw new Error("Nu ai permisiunea de a șterge această știre");
+        }
+        await deleteNews(input.id);
+        return { success: true };
       }),
 
     react: protectedProcedure
