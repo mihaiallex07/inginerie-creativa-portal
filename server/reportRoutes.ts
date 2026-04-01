@@ -294,6 +294,7 @@ export function registerReportRoutes(app: Express) {
     const dateTo = (req.query.dateTo as string) || undefined;
     const projectFilter = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
     const typeFilter = (req.query.activityType as string) || undefined;
+    const taskNameFilter = (req.query.taskName as string) || undefined;
 
     const allEntries = await getTimeEntriesForUser(user.id, dateFrom, dateTo);
     const projects = await getProjects();
@@ -304,6 +305,7 @@ export function registerReportRoutes(app: Express) {
       if (!hasTime) return false;
       if (projectFilter && e.projectId !== projectFilter) return false;
       if (typeFilter && typeFilter !== "all" && e.activityType !== typeFilter) return false;
+      if (taskNameFilter && !(e.taskName || "").toLowerCase().includes(taskNameFilter.toLowerCase())) return false;
       return true;
     });
 
@@ -424,6 +426,7 @@ export function registerReportRoutes(app: Express) {
     const dateTo = (req.query.dateTo as string) || undefined;
     const projectFilter = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
     const typeFilter = (req.query.activityType as string) || undefined;
+    const taskNameFilter = (req.query.taskName as string) || undefined;
 
     const allEntries = await getTimeEntriesForUser(user.id, dateFrom, dateTo);
     const projects = await getProjects();
@@ -434,6 +437,7 @@ export function registerReportRoutes(app: Express) {
       if (!hasTime) return false;
       if (projectFilter && e.projectId !== projectFilter) return false;
       if (typeFilter && typeFilter !== "all" && e.activityType !== typeFilter) return false;
+      if (taskNameFilter && !(e.taskName || "").toLowerCase().includes(taskNameFilter.toLowerCase())) return false;
       return true;
     });
 

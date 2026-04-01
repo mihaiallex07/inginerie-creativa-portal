@@ -263,3 +263,4 @@
 - [x] Fix: prima oră (00:00) vizibilă fără a fi ascunsă
 - [x] Export: înlocuire CSV cu Excel (.xlsx) server-side branded
 - [x] Export: adăugare export PDF server-side branded
+- [x] Export: adăugare filtru "Titlu activitate" în dialogul de export raport ore

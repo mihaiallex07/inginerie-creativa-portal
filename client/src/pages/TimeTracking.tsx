@@ -238,6 +238,7 @@ export default function TimeTracking() {
   const [exportTo, setExportTo] = useState(() => format(endOfWeek(new Date(), { weekStartsOn: 1 }), "yyyy-MM-dd"));
   const [exportProject, setExportProject] = useState("all");
   const [exportType, setExportType] = useState("all");
+  const [exportTaskName, setExportTaskName] = useState("");
 
   // ── Data queries ──
   const dateFrom = format(weekStart, "yyyy-MM-dd");
@@ -479,9 +480,10 @@ export default function TimeTracking() {
       if (d < exportFrom || d > exportTo) return false;
       if (exportProject !== "all" && String(e.projectId || "") !== exportProject) return false;
       if (exportType !== "all" && e.activityType !== exportType) return false;
+      if (exportTaskName && !(e.taskName || "").toLowerCase().includes(exportTaskName.toLowerCase())) return false;
       return true;
     });
-  }, [entries, exportFrom, exportTo, exportProject, exportType]);
+  }, [entries, exportFrom, exportTo, exportProject, exportType, exportTaskName]);
 
   const buildExportUrl = (fmt: "excel" | "pdf") => {
     const params = new URLSearchParams();
@@ -489,6 +491,7 @@ export default function TimeTracking() {
     if (exportTo) params.set("dateTo", exportTo);
     if (exportProject !== "all") params.set("projectId", exportProject);
     if (exportType !== "all") params.set("activityType", exportType);
+    if (exportTaskName) params.set("taskName", exportTaskName);
     return `/api/reports/time-tracking/${fmt}?${params.toString()}`;
   };
 
@@ -908,6 +911,10 @@ export default function TimeTracking() {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+            <div>
+              <Label className="text-xs">Titlu activitate</Label>
+              <Input value={exportTaskName} onChange={e => setExportTaskName(e.target.value)} placeholder="Caută după titlu..." className="h-8 text-xs" />
             </div>
 
             {/* Preview table */}
