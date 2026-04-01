@@ -75,6 +75,7 @@ import {
   updateBudgetItem,
   deleteBudgetItem,
   getProjectBudgetSummary,
+  getProcessOverview,
 } from "./db";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -321,13 +322,22 @@ export const appRouter = router({
         description: z.string().optional(),
         color: z.string().optional(),
         coordinatorId: z.number().optional().nullable(),
+        startDate: z.string().optional().nullable(),
+        endDate: z.string().optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
         if (role !== "admin" && role !== "coordonator") {
           throw new Error("Acces interzis");
         }
-        await upsertProject({ ...input, managerId: ctx.user.id, coordinatorId: input.coordinatorId });
+        const { startDate, endDate, ...rest } = input;
+        await upsertProject({
+          ...rest,
+          managerId: ctx.user.id,
+          coordinatorId: input.coordinatorId,
+          startDate: startDate ? new Date(startDate) : null,
+          endDate: endDate ? new Date(endDate) : null,
+        });
         return { success: true };
       }),
 
@@ -1123,6 +1133,18 @@ export const appRouter = router({
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== "admin") throw new Error("Acces interzis");
         return deleteCompanyEvent(input.id);
+      }),
+  }),
+
+  // ─── PROCESS OVERVIEW (calendar echipă) ──────────────────────────────────────────
+  processOverview: router({
+    getData: protectedProcedure
+      .input(z.object({
+        dateFrom: z.string(),
+        dateTo: z.string(),
+      }))
+      .query(async ({ input }) => {
+        return getProcessOverview(input.dateFrom, input.dateTo);
       }),
   }),
 });

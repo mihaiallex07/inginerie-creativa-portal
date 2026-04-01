@@ -24,6 +24,8 @@ import {
   Pencil,
   Trash2,
   BarChart3,
+  CalendarDays,
+  Settings2,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
@@ -255,21 +257,21 @@ export default function ProiectDetaliu() {
       </div>
 
       {/* Project Info Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <Card className="border-border">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
               <Briefcase className="h-5 w-5 text-blue-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-muted-foreground">Client</p>
-              <p className="text-sm font-semibold">{project.clientName || "Nespecificat"}</p>
+              <p className="text-sm font-semibold truncate">{project.clientName || "Nespecificat"}</p>
             </div>
           </CardContent>
         </Card>
         <Card className="border-border">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
               <Users className="h-5 w-5 text-green-600" />
             </div>
             <div>
@@ -280,12 +282,33 @@ export default function ProiectDetaliu() {
         </Card>
         <Card className="border-border">
           <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-yellow-50 flex items-center justify-center">
+            <div className="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
+              <CalendarDays className="h-5 w-5 text-purple-600" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs text-muted-foreground">Perioadă</p>
+              <p className="text-sm font-semibold truncate">
+                {project.startDate && project.endDate
+                  ? `${new Date(project.startDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "short" })} – ${new Date(project.endDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "short", year: "numeric" })}`
+                  : project.startDate
+                    ? `Din ${new Date(project.startDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "short", year: "numeric" })}`
+                    : "Nespecificat"}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border">
+          <CardContent className="p-4 flex items-center gap-3">
+            <div className="h-10 w-10 rounded-lg bg-yellow-50 flex items-center justify-center shrink-0">
               <Clock className="h-5 w-5 text-yellow-600" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Ore estimate</p>
-              <p className="text-sm font-semibold">{project.estimatedHours ? `${project.estimatedHours}h` : "Nespecificat"}</p>
+              <p className="text-xs text-muted-foreground">Ore bugetate</p>
+              <p className="text-sm font-semibold">
+                {budgetData && budgetData.totalBudgeted > 0
+                  ? <>{budgetData.totalBudgeted}h <span className="text-xs font-normal text-muted-foreground">({budgetData.totalWorked}h lucrate)</span></>
+                  : project.estimatedHours ? `${project.estimatedHours}h` : "Nespecificat"}
+              </p>
             </div>
           </CardContent>
         </Card>

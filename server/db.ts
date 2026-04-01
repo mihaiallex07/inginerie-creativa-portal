@@ -1139,3 +1139,58 @@ export async function getProjectBudgetSummary(projectId: number) {
   const totalWorked = Math.round((totalWorkedMinutes / 60) * 100) / 100;
   return { items, totalBudgeted, totalWorked };
 }
+
+// ─── PROCESS OVERVIEW (calendar echipă) ──────────────────────────────────────
+export async function getProcessOverview(dateFrom: string, dateTo: string) {
+  const db = await getDb();
+  if (!db) return { users: [], timeEntries: [], leaveRequests: [], projectAssignments: [], projects: [] };
+
+  // 1. All active users
+  const allUsers = await db.select({
+    id: users.id,
+    name: users.name,
+    department: users.department,
+    role: users.role,
+  }).from(users).where(eq(users.isActive, true)).orderBy(users.name);
+
+  // 2. Time entries in range (using date column)
+  const entries = await db.execute(
+    sql`SELECT te.userId, te.date, te.projectId, te.startHour, te.startMin, te.endHour, te.endMin,
+               te.taskName, te.activityType AS category, p.name AS projectName, p.code AS projectCode
+        FROM time_entries te
+        LEFT JOIN projects p ON p.id = te.projectId
+        WHERE te.date >= ${dateFrom} AND te.date <= ${dateTo}
+        ORDER BY te.date, te.startHour`
+  );
+
+  // 3. Approved leave requests overlapping the range
+  const leaves = await db.execute(
+    sql`SELECT lr.userId, lr.type, lr.startDate, lr.endDate, lr.totalDays, lr.status
+        FROM leave_requests lr
+        WHERE lr.status = 'aprobata'
+          AND lr.startDate <= ${dateTo}
+          AND lr.endDate >= ${dateFrom}
+        ORDER BY lr.startDate`
+  );
+
+  // 4. Project member assignments (to know which projects each user is on)
+  const assignments = await db.execute(
+    sql`SELECT pm.userId, pm.projectId, pm.projectRole, p.name AS projectName, p.code AS projectCode,
+               p.startDate AS projectStart, p.endDate AS projectEnd, p.status AS projectStatus
+        FROM project_members pm
+        JOIN projects p ON p.id = pm.projectId
+        WHERE p.status = 'activ'
+        ORDER BY pm.userId, p.name`
+  );
+
+  // 5. Active projects with dates
+  const activeProjects = await db.select().from(projects).where(eq(projects.status, "activ")).orderBy(projects.name);
+
+  return {
+    users: allUsers,
+    timeEntries: (entries as any)[0] ?? [],
+    leaveRequests: (leaves as any)[0] ?? [],
+    projectAssignments: (assignments as any)[0] ?? [],
+    projects: activeProjects,
+  };
+}

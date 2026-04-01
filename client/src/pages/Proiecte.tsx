@@ -41,6 +41,8 @@ export default function Proiecte() {
     description: "",
     status: "activ" as "activ" | "suspendat" | "finalizat" | "intern",
     color: "#FFCB09",
+    startDate: "",
+    endDate: "",
   });
 
   const { data: projects, isLoading } = trpc.projects.list.useQuery({ status: statusFilter === "toate" ? undefined : statusFilter });
@@ -50,7 +52,7 @@ export default function Proiecte() {
     onSuccess: () => {
       toast.success("Proiect salvat!");
       setOpen(false);
-      setForm({ name: "", code: "", clientName: "", driveId: "", description: "", status: "activ", color: "#FFCB09" });
+      setForm({ name: "", code: "", clientName: "", driveId: "", description: "", status: "activ", color: "#FFCB09", startDate: "", endDate: "" });
       utils.projects.list.invalidate();
     },
     onError: () => toast.error("Eroare la salvare"),
@@ -98,6 +100,16 @@ export default function Proiecte() {
                   <Label className="text-xs">ID Folder Google Drive</Label>
                   <Input value={form.driveId} onChange={e => setForm(f => ({ ...f, driveId: e.target.value }))} placeholder="ID-ul folderului din Drive" className="mt-1" />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs">Data start</Label>
+                    <Input type="date" value={form.startDate} onChange={e => setForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1" />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Data sfârșit</Label>
+                    <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1" />
+                  </div>
+                </div>
                 <div>
                   <Label className="text-xs">Status</Label>
                   <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v as any }))}>
@@ -124,7 +136,12 @@ export default function Proiecte() {
                 </div>
                 <Button
                   className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-                  onClick={() => upsert.mutate({ ...form, estimatedHours: undefined })}
+                  onClick={() => upsert.mutate({
+                    ...form,
+                    estimatedHours: undefined,
+                    startDate: form.startDate || null,
+                    endDate: form.endDate || null,
+                  })}
                   disabled={upsert.isPending || !form.name}
                 >
                   Salvează proiectul

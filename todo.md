@@ -297,3 +297,15 @@
 - [x] Frontend: dialog adăugare/editare categorie buget cu alocare pe membri
 - [x] Frontend: vizualizare sumar buget (total ore bugetate vs. ore lucrate)
 - [x] Teste: actualizare teste vitest (39/39 trec)
+
+## Sprint 31 — Process Overview + Flux proiecte remodelat
+- [x] DB: adăugare coloane startDate/endDate pe tabelul proiecte
+- [x] Backend: actualizare proceduri proiecte cu date start/sfârșit
+- [x] Remodelarea fluxului: eliminare duplicare ore (Ore estimate se calculează din bugetare)
+- [x] Frontend: actualizare formular creare/editare proiect cu date start/sfârșit
+- [x] Frontend: Ore estimate se auto-calculează din totalul bugetării pe categorii
+- [x] DB + Backend: proceduri Process Overview (agregări zilnice: proiecte, concedii, zile libere)
+- [x] Frontend: tab Process Overview cu tabel calendar echipă (angajați pe coloane, zile pe rânduri)
+- [x] Frontend: afișare coduri proiecte, concedii (CO), zile libere legale, weekend-uri colorate
+- [x] Sidebar: adăugare link Process Overview
+- [x] Teste: actualizare teste vitest (39/39 trec)

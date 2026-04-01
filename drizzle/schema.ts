@@ -95,6 +95,8 @@ export const projects = mysqlTable("projects", {
   estimatedHours: decimal("estimatedHours", { precision: 8, scale: 2 }),
   managerId: int("managerId"),
   coordinatorId: int("coordinatorId"),
+  startDate: date("startDate"),
+  endDate: date("endDate"),
   description: text("description"),
   color: varchar("color", { length: 16 }).default("#FFCB09"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
