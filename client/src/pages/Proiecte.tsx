@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { FolderOpen, Plus, ExternalLink, Search } from "lucide-react";
+import { useLocation } from "wouter";
 import { toast } from "sonner";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -27,6 +28,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function Proiecte() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const utils = trpc.useUtils();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("toate");
@@ -42,7 +44,7 @@ export default function Proiecte() {
   });
 
   const { data: projects, isLoading } = trpc.projects.list.useQuery({ status: statusFilter === "toate" ? undefined : statusFilter });
-  const canManage = user?.role === "admin";
+  const canManage = user?.role === "admin" || user?.role === "coordonator";
 
   const upsert = trpc.projects.upsert.useMutation({
     onSuccess: () => {
@@ -159,7 +161,7 @@ export default function Proiecte() {
       ) : filtered.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {filtered.map(p => (
-            <Card key={p.id} className="border-border hover:shadow-sm transition-shadow">
+            <Card key={p.id} className="border-border hover:shadow-sm transition-shadow cursor-pointer" onClick={() => setLocation(`/proiecte/${p.id}`)}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <div

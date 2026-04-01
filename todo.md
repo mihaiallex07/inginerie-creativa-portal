@@ -280,3 +280,11 @@
 - [x] Frontend: actualizare pagina Utilizatori cu dropdown 4 roluri
 - [ ] Frontend: actualizare organigramă cu afișare rol (de implementat într-un sprint viitor)
 - [x] Teste: actualizare teste vitest pentru noul sistem de roluri (39/39 trec)
+
+## Sprint 29 — Ierarhie roluri + Echipă proiect
+- [x] Backend: ierarhie permisiuni Admin moștenește toate permisiunile Coordonator
+- [x] DB: creare tabel project_members (userId, projectId, role pe proiect)
+- [x] Backend: proceduri tRPC echipă proiect (adăugare/eliminare membri, setare coordonator)
+- [x] Frontend: dashboard proiect cu echipă vizibilă (coordonator + membri înrolați)
+- [x] Frontend: posibilitate de a adăuga/elimina membri din echipa proiectului
+- [x] Teste: actualizare teste vitest (39/39 trec)

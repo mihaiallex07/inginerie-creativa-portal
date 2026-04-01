@@ -1015,3 +1015,57 @@ export async function deleteUserCompletely(userId: number) {
   await db.execute(sql`DELETE FROM users WHERE id = ${userId}`);
   return { success: true };
 }
+
+// ─── PROJECT MEMBERS (echipă proiect) ──────────────────────────────────────
+import { projectMembers } from "../drizzle/schema";
+
+export async function getProjectMembers(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT pm.*, u.name, u.email, u.role AS globalRole, u.department, u.jobTitle, u.avatarUrl
+        FROM project_members pm
+        JOIN users u ON u.id = pm.userId
+        WHERE pm.projectId = ${projectId}
+        ORDER BY FIELD(pm.projectRole, 'coordonator', 'membru', 'consultant'), u.name`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+export async function addProjectMember(projectId: number, userId: number, projectRole: string = "membru", allocatedHours?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.insert(projectMembers).values({
+    projectId,
+    userId,
+    projectRole: projectRole as any,
+    allocatedHours: allocatedHours ?? null,
+  }).onDuplicateKeyUpdate({ set: { projectRole: projectRole as any, allocatedHours: allocatedHours ?? null } });
+  return { success: true };
+}
+
+export async function removeProjectMember(projectId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.delete(projectMembers)
+    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
+  return { success: true };
+}
+
+export async function updateProjectMemberRole(projectId: number, userId: number, projectRole: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(projectMembers)
+    .set({ projectRole: projectRole as any })
+    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
+  return { success: true };
+}
+
+export async function getProjectWithTeam(projectId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+  if (!project) return null;
+  const members = await getProjectMembers(projectId);
+  return { ...project, members };
+}

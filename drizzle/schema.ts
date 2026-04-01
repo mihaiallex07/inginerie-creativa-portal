@@ -322,3 +322,16 @@ export const companyEvents = mysqlTable("company_events", {
 
 export type CompanyEvent = typeof companyEvents.$inferSelect;
 export type InsertCompanyEvent = typeof companyEvents.$inferInsert;
+
+// ─── PROJECT MEMBERS (echipă proiect) ──────────────────────────────────────────────
+export const projectMembers = mysqlTable("project_members", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  userId: int("userId").notNull(),
+  projectRole: mysqlEnum("projectRole", ["coordonator", "membru", "consultant"]).default("membru").notNull(),
+  allocatedHours: decimal("allocatedHours", { precision: 8, scale: 2 }),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+});
+
+export type ProjectMember = typeof projectMembers.$inferSelect;
+export type InsertProjectMember = typeof projectMembers.$inferInsert;

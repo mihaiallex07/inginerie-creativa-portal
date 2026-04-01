@@ -65,6 +65,11 @@ import {
   createCompanyEvent,
   updateCompanyEvent,
   deleteCompanyEvent,
+  getProjectMembers,
+  addProjectMember,
+  removeProjectMember,
+  updateProjectMemberRole,
+  getProjectWithTeam,
 } from "./db";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -318,6 +323,72 @@ export const appRouter = router({
           throw new Error("Acces interzis");
         }
         await upsertProject({ ...input, managerId: ctx.user.id, coordinatorId: input.coordinatorId });
+        return { success: true };
+      }),
+
+    // Get project with full team
+    getWithTeam: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        return getProjectWithTeam(input.id);
+      }),
+
+    // Get project members
+    members: protectedProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ input }) => {
+        return getProjectMembers(input.projectId);
+      }),
+
+    // Add member to project (admin or coordonator)
+    addMember: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        userId: z.number(),
+        projectRole: z.enum(["coordonator", "membru", "consultant"]).default("membru"),
+        allocatedHours: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "admin" && role !== "coordonator") {
+          throw new Error("Acces interzis");
+        }
+        await addProjectMember(input.projectId, input.userId, input.projectRole, input.allocatedHours);
+        // If adding as coordonator, also update the project's coordinatorId
+        if (input.projectRole === "coordonator") {
+          await upsertProject({ id: input.projectId, name: "", coordinatorId: input.userId });
+        }
+        return { success: true };
+      }),
+
+    // Remove member from project
+    removeMember: protectedProcedure
+      .input(z.object({ projectId: z.number(), userId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "admin" && role !== "coordonator") {
+          throw new Error("Acces interzis");
+        }
+        await removeProjectMember(input.projectId, input.userId);
+        return { success: true };
+      }),
+
+    // Update member role on project
+    updateMemberRole: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        userId: z.number(),
+        projectRole: z.enum(["coordonator", "membru", "consultant"]),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "admin" && role !== "coordonator") {
+          throw new Error("Acces interzis");
+        }
+        await updateProjectMemberRole(input.projectId, input.userId, input.projectRole);
+        if (input.projectRole === "coordonator") {
+          await upsertProject({ id: input.projectId, name: "", coordinatorId: input.userId });
+        }
         return { success: true };
       }),
   }),

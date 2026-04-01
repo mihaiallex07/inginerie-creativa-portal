@@ -25,6 +25,7 @@ import DashboardHR from "./pages/DashboardHR";
 import Organigrama from "./pages/Organigrama";
 import ProfilColeg from "./pages/ProfilColeg";
 import TimeTracking from "./pages/TimeTracking";
+import ProiectDetaliu from "./pages/ProiectDetaliu";
 
 function Router() {
   return (
@@ -41,6 +42,7 @@ function Router() {
         <Route path="/procese/:id" component={ProcesDetaliu} />
         <Route path="/propuneri" component={Propuneri} />
         <Route path="/proiecte" component={Proiecte} />
+        <Route path="/proiecte/:id" component={ProiectDetaliu} />
         <Route path="/profil" component={Profil} />
         <Route path="/cereri" component={CereriConcediu} />
         <Route path="/organigrama" component={Organigrama} />
