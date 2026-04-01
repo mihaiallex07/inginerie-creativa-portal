@@ -335,3 +335,20 @@ export const projectMembers = mysqlTable("project_members", {
 
 export type ProjectMember = typeof projectMembers.$inferSelect;
 export type InsertProjectMember = typeof projectMembers.$inferInsert;
+
+// ─── PROJECT BUDGET ITEMS (bugetare ore pe categorii) ──────────────────────────
+export const projectBudgetItems = mysqlTable("project_budget_items", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  category: mysqlEnum("category", [
+    "proiectare", "consultanta", "sedinta", "documentare",
+    "deplasare", "administrativ", "verificare", "executie"
+  ]).notNull(),
+  description: text("description"),
+  budgetedHours: decimal("budgetedHours", { precision: 8, scale: 2 }).notNull(),
+  assignedUserId: int("assignedUserId"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ProjectBudgetItem = typeof projectBudgetItems.$inferSelect;
+export type InsertProjectBudgetItem = typeof projectBudgetItems.$inferInsert;

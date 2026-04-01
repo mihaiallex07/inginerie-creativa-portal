@@ -288,3 +288,12 @@
 - [x] Frontend: dashboard proiect cu echipă vizibilă (coordonator + membri înrolați)
 - [x] Frontend: posibilitate de a adăuga/elimina membri din echipa proiectului
 - [x] Teste: actualizare teste vitest (39/39 trec)
+
+## Sprint 30 — Bugetare ore pe categorii per proiect
+- [x] DB: creare tabel project_budget_items (proiect, categorie activitate, ore bugetate, membru alocat)
+- [x] Backend: proceduri tRPC CRUD pentru buget ore (adăugare, editare, ștergere)
+- [x] Backend: procedură alocare ore bugetate pe membrii echipei
+- [x] Frontend: secțiune bugetare ore pe pagina proiectului (vizibil doar admin/coordonator)
+- [x] Frontend: dialog adăugare/editare categorie buget cu alocare pe membri
+- [x] Frontend: vizualizare sumar buget (total ore bugetate vs. ore lucrate)
+- [x] Teste: actualizare teste vitest (39/39 trec)

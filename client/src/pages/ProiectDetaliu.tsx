@@ -19,7 +19,13 @@ import {
   UserMinus,
   Clock,
   Briefcase,
+  Calculator,
+  Plus,
+  Pencil,
+  Trash2,
+  BarChart3,
 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -48,6 +54,17 @@ const PROJECT_ROLE_COLORS: Record<string, string> = {
   consultant: "bg-purple-100 text-purple-800 border-purple-200",
 };
 
+const CATEGORY_LABELS: Record<string, string> = {
+  proiectare: "Proiectare",
+  consultanta: "Consultanță",
+  sedinta: "Ședință",
+  documentare: "Documentare",
+  deplasare: "Deplasare",
+  administrativ: "Administrativ",
+  verificare: "Verificare",
+  executie: "Execuție",
+};
+
 function getInitials(name: string | null) {
   if (!name) return "?";
   return name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
@@ -65,10 +82,21 @@ export default function ProiectDetaliu() {
   const [selectedRole, setSelectedRole] = useState<string>("membru");
   const [allocatedHours, setAllocatedHours] = useState("");
 
+  // Budget state
+  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
+  const [editingBudgetItem, setEditingBudgetItem] = useState<any>(null);
+  const [budgetForm, setBudgetForm] = useState({
+    category: "proiectare" as string,
+    description: "",
+    budgetedHours: "",
+    assignedUserId: "" as string,
+  });
+
   const { data: project, isLoading } = trpc.projects.getWithTeam.useQuery({ id: projectId });
   const { data: allUsers } = trpc.adminUsers.list.useQuery(undefined, {
     enabled: user?.role === "admin" || user?.role === "coordonator",
   });
+  const { data: budgetData } = trpc.projects.budgetItems.useQuery({ projectId });
 
   const canManage = user?.role === "admin" || user?.role === "coordonator";
 
@@ -99,6 +127,68 @@ export default function ProiectDetaliu() {
     },
     onError: () => toast.error("Eroare la actualizare"),
   });
+
+  const addBudgetMutation = trpc.projects.addBudgetItem.useMutation({
+    onSuccess: () => {
+      toast.success("Categorie buget adăugată!");
+      setBudgetDialogOpen(false);
+      resetBudgetForm();
+      utils.projects.budgetItems.invalidate({ projectId });
+    },
+    onError: () => toast.error("Eroare la adăugare"),
+  });
+
+  const updateBudgetMutation = trpc.projects.updateBudgetItem.useMutation({
+    onSuccess: () => {
+      toast.success("Buget actualizat!");
+      setBudgetDialogOpen(false);
+      setEditingBudgetItem(null);
+      resetBudgetForm();
+      utils.projects.budgetItems.invalidate({ projectId });
+    },
+    onError: () => toast.error("Eroare la actualizare"),
+  });
+
+  const deleteBudgetMutation = trpc.projects.deleteBudgetItem.useMutation({
+    onSuccess: () => {
+      toast.success("Categorie buget ștearsă!");
+      utils.projects.budgetItems.invalidate({ projectId });
+    },
+    onError: () => toast.error("Eroare la ștergere"),
+  });
+
+  function resetBudgetForm() {
+    setBudgetForm({ category: "proiectare", description: "", budgetedHours: "", assignedUserId: "" });
+  }
+
+  function openEditBudget(item: any) {
+    setEditingBudgetItem(item);
+    setBudgetForm({
+      category: item.category,
+      description: item.description || "",
+      budgetedHours: String(item.budgetedHours),
+      assignedUserId: item.assignedUserId ? String(item.assignedUserId) : "",
+    });
+    setBudgetDialogOpen(true);
+  }
+
+  function handleSaveBudget() {
+    if (!budgetForm.budgetedHours || Number(budgetForm.budgetedHours) <= 0) {
+      return toast.error("Introduceți un număr valid de ore");
+    }
+    const payload = {
+      projectId,
+      category: budgetForm.category as any,
+      description: budgetForm.description || undefined,
+      budgetedHours: budgetForm.budgetedHours,
+      assignedUserId: budgetForm.assignedUserId ? Number(budgetForm.assignedUserId) : null,
+    };
+    if (editingBudgetItem) {
+      updateBudgetMutation.mutate({ id: editingBudgetItem.id, ...payload });
+    } else {
+      addBudgetMutation.mutate(payload);
+    }
+  }
 
   if (isLoading) {
     return (
@@ -335,6 +425,184 @@ export default function ProiectDetaliu() {
           )}
         </CardContent>
       </Card>
+
+      {/* Budget Section */}
+      {canManage && (
+        <Card className="border-border">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Calculator className="h-4 w-4 text-[#FFCB09]" />
+                Bugetare ore pe categorii
+              </CardTitle>
+              <Button
+                size="sm"
+                className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold gap-1.5"
+                onClick={() => { setEditingBudgetItem(null); resetBudgetForm(); setBudgetDialogOpen(true); }}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Adaugă categorie
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {/* Summary bar */}
+            {budgetData && budgetData.totalBudgeted > 0 && (
+              <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Sumar buget</span>
+                  </div>
+                  <div className="flex items-center gap-4 text-sm">
+                    <span>Bugetat: <strong>{budgetData.totalBudgeted}h</strong></span>
+                    <span>Lucrat: <strong className={budgetData.totalWorked > budgetData.totalBudgeted ? "text-red-600" : "text-green-600"}>{budgetData.totalWorked}h</strong></span>
+                    <span>Rămas: <strong>{Math.max(0, budgetData.totalBudgeted - budgetData.totalWorked)}h</strong></span>
+                  </div>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className={`h-2.5 rounded-full transition-all ${budgetData.totalWorked > budgetData.totalBudgeted ? "bg-red-500" : "bg-[#FFCB09]"}`}
+                    style={{ width: `${Math.min(100, (budgetData.totalWorked / budgetData.totalBudgeted) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Budget items table */}
+            {budgetData && budgetData.items.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border">
+                      <th className="text-left py-2 px-2 text-xs text-muted-foreground font-medium">Categorie</th>
+                      <th className="text-left py-2 px-2 text-xs text-muted-foreground font-medium">Descriere</th>
+                      <th className="text-right py-2 px-2 text-xs text-muted-foreground font-medium">Ore bugetate</th>
+                      <th className="text-left py-2 px-2 text-xs text-muted-foreground font-medium">Alocat</th>
+                      <th className="text-right py-2 px-2 text-xs text-muted-foreground font-medium w-20">Acțiuni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {budgetData.items.map((item: any) => (
+                      <tr key={item.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                        <td className="py-2 px-2">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-800 border border-yellow-200">
+                            {CATEGORY_LABELS[item.category] || item.category}
+                          </span>
+                        </td>
+                        <td className="py-2 px-2 text-xs text-muted-foreground max-w-[200px] truncate">
+                          {item.description || "—"}
+                        </td>
+                        <td className="py-2 px-2 text-right font-semibold">{item.budgetedHours}h</td>
+                        <td className="py-2 px-2">
+                          {item.assignedUserName ? (
+                            <span className="text-xs">{item.assignedUserName}</span>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">Nealocat</span>
+                          )}
+                        </td>
+                        <td className="py-2 px-2 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditBudget(item)}>
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-red-400 hover:text-red-600 hover:bg-red-50"
+                              onClick={() => { if (confirm("Ștergi această categorie de buget?")) deleteBudgetMutation.mutate({ id: item.id }); }}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Calculator className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">Nicio categorie de buget definită</p>
+                <p className="text-xs mt-1">Adaugă categorii de ore folosind butonul de mai sus</p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Budget Dialog */}
+      <Dialog open={budgetDialogOpen} onOpenChange={(v) => { setBudgetDialogOpen(v); if (!v) { setEditingBudgetItem(null); resetBudgetForm(); } }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{editingBudgetItem ? "Editează categorie buget" : "Adaugă categorie buget"}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label>Categorie activitate</Label>
+              <Select value={budgetForm.category} onValueChange={(v) => setBudgetForm(f => ({ ...f, category: v }))}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
+                    <SelectItem key={k} value={k}>{v}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>Descriere (opțional)</Label>
+              <Textarea
+                value={budgetForm.description}
+                onChange={e => setBudgetForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="Detalii despre activitatea bugetată..."
+                rows={2}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Ore bugetate</Label>
+              <Input
+                type="number"
+                value={budgetForm.budgetedHours}
+                onChange={e => setBudgetForm(f => ({ ...f, budgetedHours: e.target.value }))}
+                placeholder="ex: 40"
+                min="0.5"
+                step="0.5"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>Alocat angajatului (opțional)</Label>
+              <Select value={budgetForm.assignedUserId} onValueChange={(v) => setBudgetForm(f => ({ ...f, assignedUserId: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selectează angajatul" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Nealocat</SelectItem>
+                  {members.map((m: any) => (
+                    <SelectItem key={m.userId} value={String(m.userId)}>
+                      {m.name || m.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => { setBudgetDialogOpen(false); setEditingBudgetItem(null); resetBudgetForm(); }}>
+                Anulează
+              </Button>
+              <Button
+                className="flex-1 bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
+                onClick={handleSaveBudget}
+                disabled={addBudgetMutation.isPending || updateBudgetMutation.isPending}
+              >
+                {(addBudgetMutation.isPending || updateBudgetMutation.isPending) ? "Se salvează..." : editingBudgetItem ? "Salvează" : "Adaugă"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Add Member Dialog */}
       <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>

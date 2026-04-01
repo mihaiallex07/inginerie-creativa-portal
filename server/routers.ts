@@ -70,6 +70,11 @@ import {
   removeProjectMember,
   updateProjectMemberRole,
   getProjectWithTeam,
+  getProjectBudgetItems,
+  createBudgetItem,
+  updateBudgetItem,
+  deleteBudgetItem,
+  getProjectBudgetSummary,
 } from "./db";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -371,6 +376,50 @@ export const appRouter = router({
         }
         await removeProjectMember(input.projectId, input.userId);
         return { success: true };
+      }),
+
+    // ── Budget items (bugetare ore pe categorii) ──
+    budgetItems: protectedProcedure
+      .input(z.object({ projectId: z.number() }))
+      .query(async ({ input }) => {
+        return getProjectBudgetSummary(input.projectId);
+      }),
+
+    addBudgetItem: protectedProcedure
+      .input(z.object({
+        projectId: z.number(),
+        category: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]),
+        description: z.string().optional(),
+        budgetedHours: z.string(),
+        assignedUserId: z.number().optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "admin" && role !== "coordonator") throw new Error("Acces interzis");
+        return createBudgetItem(input);
+      }),
+
+    updateBudgetItem: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        category: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).optional(),
+        description: z.string().optional().nullable(),
+        budgetedHours: z.string().optional(),
+        assignedUserId: z.number().optional().nullable(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "admin" && role !== "coordonator") throw new Error("Acces interzis");
+        const { id, ...data } = input;
+        return updateBudgetItem(id, data);
+      }),
+
+    deleteBudgetItem: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const role = ctx.user.role;
+        if (role !== "admin" && role !== "coordonator") throw new Error("Acces interzis");
+        return deleteBudgetItem(input.id);
       }),
 
     // Update member role on project

@@ -1069,3 +1069,73 @@ export async function getProjectWithTeam(projectId: number) {
   const members = await getProjectMembers(projectId);
   return { ...project, members };
 }
+
+// ─── PROJECT BUDGET ITEMS (bugetare ore pe categorii) ──────────────────────────
+import { projectBudgetItems } from "../drizzle/schema";
+
+export async function getProjectBudgetItems(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT pbi.*, u.name AS assignedUserName
+        FROM project_budget_items pbi
+        LEFT JOIN users u ON u.id = pbi.assignedUserId
+        WHERE pbi.projectId = ${projectId}
+        ORDER BY pbi.category, pbi.id`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+export async function createBudgetItem(data: {
+  projectId: number;
+  category: string;
+  description?: string | null;
+  budgetedHours: string;
+  assignedUserId?: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(projectBudgetItems).values({
+    projectId: data.projectId,
+    category: data.category as any,
+    description: data.description ?? null,
+    budgetedHours: data.budgetedHours,
+    assignedUserId: data.assignedUserId ?? null,
+  });
+  return { success: true, id: (result as any)[0]?.insertId };
+}
+
+export async function updateBudgetItem(id: number, data: {
+  category?: string;
+  description?: string | null;
+  budgetedHours?: string;
+  assignedUserId?: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(projectBudgetItems).set(data as any).where(eq(projectBudgetItems.id, id));
+  return { success: true };
+}
+
+export async function deleteBudgetItem(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.delete(projectBudgetItems).where(eq(projectBudgetItems.id, id));
+  return { success: true };
+}
+
+export async function getProjectBudgetSummary(projectId: number) {
+  const db = await getDb();
+  if (!db) return { items: [], totalBudgeted: 0, totalWorked: 0 };
+  const items = await getProjectBudgetItems(projectId);
+  const totalBudgeted = items.reduce((sum: number, i: any) => sum + Number(i.budgetedHours || 0), 0);
+  // Get actual worked hours from time_entries for this project
+  const workedRows = await db.execute(
+    sql`SELECT COALESCE(SUM(durationMinutes), 0) AS totalMinutes
+        FROM time_entries
+        WHERE projectId = ${projectId}`
+  );
+  const totalWorkedMinutes = Number((workedRows as any)[0]?.[0]?.totalMinutes ?? 0);
+  const totalWorked = Math.round((totalWorkedMinutes / 60) * 100) / 100;
+  return { items, totalBudgeted, totalWorked };
+}
