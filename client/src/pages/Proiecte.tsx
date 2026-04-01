@@ -36,6 +36,7 @@ export default function Proiecte() {
   const [form, setForm] = useState({
     name: "",
     code: "",
+    abbreviation: "",
     clientName: "",
     driveId: "",
     description: "",
@@ -52,7 +53,7 @@ export default function Proiecte() {
     onSuccess: () => {
       toast.success("Proiect salvat!");
       setOpen(false);
-      setForm({ name: "", code: "", clientName: "", driveId: "", description: "", status: "activ", color: "#FFCB09", startDate: "", endDate: "" });
+      setForm({ name: "", code: "", abbreviation: "", clientName: "", driveId: "", description: "", status: "activ", color: "#FFCB09", startDate: "", endDate: "" });
       utils.projects.list.invalidate();
     },
     onError: () => toast.error("Eroare la salvare"),
@@ -82,14 +83,18 @@ export default function Proiecte() {
                 <DialogTitle>Proiect nou</DialogTitle>
               </DialogHeader>
               <div className="space-y-3 py-2">
+                <div>
+                  <Label className="text-xs">Nume proiect *</Label>
+                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
+                </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label className="text-xs">Nume proiect *</Label>
-                    <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
+                    <Label className="text-xs">Cod intern</Label>
+                    <Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="ex: 222" className="mt-1" />
                   </div>
                   <div>
-                    <Label className="text-xs">Cod intern</Label>
-                    <Input value={form.code} onChange={e => setForm(f => ({ ...f, code: e.target.value }))} placeholder="ex: 125" className="mt-1" />
+                    <Label className="text-xs">Abreviere</Label>
+                    <Input value={form.abbreviation} onChange={e => setForm(f => ({ ...f, abbreviation: e.target.value.toUpperCase() }))} placeholder="ex: MVT" className="mt-1" maxLength={10} />
                   </div>
                 </div>
                 <div>

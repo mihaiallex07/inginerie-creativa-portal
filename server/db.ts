@@ -1177,6 +1177,7 @@ export async function getProcessOverview(dateFrom: string, dateTo: string) {
   // 4. Project member assignments (to know which projects each user is on)
   const assignments = await db.execute(
     sql`SELECT pm.userId, pm.projectId, pm.projectRole, p.name AS projectName, p.code AS projectCode,
+               p.abbreviation AS projectAbbreviation,
                p.startDate AS projectStart, p.endDate AS projectEnd, p.status AS projectStatus
         FROM project_members pm
         JOIN projects p ON p.id = pm.projectId

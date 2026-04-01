@@ -333,3 +333,12 @@
 - [x] Layout compact: pontaj, documente, proiecte, propuneri, process overview, calendar IC — toate vizibile fără scroll
 - [x] Backend: folosire proceduri existente companyEvents.list + people.upcomingBirthdays combinate în frontend
 - [x] Fix: emoji-uri 🎂/📎 nu apar pe celulele calendarului — corectat encoding unicode escaped → emoji direct
+
+## Sprint 35 — Process Overview bazat pe proiecte înrolate
+- [x] Schema: adăugare câmp "abbreviation" la tabelul projects
+- [x] Migrare DB: ALTER TABLE projects ADD abbreviation
+- [x] Backend: actualizare proceduri proiecte (create/update) pentru abbreviation
+- [x] Frontend: adăugare câmp Abreviere în formularul de creare/editare proiect
+- [x] Process Overview: înlocuire date time-tracking cu proiecte înrolate (project_members)
+- [x] Process Overview: afișare format "cod abreviere" (ex: 255 MVT) pe zilele lucrătoare
+- [x] Process Overview: respectare CO, weekend, liber stat — doar zile lucrătoare

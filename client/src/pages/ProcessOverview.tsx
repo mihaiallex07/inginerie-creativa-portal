@@ -94,27 +94,23 @@ export default function ProcessOverview() {
 
   const { data, isLoading } = trpc.processOverview.getData.useQuery({ dateFrom, dateTo });
 
-  // Build lookup maps
-  const { userDayMap, leaveMap } = useMemo(() => {
-    if (!data) return { userDayMap: new Map(), leaveMap: new Map() };
+  // Build lookup maps from project assignments (not time entries)
+  const { userProjectMap, leaveMap } = useMemo(() => {
+    if (!data) return { userProjectMap: new Map(), leaveMap: new Map() };
 
-    // Time entries: userId -> dateKey -> projectCodes[]
-    const udm = new Map<number, Map<string, { codes: string[]; details: string[] }>>();
-    for (const te of data.timeEntries) {
-      const dateKey = typeof te.date === "string"
-        ? te.date.substring(0, 10)
-        : formatDateKey(new Date(te.date));
-      if (!udm.has(te.userId)) udm.set(te.userId, new Map());
-      const userMap = udm.get(te.userId)!;
-      if (!userMap.has(dateKey)) userMap.set(dateKey, { codes: [], details: [] });
-      const entry = userMap.get(dateKey)!;
-      const code = te.projectCode || te.projectName || te.taskName || "—";
-      if (!entry.codes.includes(code)) entry.codes.push(code);
-      const h1 = String(te.startHour ?? 0).padStart(2, "0");
-      const m1 = String(te.startMin ?? 0).padStart(2, "0");
-      const h2 = String(te.endHour ?? 0).padStart(2, "0");
-      const m2 = String(te.endMin ?? 0).padStart(2, "0");
-      entry.details.push(`${h1}:${m1}-${h2}:${m2} ${te.taskName || code}`);
+    // Project assignments: userId -> array of { label, projectName, projectStart, projectEnd }
+    const upm = new Map<number, Array<{ label: string; projectName: string; projectStart: string | null; projectEnd: string | null }>>(); 
+    for (const pa of data.projectAssignments) {
+      if (!upm.has(pa.userId)) upm.set(pa.userId, []);
+      const code = pa.projectCode || "";
+      const abbr = pa.projectAbbreviation || "";
+      const label = code && abbr ? `${code} ${abbr}` : code || abbr || pa.projectName || "—";
+      upm.get(pa.userId)!.push({
+        label,
+        projectName: pa.projectName || "—",
+        projectStart: pa.projectStart ? String(pa.projectStart).substring(0, 10) : null,
+        projectEnd: pa.projectEnd ? String(pa.projectEnd).substring(0, 10) : null,
+      });
     }
 
     // Leave requests: userId -> dateKey -> leaveType
@@ -129,8 +125,25 @@ export default function ProcessOverview() {
       }
     }
 
-    return { userDayMap: udm, leaveMap: lm };
+    return { userProjectMap: upm, leaveMap: lm };
   }, [data]);
+
+  // Helper: get active projects for a user on a specific date
+  function getUserProjectsForDate(userId: number, dateKey: string): { labels: string[]; names: string[] } {
+    const projects = userProjectMap.get(userId);
+    if (!projects || projects.length === 0) return { labels: [], names: [] };
+    const labels: string[] = [];
+    const names: string[] = [];
+    for (const p of projects) {
+      // Check if the date falls within the project's date range
+      const inRange = (!p.projectStart || dateKey >= p.projectStart) && (!p.projectEnd || dateKey <= p.projectEnd);
+      if (inRange) {
+        labels.push(p.label);
+        names.push(p.projectName);
+      }
+    }
+    return { labels, names };
+  }
 
   const prevMonth = () => {
     if (month === 0) { setMonth(11); setYear(y => y - 1); }
@@ -257,12 +270,13 @@ export default function ProcessOverview() {
                       {/* User cells */}
                       {users.map(u => {
                         const leave = leaveMap.get(u.id)?.get(dateKey);
-                        const work = userDayMap.get(u.id)?.get(dateKey);
 
-                        if (isWeekend && !work && !leave) {
+                        // Weekend - empty cell
+                        if (isWeekend && !leave) {
                           return <td key={u.id} className="px-0.5 py-0.5 text-center bg-amber-50/60 border-r border-border/20" />;
                         }
-                        if (isHoliday && !work && !leave) {
+                        // Public holiday
+                        if (isHoliday && !leave) {
                           return (
                             <Tooltip key={u.id}>
                               <TooltipTrigger asChild>
@@ -276,6 +290,7 @@ export default function ProcessOverview() {
                             </Tooltip>
                           );
                         }
+                        // Leave (CO, CM, etc.)
                         if (leave) {
                           const leaveLabel = LEAVE_LABELS[leave] || leave;
                           const leaveColor = LEAVE_COLORS[leave] || "bg-gray-100 text-gray-700";
@@ -285,27 +300,27 @@ export default function ProcessOverview() {
                             </td>
                           );
                         }
-                        if (work) {
-                          const label = work.codes.join(" / ");
-                          // Color based on first project
-                          const colors = work.codes.length > 0 ? projectColor(work.codes[0]) : { bg: "#f3f4f6", text: "#374151" };
-                          const isFinal = work.details.some((d: string) => d.toLowerCase().includes("final"));
+                        // Working day - show enrolled projects
+                        const { labels, names } = getUserProjectsForDate(u.id, dateKey);
+                        if (labels.length > 0) {
+                          const displayLabel = labels.join(" / ");
+                          const colors = projectColor(labels[0]);
                           return (
                             <Tooltip key={u.id}>
                               <TooltipTrigger asChild>
                                 <td
-                                  className={`px-0.5 py-0.5 text-center border-r border-border/20 cursor-default ${isFinal ? "ring-2 ring-red-500 ring-inset" : ""}`}
+                                  className="px-0.5 py-0.5 text-center border-r border-border/20 cursor-default"
                                   style={{ backgroundColor: colors.bg, color: colors.text }}
                                 >
-                                  <span className={`font-semibold text-[9px] leading-tight block truncate ${isFinal ? "text-red-700 font-bold" : ""}`}>
-                                    {label}
+                                  <span className="font-semibold text-[8px] leading-tight block truncate">
+                                    {displayLabel}
                                   </span>
                                 </td>
                               </TooltipTrigger>
                               <TooltipContent side="top" className="text-xs max-w-[300px]">
                                 <div className="space-y-0.5">
                                   <p className="font-semibold">{u.name} — {dateKey}</p>
-                                  {work.details.map((d: string, i: number) => <p key={i}>{d}</p>)}
+                                  {names.map((n, i) => <p key={i}>{labels[i]} — {n}</p>)}
                                 </div>
                               </TooltipContent>
                             </Tooltip>

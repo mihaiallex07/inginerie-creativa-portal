@@ -106,7 +106,7 @@ export default function ProiectDetaliu() {
   // Edit project state
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editForm, setEditForm] = useState({
-    name: "", code: "", clientName: "", status: "activ",
+    name: "", code: "", abbreviation: "", clientName: "", status: "activ",
     description: "", driveId: "", color: "#FFCB09",
     startDate: "", endDate: "",
   });
@@ -137,6 +137,7 @@ export default function ProiectDetaliu() {
     setEditForm({
       name: project.name || "",
       code: project.code || "",
+      abbreviation: (project as any).abbreviation || "",
       clientName: project.clientName || "",
       status: project.status || "activ",
       description: project.description || "",
@@ -153,6 +154,7 @@ export default function ProiectDetaliu() {
       id: projectId,
       name: editForm.name,
       code: editForm.code || undefined,
+      abbreviation: editForm.abbreviation || undefined,
       clientName: editForm.clientName || undefined,
       status: editForm.status as any,
       description: editForm.description || undefined,
@@ -789,8 +791,12 @@ export default function ProiectDetaliu() {
               </div>
               <div>
                 <Label className="text-xs">Cod</Label>
-                <Input value={editForm.code} onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))} placeholder="ex: 255" />
+                <Input value={editForm.code} onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))} placeholder="ex: 222" />
               </div>
+            </div>
+            <div>
+              <Label className="text-xs">Abreviere</Label>
+              <Input value={editForm.abbreviation} onChange={e => setEditForm(f => ({ ...f, abbreviation: e.target.value.toUpperCase() }))} placeholder="ex: MVT" maxLength={10} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>

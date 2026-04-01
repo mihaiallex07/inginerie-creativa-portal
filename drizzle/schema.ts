@@ -89,6 +89,7 @@ export const projects = mysqlTable("projects", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
   code: varchar("code", { length: 64 }),
+  abbreviation: varchar("abbreviation", { length: 32 }),
   driveId: varchar("driveId", { length: 128 }),
   drivePath: text("drivePath"),
   status: mysqlEnum("status", ["activ", "suspendat", "finalizat", "intern"]).default("activ").notNull(),

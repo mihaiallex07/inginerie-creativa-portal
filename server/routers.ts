@@ -317,6 +317,7 @@ export const appRouter = router({
         id: z.number().optional(),
         name: z.string().min(1),
         code: z.string().optional(),
+        abbreviation: z.string().optional(),
         driveId: z.string().optional(),
         status: z.enum(["activ", "suspendat", "finalizat", "intern"]).optional(),
         clientName: z.string().optional(),
