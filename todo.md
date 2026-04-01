@@ -248,3 +248,10 @@
 - [x] Fix: drag threshold 5px + activated flag — click simplu deschide dialog, nu mută task-ul
 - [x] Fix: double-click pe slot gol pentru adăugare (evită conflicte cu drag)
 - [x] Fix: overflow-hidden pe container exterior, un singur scrollbar pe grid
+
+## Sprint 25 — Fix grid calendar + Export rapoarte
+- [x] Fix: ora 06:00 vizibilă — slotH dinamic (gridHeight / TOTAL_HOURS), fără scrollTop
+- [x] Fix: grid calendar fără scrollbar — overflow-hidden pe container, celule se adaptează la ecran
+- [x] Export rapoarte: buton Export în header TimeTracking + dialog cu filtre (perioadă, proiect, tip)
+- [x] Export rapoarte: preview tabel cu datele filtrate + total ore
+- [x] Export rapoarte: generare CSV cu BOM UTF-8 (compatibil Excel)

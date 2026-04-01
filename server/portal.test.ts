@@ -272,8 +272,8 @@ describe("timeTracking calendar procedures", () => {
     await expect(
       caller.timeTracking.addCalendarEntry({
         date: "2026-03-27",
-        startTime: "09:00",
-        endTime: "10:00",
+        startHour: 9, startMin: 0,
+        endHour: 10, endMin: 0,
         activityType: "proiectare",
       })
     ).rejects.toThrow();
@@ -283,8 +283,8 @@ describe("timeTracking calendar procedures", () => {
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.timeTracking.addCalendarEntry({
       date: "2026-03-27",
-      startTime: "09:00",
-      endTime: "10:30",
+      startHour: 9, startMin: 0,
+      endHour: 10, endMin: 30,
       activityType: "proiectare",
       taskName: "Test calendar entry",
     });
@@ -297,8 +297,8 @@ describe("timeTracking calendar procedures", () => {
       caller.timeTracking.updateCalendarEntry({
         id: 1,
         date: "2026-03-27",
-        startTime: "09:00",
-        endTime: "10:00",
+        startHour: 9, startMin: 0,
+        endHour: 10, endMin: 0,
       })
     ).rejects.toThrow();
   });
@@ -310,8 +310,8 @@ describe("timeTracking calendar procedures", () => {
       caller.timeTracking.updateCalendarEntry({
         id: 999,
         date: "2026-03-27",
-        startTime: "09:00",
-        endTime: "10:00",
+        startHour: 9, startMin: 0,
+        endHour: 10, endMin: 0,
       })
     ).rejects.toThrow();
   });
