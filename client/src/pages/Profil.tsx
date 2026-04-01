@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 
 const ROLE_LABELS: Record<string, string> = {
   admin: "Administrator",
+  coordonator: "Coordonator",
   angajat: "Angajat",
   colaborator: "Colaborator",
 };

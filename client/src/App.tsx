@@ -23,6 +23,7 @@ import AprobariConcediu from "./pages/AprobariConcediu";
 import AdminUtilizatori from "./pages/AdminUtilizatori";
 import DashboardHR from "./pages/DashboardHR";
 import Organigrama from "./pages/Organigrama";
+import ProfilColeg from "./pages/ProfilColeg";
 import TimeTracking from "./pages/TimeTracking";
 
 function Router() {
@@ -43,6 +44,7 @@ function Router() {
         <Route path="/profil" component={Profil} />
         <Route path="/cereri" component={CereriConcediu} />
         <Route path="/organigrama" component={Organigrama} />
+        <Route path="/coleg/:id" component={ProfilColeg} />
         <Route path="/viziune" component={() => <PlaceholderPage title="Viziune & Valori" />} />
         <Route path="/regulament" component={() => <PlaceholderPage title="Regulament Intern" />} />
         <Route path="/biblioteca" component={() => <PlaceholderPage title="Bibliotecă Tehnică" />} />

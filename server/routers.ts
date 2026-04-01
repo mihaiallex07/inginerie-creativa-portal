@@ -310,13 +310,14 @@ export const appRouter = router({
         estimatedHours: z.string().optional(),
         description: z.string().optional(),
         color: z.string().optional(),
+        coordinatorId: z.number().optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
-        if (role !== "admin") {
+        if (role !== "admin" && role !== "coordonator") {
           throw new Error("Acces interzis");
         }
-        await upsertProject({ ...input, managerId: ctx.user.id });
+        await upsertProject({ ...input, managerId: ctx.user.id, coordinatorId: input.coordinatorId });
         return { success: true };
       }),
   }),
@@ -774,7 +775,7 @@ export const appRouter = router({
     updateRole: protectedProcedure
       .input(z.object({
         id: z.number(),
-        role: z.enum(["admin", "angajat", "colaborator"]),
+        role: z.enum(["admin", "coordonator", "angajat", "colaborator"]),
       }))
       .mutation(async ({ ctx, input }) => {
         const role = ctx.user.role;
@@ -842,6 +843,33 @@ export const appRouter = router({
         return getFullProfile(input.userId);
       }),
 
+    // Any authenticated user can view basic info of a colleague
+    viewColleague: protectedProcedure
+      .input(z.object({ userId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const full = await getFullProfile(input.userId);
+        if (!full) return null;
+        // Admin sees everything
+        if (ctx.user.role === "admin") return { ...full, isFullAccess: true };
+        // Others see only basic info
+        return {
+          id: full.id,
+          name: full.name,
+          email: full.email,
+          role: full.role,
+          department: full.department,
+          jobTitle: full.jobTitle,
+          phone: full.phone,
+          phoneMobile: full.phoneMobile,
+          city: full.city,
+          birthDate: full.birthDate,
+          hireDate: full.hireDate,
+          avatarUrl: full.avatarUrl,
+          isActive: full.isActive,
+          isFullAccess: false,
+        };
+      }),
+
     updateMyProfile: protectedProcedure
       .input(z.object({
         name: z.string().min(1).optional(),
@@ -875,10 +903,29 @@ export const appRouter = router({
     adminUpdateProfile: protectedProcedure
       .input(z.object({
         userId: z.number(),
-        hireDate: z.string().optional().nullable(),
-        profileNotes: z.string().optional().nullable(),
+        name: z.string().min(1).optional(),
+        phone: z.string().optional().nullable(),
+        phoneMobile: z.string().optional().nullable(),
         department: z.string().optional().nullable(),
         jobTitle: z.string().optional().nullable(),
+        birthDate: z.string().optional().nullable(),
+        hireDate: z.string().optional().nullable(),
+        addressBuletin: z.string().optional().nullable(),
+        addressSecondary: z.string().optional().nullable(),
+        city: z.string().optional().nullable(),
+        cnp: z.string().max(13).optional().nullable(),
+        ciSeries: z.string().max(4).optional().nullable(),
+        ciNumber: z.string().max(10).optional().nullable(),
+        ciExpiry: z.string().optional().nullable(),
+        ciIssuedBy: z.string().optional().nullable(),
+        iban: z.string().max(34).optional().nullable(),
+        bankName: z.string().optional().nullable(),
+        emergencyContact: z.string().optional().nullable(),
+        emergencyPhone: z.string().optional().nullable(),
+        emergencyRelation: z.string().optional().nullable(),
+        bloodType: z.enum(["A+","A-","B+","B-","AB+","AB-","O+","O-"]).optional().nullable(),
+        allergies: z.string().optional().nullable(),
+        profileNotes: z.string().optional().nullable(),
         workHoursPerDay: z.string().optional().nullable(),
       }))
       .mutation(async ({ ctx, input }) => {

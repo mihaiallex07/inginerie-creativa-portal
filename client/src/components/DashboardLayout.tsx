@@ -51,7 +51,21 @@ import { Button } from "./ui/button";
 const LOGO_YELLOW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/LOGOtipgalben_c557a302.png";
 const LOGO_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/logogalben_d1fef82c.png";
 
-const navSections = [
+type NavItem = {
+  icon: any;
+  label: string;
+  path: string;
+  badge?: string;
+  roles?: string[]; // if set, only these roles see this item
+};
+
+type NavSection = {
+  label: string;
+  items: NavItem[];
+  roles?: string[]; // if set, only these roles see this section
+};
+
+const navSections: NavSection[] = [
   {
     label: "PRINCIPAL",
     items: [
@@ -94,11 +108,12 @@ const navSections = [
   },
   {
     label: "ADMINISTRARE",
+    roles: ["admin", "coordonator"],
     items: [
-      { icon: BarChart3, label: "Dashboard HR", path: "/dashboard-hr" },
-      { icon: BarChart3, label: "Rapoarte HR", path: "/rapoarte-hr" },
-      { icon: CalendarCheck, label: "Aprobări Concediu", path: "/aprobari-concediu" },
-      { icon: Shield, label: "Utilizatori", path: "/admin-utilizatori" },
+      { icon: BarChart3, label: "Dashboard HR", path: "/dashboard-hr", roles: ["admin"] },
+      { icon: BarChart3, label: "Rapoarte HR", path: "/rapoarte-hr", roles: ["admin", "coordonator"] },
+      { icon: CalendarCheck, label: "Aprobări Concediu", path: "/aprobari-concediu", roles: ["admin"] },
+      { icon: Shield, label: "Utilizatori", path: "/admin-utilizatori", roles: ["admin"] },
     ],
   },
 ];
@@ -257,7 +272,14 @@ function DashboardLayoutContent({
 
           {/* Navigation */}
           <SidebarContent className="gap-0 py-2 overflow-y-auto">
-            {navSections.map((section) => (
+            {navSections
+              .filter((section) => !section.roles || section.roles.includes(user?.role ?? "angajat"))
+              .map((section) => {
+                const visibleItems = section.items.filter(
+                  (item) => !item.roles || item.roles.includes(user?.role ?? "angajat")
+                );
+                if (visibleItems.length === 0) return null;
+                return (
               <div key={section.label} className="mb-1">
                 {!isCollapsed && (
                   <p className="px-4 py-1.5 text-[10px] font-semibold tracking-widest text-sidebar-foreground/40 uppercase">
@@ -265,7 +287,7 @@ function DashboardLayoutContent({
                   </p>
                 )}
                 <SidebarMenu className="px-2">
-                  {section.items.map((item) => {
+                  {visibleItems.map((item) => {
                     const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path));
                     return (
                       <SidebarMenuItem key={item.path}>
@@ -292,7 +314,8 @@ function DashboardLayoutContent({
                   })}
                 </SidebarMenu>
               </div>
-            ))}
+                );
+              })}
           </SidebarContent>
 
           {/* Footer */}

@@ -268,3 +268,15 @@
 ## Sprint 27 — Fus orar global + Filtru Angajat export
 - [x] Fix: ajustare fus orar Europe/Bucharest la nivel global (server + frontend)
 - [x] Export: adăugare filtru "Angajat" vizibil doar pentru administratori (frontend + backend)
+
+## Sprint 28 — Sistem 4 roluri + Vizualizare profil angajat
+- [x] DB: extindere enum roluri cu coordonator și colaborator
+- [x] DB: adăugare câmp coordinatorId pe tabelul proiecte
+- [x] Backend: procedură vizualizare profil angajat (admin=tot, angajat=info bază)
+- [x] Backend: procedură editare profil angajat (doar admin)
+- [x] Backend: actualizare permisiuni per rol (coordonator poate crea proiecte, vedea ore echipă)
+- [x] Frontend: pagină profil angajat cu vizualizare diferențiată per rol
+- [x] Frontend: actualizare sidebar cu permisiuni per rol
+- [x] Frontend: actualizare pagina Utilizatori cu dropdown 4 roluri
+- [ ] Frontend: actualizare organigramă cu afișare rol (de implementat într-un sprint viitor)
+- [x] Teste: actualizare teste vitest pentru noul sistem de roluri (39/39 trec)

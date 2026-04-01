@@ -28,7 +28,9 @@ import {
   UserX,
   Pencil,
   Trash2,
+  Eye,
 } from "lucide-react";
+import { useLocation } from "wouter";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -50,6 +52,7 @@ const DEPARTMENTS = [
 
 const ROLES: Record<string, { label: string; color: string }> = {
   admin: { label: "Admin", color: "bg-yellow-100 text-yellow-800 border-yellow-300" },
+  coordonator: { label: "Coordonator", color: "bg-blue-100 text-blue-800 border-blue-200" },
   angajat: { label: "Angajat", color: "bg-green-100 text-green-800 border-green-200" },
   colaborator: { label: "Colaborator", color: "bg-gray-100 text-gray-700 border-gray-200" },
 };
@@ -58,7 +61,7 @@ type UserRow = {
   id: number;
   name: string | null;
   email: string | null;
-  role: "admin" | "angajat" | "colaborator";
+  role: "admin" | "coordonator" | "angajat" | "colaborator";
   department: string | null;
   jobTitle: string | null;
   isActive: boolean;
@@ -79,6 +82,7 @@ function getInitials(name: string | null): string {
 
 export default function AdminUtilizatori() {
   const utils = trpc.useUtils();
+  const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("toate");
   const [editUser, setEditUser] = useState<UserRow | null>(null);
@@ -281,9 +285,18 @@ export default function AdminUtilizatori() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-8 w-8 text-muted-foreground hover:text-[#FFCB09]"
+                          onClick={() => setLocation(`/coleg/${u.id}`)}
+                          title="Vezi profil complet"
+                        >
+                          <Eye className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-foreground"
                           onClick={() => openEdit(u)}
-                          title="Editează profil"
+                          title="Editare rapidă"
                         >
                           <Pencil className="h-3.5 w-3.5" />
                         </Button>
