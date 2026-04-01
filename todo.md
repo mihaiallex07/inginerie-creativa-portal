@@ -320,3 +320,6 @@
 - [x] Frontend: Process Overview sortare angajați după displayOrder
 - [x] Frontend: buton admin "Reordonează" cu interfață up/down arrows
 - [x] Teste: actualizare teste vitest (39/39 trec)
+
+## Sprint 33 — Fix reordonare angajați
+- [x] Fix: reordonare angajați în Process Overview nu persistă — query-ul getProcessOverview sorta doar după name, acum sortează după displayOrder

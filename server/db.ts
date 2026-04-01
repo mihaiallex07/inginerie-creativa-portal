@@ -1151,7 +1151,8 @@ export async function getProcessOverview(dateFrom: string, dateTo: string) {
     name: users.name,
     department: users.department,
     role: users.role,
-  }).from(users).where(eq(users.isActive, true)).orderBy(users.name);
+    displayOrder: users.displayOrder,
+  }).from(users).where(eq(users.isActive, true)).orderBy(users.displayOrder, users.name);
 
   // 2. Time entries in range (using date column)
   const entries = await db.execute(
