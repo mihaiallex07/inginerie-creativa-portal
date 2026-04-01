@@ -197,8 +197,6 @@ export default function ProcessOverview() {
         </div>
         <div className="flex items-center gap-3 text-[10px]">
           <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-200 border border-green-300" /> CO</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-red-200 border border-red-300" /> CM</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-blue-200 border border-blue-300" /> LL</span>
           <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-100 border border-amber-300" /> Weekend</span>
           <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-rose-100 border border-rose-300" /> Liber stat</span>
           {isAdmin && (

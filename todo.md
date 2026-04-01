@@ -323,3 +323,4 @@
 
 ## Sprint 33 — Fix reordonare angajați
 - [x] Fix: reordonare angajați în Process Overview nu persistă — query-ul getProcessOverview sorta doar după name, acum sortează după displayOrder
+- [x] Simplificare legendă Process Overview: păstrate doar CO, Weekend, Liber stat (eliminat CM și LL)
