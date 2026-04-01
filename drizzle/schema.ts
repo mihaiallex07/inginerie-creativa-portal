@@ -356,3 +356,14 @@ export const projectBudgetItems = mysqlTable("project_budget_items", {
 });
 export type ProjectBudgetItem = typeof projectBudgetItems.$inferSelect;
 export type InsertProjectBudgetItem = typeof projectBudgetItems.$inferInsert;
+
+// ─── APP SETTINGS (key-value store for admin-managed settings) ──────────────
+export const appSettings = mysqlTable("app_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  key: varchar("key", { length: 128 }).notNull().unique(),
+  value: text("value"),
+  updatedBy: int("updatedBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;

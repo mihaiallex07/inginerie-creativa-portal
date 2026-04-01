@@ -349,3 +349,9 @@
 - [x] Frontend: butoane Editează/Șterge pe pagina de detaliu știre (vizibile doar pentru admin/autor)
 - [x] Frontend: dialog editare știre (titlu, rezumat, conținut, categorie, tag-uri, fixat, important)
 - [x] Frontend: dialog confirmare ștergere cu avertisment ireversibil
+
+## Sprint 37 — Link meet zilnic pe Process Overview
+- [x] Backend: tabel app_settings (key-value) pentru stocarea link-ului meet zilnic
+- [x] Backend: proceduri settings.get / settings.set (admin only pentru set)
+- [x] Frontend: buton "Meet zilnic" albastru pe header Process Overview cu link extern
+- [x] Frontend: dialog editare link meet (admin only) cu suport Google Meet/Zoom/Teams

@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronRight, Download, CalendarDays, ArrowUp, ArrowDown, GripVertical, Settings2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, CalendarDays, ArrowUp, ArrowDown, GripVertical, Settings2, Video, Pencil, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { toast } from "sonner";
@@ -189,6 +189,26 @@ export default function ProcessOverview() {
     reorderMutation.mutate({ orderList });
   }
 
+  // Meet link
+  const { data: meetLinkData } = trpc.settings.get.useQuery({ key: "daily_meet_link" });
+  const [meetEditOpen, setMeetEditOpen] = useState(false);
+  const [meetLinkInput, setMeetLinkInput] = useState("");
+  const setMeetLink = trpc.settings.set.useMutation({
+    onSuccess: () => {
+      toast.success("Link meet actualizat!");
+      setMeetEditOpen(false);
+      utils.settings.get.invalidate({ key: "daily_meet_link" });
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  function openMeetEdit() {
+    setMeetLinkInput(meetLinkData?.value ?? "");
+    setMeetEditOpen(true);
+  }
+
+  const meetLink = meetLinkData?.value;
+
   return (
     <div className="h-[calc(100vh-72px)] flex flex-col">
       {/* Header */}
@@ -196,6 +216,28 @@ export default function ProcessOverview() {
         <div className="flex items-center gap-2">
           <CalendarDays className="h-5 w-5 text-[#FFCB09]" />
           <h1 className="text-lg font-bold text-foreground">Process Overview</h1>
+          {/* Meet link button */}
+          {meetLink ? (
+            <a
+              href={meetLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="ml-3 inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors"
+            >
+              <Video className="h-3.5 w-3.5" />
+              Meet zilnic
+              <ExternalLink className="h-3 w-3 opacity-70" />
+            </a>
+          ) : isAdmin ? (
+            <Button variant="outline" size="sm" className="ml-3 h-7 text-xs gap-1" onClick={openMeetEdit}>
+              <Video className="h-3.5 w-3.5" /> Adaugă link meet
+            </Button>
+          ) : null}
+          {isAdmin && meetLink && (
+            <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" onClick={openMeetEdit} title="Editează link meet">
+              <Pencil className="h-3 w-3 text-muted-foreground" />
+            </Button>
+          )}
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={prevMonth} className="h-8 w-8">
@@ -381,6 +423,40 @@ export default function ProcessOverview() {
             <Button className="bg-[#FFCB09] text-black hover:bg-[#e6b800]" onClick={saveReorder} disabled={reorderMutation.isPending}>
               {reorderMutation.isPending ? "Se salvează..." : "Salvează ordinea"}
             </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Meet Link Edit Dialog */}
+      <Dialog open={meetEditOpen} onOpenChange={setMeetEditOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Video className="h-5 w-5 text-blue-600" /> Link meet zilnic
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div>
+              <Label className="text-xs font-semibold">Link Google Meet / Zoom / Teams</Label>
+              <Input
+                value={meetLinkInput}
+                onChange={e => setMeetLinkInput(e.target.value)}
+                placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                className="mt-1"
+              />
+              <p className="text-[10px] text-muted-foreground mt-1">Introdu link-ul complet al întâlnirii zilnice. Lasă gol pentru a șterge.</p>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" size="sm" onClick={() => setMeetEditOpen(false)}>Anulează</Button>
+              <Button
+                size="sm"
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+                onClick={() => setMeetLink.mutate({ key: "daily_meet_link", value: meetLinkInput.trim() })}
+                disabled={setMeetLink.isPending}
+              >
+                {setMeetLink.isPending ? "Se salvează..." : "Salvează"}
+              </Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>

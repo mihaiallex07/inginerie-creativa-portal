@@ -18,10 +18,30 @@ import {
   proposals,
   timeEntries,
   users,
+  appSettings,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
 let _db: ReturnType<typeof drizzle> | null = null;
+
+// ─── APP SETTINGS ─────────────────────────────────────────────────────────
+export async function getAppSetting(key: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db.select().from(appSettings).where(eq(appSettings.key, key)).limit(1);
+  return result[0]?.value ?? null;
+}
+
+export async function setAppSetting(key: string, value: string, updatedBy: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db.select().from(appSettings).where(eq(appSettings.key, key)).limit(1);
+  if (existing.length > 0) {
+    await db.update(appSettings).set({ value, updatedBy }).where(eq(appSettings.key, key));
+  } else {
+    await db.insert(appSettings).values({ key, value, updatedBy });
+  }
+}
 
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {

@@ -80,6 +80,8 @@ import {
   getProcessOverview,
   deleteProject,
   updateUsersDisplayOrder,
+  getAppSetting,
+  setAppSetting,
 } from "./db";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -95,8 +97,28 @@ const peopleRouter = router({
     }),
 });
 
+// ─── APP SETTINGS ──────────────────────────────────────────────────────────────────
+const settingsRouter = router({
+  get: protectedProcedure
+    .input(z.object({ key: z.string() }))
+    .query(async ({ input }) => {
+      const value = await getAppSetting(input.key);
+      return { key: input.key, value };
+    }),
+  set: protectedProcedure
+    .input(z.object({ key: z.string(), value: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new Error("Doar administratorii pot modifica setările");
+      }
+      await setAppSetting(input.key, input.value, ctx.user.id);
+      return { success: true };
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
+  settings: settingsRouter,
 
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
