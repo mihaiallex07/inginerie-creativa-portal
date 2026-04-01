@@ -1194,3 +1194,27 @@ export async function getProcessOverview(dateFrom: string, dateTo: string) {
     projects: activeProjects,
   };
 }
+
+// ─── DELETE PROJECT (cascade: members, budget items, time entries) ──────────
+export async function deleteProject(projectId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  // Delete cascade: budget items, members, then project
+  await db.delete(projectBudgetItems).where(eq(projectBudgetItems.projectId, projectId));
+  await db.delete(projectMembers).where(eq(projectMembers.projectId, projectId));
+  // Unlink time entries (set projectId to null instead of deleting)
+  await db.update(timeEntries).set({ projectId: null } as any).where(eq(timeEntries.projectId as any, projectId));
+  // Delete the project itself
+  await db.delete(projects).where(eq(projects.id, projectId));
+  return { success: true };
+}
+
+// ─── UPDATE USERS DISPLAY ORDER ──────────────────────────────────────────────
+export async function updateUsersDisplayOrder(orderList: { userId: number; displayOrder: number }[]) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  for (const item of orderList) {
+    await db.update(users).set({ displayOrder: item.displayOrder }).where(eq(users.id, item.userId));
+  }
+  return { success: true };
+}

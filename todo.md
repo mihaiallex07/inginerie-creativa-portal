@@ -309,3 +309,14 @@
 - [x] Frontend: afișare coduri proiecte, concedii (CO), zile libere legale, weekend-uri colorate
 - [x] Sidebar: adăugare link Process Overview
 - [x] Teste: actualizare teste vitest (39/39 trec)
+
+## Sprint 32 — Editare/Ștergere proiecte + Ordine angajați Process Overview
+- [x] Backend: procedură editare proiect (toate câmpurile: nume, cod, client, status, date)
+- [x] Backend: procedură ștergere proiect (cu ștergere cascadă project_members, budget_items)
+- [x] Frontend: buton editare proiect pe pagina detaliu (dialog cu toate câmpurile)
+- [x] Frontend: buton ștergere proiect cu dialog confirmare sigur (tastare nume proiect)
+- [x] DB: adăugare coloană displayOrder pe tabelul users
+- [x] Backend: procedură actualizare displayOrder (admin-only)
+- [x] Frontend: Process Overview sortare angajați după displayOrder
+- [x] Frontend: buton admin "Reordonează" cu interfață up/down arrows
+- [x] Teste: actualizare teste vitest (39/39 trec)

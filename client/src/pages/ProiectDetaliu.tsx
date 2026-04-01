@@ -101,6 +101,72 @@ export default function ProiectDetaliu() {
   const { data: budgetData } = trpc.projects.budgetItems.useQuery({ projectId });
 
   const canManage = user?.role === "admin" || user?.role === "coordonator";
+  const isAdmin = user?.role === "admin";
+
+  // Edit project state
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "", code: "", clientName: "", status: "activ",
+    description: "", driveId: "", color: "#FFCB09",
+    startDate: "", endDate: "",
+  });
+
+  // Delete project state
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+
+  const editProjectMutation = trpc.projects.upsert.useMutation({
+    onSuccess: () => {
+      toast.success("Proiect actualizat!");
+      setEditDialogOpen(false);
+      utils.projects.getWithTeam.invalidate({ id: projectId });
+    },
+    onError: () => toast.error("Eroare la actualizare"),
+  });
+
+  const deleteProjectMutation = trpc.projects.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Proiect șters!");
+      setLocation("/proiecte");
+    },
+    onError: (err) => toast.error(err.message || "Eroare la ștergere"),
+  });
+
+  function openEditDialog() {
+    if (!project) return;
+    setEditForm({
+      name: project.name || "",
+      code: project.code || "",
+      clientName: project.clientName || "",
+      status: project.status || "activ",
+      description: project.description || "",
+      driveId: project.driveId || "",
+      color: project.color || "#FFCB09",
+      startDate: project.startDate ? new Date(project.startDate).toISOString().split("T")[0] : "",
+      endDate: project.endDate ? new Date(project.endDate).toISOString().split("T")[0] : "",
+    });
+    setEditDialogOpen(true);
+  }
+
+  function handleSaveEdit() {
+    editProjectMutation.mutate({
+      id: projectId,
+      name: editForm.name,
+      code: editForm.code || undefined,
+      clientName: editForm.clientName || undefined,
+      status: editForm.status as any,
+      description: editForm.description || undefined,
+      driveId: editForm.driveId || undefined,
+      color: editForm.color || undefined,
+      startDate: editForm.startDate || null,
+      endDate: editForm.endDate || null,
+    });
+  }
+
+  function handleDeleteProject() {
+    if (!project) return;
+    deleteProjectMutation.mutate({ id: projectId, confirmName: deleteConfirmName });
+  }
 
   const addMemberMutation = trpc.projects.addMember.useMutation({
     onSuccess: () => {
@@ -244,16 +310,28 @@ export default function ProiectDetaliu() {
           </div>
           {project.code && <p className="text-xs text-muted-foreground mt-0.5 ml-10">Cod: {project.code}</p>}
         </div>
-        {project.driveId && (
-          <a
-            href={`https://drive.google.com/drive/folders/${project.driveId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-[#FFCB09] transition-colors"
-          >
-            <ExternalLink className="h-4 w-4" /> Google Drive
-          </a>
-        )}
+        <div className="flex items-center gap-2">
+          {project.driveId && (
+            <a
+              href={`https://drive.google.com/drive/folders/${project.driveId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-[#FFCB09] transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" /> Google Drive
+            </a>
+          )}
+          {canManage && (
+            <Button variant="outline" size="sm" onClick={openEditDialog}>
+              <Pencil className="h-3.5 w-3.5 mr-1" /> Editare
+            </Button>
+          )}
+          {isAdmin && (
+            <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => { setDeleteConfirmName(""); setDeleteDialogOpen(true); }}>
+              <Trash2 className="h-3.5 w-3.5 mr-1" /> Șterge
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Project Info Cards */}
@@ -689,6 +767,119 @@ export default function ProiectDetaliu() {
                 disabled={addMemberMutation.isPending || !selectedUserId}
               >
                 {addMemberMutation.isPending ? "Se adaugă..." : "Adaugă"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Project Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Settings2 className="h-5 w-5 text-[#FFCB09]" /> Editare proiect
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Nume proiect *</Label>
+                <Input value={editForm.name} onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Cod</Label>
+                <Input value={editForm.code} onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))} placeholder="ex: 255" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Client</Label>
+                <Input value={editForm.clientName} onChange={e => setEditForm(f => ({ ...f, clientName: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Status</Label>
+                <Select value={editForm.status} onValueChange={v => setEditForm(f => ({ ...f, status: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="activ">Activ</SelectItem>
+                    <SelectItem value="suspendat">Suspendat</SelectItem>
+                    <SelectItem value="finalizat">Finalizat</SelectItem>
+                    <SelectItem value="intern">Intern</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Data start</Label>
+                <Input type="date" value={editForm.startDate} onChange={e => setEditForm(f => ({ ...f, startDate: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs">Data sfârșit</Label>
+                <Input type="date" value={editForm.endDate} onChange={e => setEditForm(f => ({ ...f, endDate: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Descriere</Label>
+              <Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} rows={3} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Google Drive ID</Label>
+                <Input value={editForm.driveId} onChange={e => setEditForm(f => ({ ...f, driveId: e.target.value }))} placeholder="ID folder Drive" />
+              </div>
+              <div>
+                <Label className="text-xs">Culoare</Label>
+                <div className="flex items-center gap-2">
+                  <input type="color" value={editForm.color} onChange={e => setEditForm(f => ({ ...f, color: e.target.value }))} className="h-9 w-12 rounded border cursor-pointer" />
+                  <span className="text-xs text-muted-foreground">{editForm.color}</span>
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Anulează</Button>
+              <Button className="bg-[#FFCB09] text-black hover:bg-[#e6b800]" onClick={handleSaveEdit} disabled={editProjectMutation.isPending || !editForm.name}>
+                {editProjectMutation.isPending ? "Se salvează..." : "Salvează"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Project Dialog - requires typing project name */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <Trash2 className="h-5 w-5" /> Ștergere proiect
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-sm text-red-800 font-medium">Această acțiune este ireversibilă!</p>
+              <p className="text-xs text-red-600 mt-1">
+                Se vor șterge: membrii echipei, bugetul pe categorii, și legăturile cu intrările de timp.
+                Intrările de timp nu vor fi șterse, dar nu vor mai fi asociate cu acest proiect.
+              </p>
+            </div>
+            <div>
+              <Label className="text-xs">Pentru confirmare, tastați numele proiectului: <strong>{project.name}</strong></Label>
+              <Input
+                value={deleteConfirmName}
+                onChange={e => setDeleteConfirmName(e.target.value)}
+                placeholder={project.name}
+                className="mt-1 border-red-200 focus:ring-red-500"
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Anulează</Button>
+              <Button
+                variant="destructive"
+                onClick={handleDeleteProject}
+                disabled={deleteProjectMutation.isPending || deleteConfirmName !== project.name}
+              >
+                {deleteProjectMutation.isPending ? "Se șterge..." : "Șterge definitiv"}
               </Button>
             </div>
           </div>

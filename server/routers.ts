@@ -76,6 +76,8 @@ import {
   deleteBudgetItem,
   getProjectBudgetSummary,
   getProcessOverview,
+  deleteProject,
+  updateUsersDisplayOrder,
 } from "./db";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -448,6 +450,19 @@ export const appRouter = router({
         if (input.projectRole === "coordonator") {
           await upsertProject({ id: input.projectId, name: "", coordinatorId: input.userId });
         }
+        return { success: true };
+      }),
+
+    // Delete project (admin only, with cascade)
+    delete: protectedProcedure
+      .input(z.object({ id: z.number(), confirmName: z.string() }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new Error("Doar administratorii pot șterge proiecte");
+        // Verify project exists and name matches
+        const project = await getProjectWithTeam(input.id);
+        if (!project) throw new Error("Proiectul nu există");
+        if (project.name !== input.confirmName) throw new Error("Numele proiectului nu corespunde");
+        await deleteProject(input.id);
         return { success: true };
       }),
   }),
@@ -945,6 +960,16 @@ export const appRouter = router({
         if (ctx.user.role !== "admin") throw new Error("Acces interzis");
         if (ctx.user.id === input.id) throw new Error("Nu ți poți șterge propriul cont");
         await deleteUserCompletely(input.id);
+        return { success: true };
+      }),
+
+    reorderUsers: protectedProcedure
+      .input(z.object({
+        orderList: z.array(z.object({ userId: z.number(), displayOrder: z.number() })),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+        await updateUsersDisplayOrder(input.orderList);
         return { success: true };
       }),
   }),

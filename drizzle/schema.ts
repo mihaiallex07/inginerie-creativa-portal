@@ -52,6 +52,7 @@ export const users = mysqlTable("users", {
   allergies: text("allergies"),
   // ── Note interne ──
   profileNotes: text("profileNotes"),
+  displayOrder: int("displayOrder").default(999),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
