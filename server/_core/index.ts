@@ -1,4 +1,8 @@
+// Force Romania timezone for all Date operations — must be before any imports
+process.env.TZ = "Europe/Bucharest";
+
 import "dotenv/config";
+
 import express from "express";
 import { createServer } from "http";
 import net from "net";

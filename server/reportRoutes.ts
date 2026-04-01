@@ -13,6 +13,7 @@ import {
   getActiveUsers,
   getTimeEntriesForUser,
   getProjects,
+  getAllUsers,
 } from "./db";
 import {
   generatePontajLunarExcel,
@@ -295,10 +296,21 @@ export function registerReportRoutes(app: Express) {
     const projectFilter = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
     const typeFilter = (req.query.activityType as string) || undefined;
     const taskNameFilter = (req.query.taskName as string) || undefined;
+    const employeeFilter = req.query.employeeId ? parseInt(req.query.employeeId as string) : undefined;
 
-    const allEntries = await getTimeEntriesForUser(user.id, dateFrom, dateTo);
+    // Admin can query any employee; non-admin can only query own data
+    const targetUserId = (user.role === "admin" && employeeFilter) ? employeeFilter : user.id;
+    const allEntries = await getTimeEntriesForUser(targetUserId, dateFrom, dateTo);
     const projects = await getProjects();
     const projMap = new Map(projects.map((p: any) => [p.id, p.name]));
+
+    // Resolve target user name for report title
+    let targetUserName = user.name || "Utilizator";
+    if (user.role === "admin" && employeeFilter && employeeFilter !== user.id) {
+      const allUsers = await getAllUsers();
+      const target = allUsers.find((u: any) => u.id === employeeFilter);
+      if (target) targetUserName = target.name || "Utilizator";
+    }
 
     let entries = allEntries.filter((e: any) => {
       const hasTime = (e.startHour != null) || e.startTime;
@@ -333,7 +345,7 @@ export function registerReportRoutes(app: Express) {
     const r2 = ws.lastRow!;
     ws.mergeCells(`A${r2.number}:${String.fromCharCode(64 + colCount)}${r2.number}`);
     const c2 = r2.getCell(1);
-    c2.value = `Raport Time-Tracking — ${user.name || "Utilizator"}`;
+    c2.value = `Raport Time-Tracking \u2014 ${targetUserName}`;
     c2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFCB09" } };
     c2.font = { bold: true, color: { argb: "FF221F1F" }, size: 12, name: "Calibri" };
     c2.alignment = { vertical: "middle", horizontal: "center" };
@@ -427,10 +439,21 @@ export function registerReportRoutes(app: Express) {
     const projectFilter = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
     const typeFilter = (req.query.activityType as string) || undefined;
     const taskNameFilter = (req.query.taskName as string) || undefined;
+    const employeeFilter = req.query.employeeId ? parseInt(req.query.employeeId as string) : undefined;
 
-    const allEntries = await getTimeEntriesForUser(user.id, dateFrom, dateTo);
+    // Admin can query any employee; non-admin can only query own data
+    const targetUserId = (user.role === "admin" && employeeFilter) ? employeeFilter : user.id;
+    const allEntries = await getTimeEntriesForUser(targetUserId, dateFrom, dateTo);
     const projects = await getProjects();
     const projMap = new Map(projects.map((p: any) => [p.id, p.name]));
+
+    // Resolve target user name for report title
+    let targetUserName = user.name || "Utilizator";
+    if (user.role === "admin" && employeeFilter && employeeFilter !== user.id) {
+      const allUsers = await getAllUsers();
+      const target = allUsers.find((u: any) => u.id === employeeFilter);
+      if (target) targetUserName = target.name || "Utilizator";
+    }
 
     let entries = allEntries.filter((e: any) => {
       const hasTime = (e.startHour != null) || e.startTime;
@@ -464,10 +487,10 @@ export function registerReportRoutes(app: Express) {
     });
 
     const totalsRow = ["", "", "", "TOTAL", "", "", fmtDuration(totalMins), ""];
-    const title = `Raport Time-Tracking \u2014 ${user.name || "Utilizator"}`;
+    const title = `Raport Time-Tracking \u2014 ${targetUserName}`;
     const subtitle = `Perioad\u0103: ${dateFrom || "\u2014"} \u2192 ${dateTo || "\u2014"}`;
     const buffer = await generatePDF(title, subtitle, headers, rows, totalsRow);
-    const filename = sanitizeFilename(`time-tracking-${user.name || "user"}-${dateFrom || "all"}.pdf`);
+    const filename = sanitizeFilename(`time-tracking-${targetUserName}-${dateFrom || "all"}.pdf`);
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
     res.send(buffer);

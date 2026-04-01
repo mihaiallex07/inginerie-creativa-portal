@@ -239,6 +239,7 @@ export default function TimeTracking() {
   const [exportProject, setExportProject] = useState("all");
   const [exportType, setExportType] = useState("all");
   const [exportTaskName, setExportTaskName] = useState("");
+  const [exportEmployee, setExportEmployee] = useState("self");
 
   // ── Data queries ──
   const dateFrom = format(weekStart, "yyyy-MM-dd");
@@ -247,6 +248,8 @@ export default function TimeTracking() {
   const { data: projects = [] } = trpc.projects.list.useQuery({});
   const { data: companyEvents = [], refetch: refetchEvents } = trpc.companyEvents.list.useQuery({ dateFrom, dateTo });
   const { data: birthdays = [] } = trpc.people.upcomingBirthdays.useQuery({ daysAhead: 14 });
+  const isAdmin = user?.role === "admin";
+  const { data: allUsers = [] } = trpc.users.list.useQuery(undefined as any, { enabled: !!isAdmin });
 
   const holidays = useMemo(() => {
     const y1 = weekStart.getFullYear();
@@ -492,6 +495,7 @@ export default function TimeTracking() {
     if (exportProject !== "all") params.set("projectId", exportProject);
     if (exportType !== "all") params.set("activityType", exportType);
     if (exportTaskName) params.set("taskName", exportTaskName);
+    if (isAdmin && exportEmployee !== "self") params.set("employeeId", exportEmployee);
     return `/api/reports/time-tracking/${fmt}?${params.toString()}`;
   };
 
@@ -912,9 +916,25 @@ export default function TimeTracking() {
                 </Select>
               </div>
             </div>
-            <div>
-              <Label className="text-xs">Titlu activitate</Label>
-              <Input value={exportTaskName} onChange={e => setExportTaskName(e.target.value)} placeholder="Caută după titlu..." className="h-8 text-xs" />
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Label className="text-xs">Titlu activitate</Label>
+                <Input value={exportTaskName} onChange={e => setExportTaskName(e.target.value)} placeholder="Caută după titlu..." className="h-8 text-xs" />
+              </div>
+              {isAdmin && (
+                <div className="flex-1">
+                  <Label className="text-xs">Angajat</Label>
+                  <Select value={exportEmployee} onValueChange={setExportEmployee}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="self" className="text-xs">Eu ({user?.name?.split(" ")[0]})</SelectItem>
+                      {(allUsers as any[]).filter((u: any) => u.isActive !== false).map((u: any) => (
+                        <SelectItem key={u.id} value={String(u.id)} className="text-xs">{u.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             {/* Preview table */}

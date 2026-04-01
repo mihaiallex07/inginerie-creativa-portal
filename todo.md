@@ -264,3 +264,7 @@
 - [x] Export: înlocuire CSV cu Excel (.xlsx) server-side branded
 - [x] Export: adăugare export PDF server-side branded
 - [x] Export: adăugare filtru "Titlu activitate" în dialogul de export raport ore
+
+## Sprint 27 — Fus orar global + Filtru Angajat export
+- [x] Fix: ajustare fus orar Europe/Bucharest la nivel global (server + frontend)
+- [x] Export: adăugare filtru "Angajat" vizibil doar pentru administratori (frontend + backend)
