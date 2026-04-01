@@ -17,9 +17,9 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
-const HOUR_START = 6;
-const HOUR_END = 23;
-const TOTAL_HOURS = HOUR_END - HOUR_START; // 17 hours
+const HOUR_START = 0;
+const HOUR_END = 24;
+const TOTAL_HOURS = HOUR_END - HOUR_START; // 24 hours
 const DRAG_THRESHOLD = 5;
 
 const ACTIVITY_TYPES = [
@@ -61,6 +61,18 @@ function getRomanianHolidays(year: number) {
 
 const pad2 = (n: number) => n.toString().padStart(2, "0");
 
+/** Extract time from entry — prefer integer columns, fallback to timestamp */
+function extractEntryTime(entry: any, which: "start" | "end"): { h: number; m: number } {
+  if (which === "start" && entry.startHour != null) return { h: entry.startHour, m: entry.startMin ?? 0 };
+  if (which === "end" && entry.endHour != null) return { h: entry.endHour, m: entry.endMin ?? 0 };
+  // Fallback for old data or company events
+  const d = which === "start" ? entry.startTime : entry.endTime;
+  if (!d) return { h: 0, m: 0 };
+  const dt = typeof d === "string" ? new Date(d) : d;
+  return { h: dt.getHours(), m: dt.getMinutes() };
+}
+
+/** Extract time from a raw Date/string (for company events) */
 function extractTime(d: Date | string | null | undefined): { h: number; m: number } {
   if (!d) return { h: 0, m: 0 };
   const dt = typeof d === "string" ? new Date(d) : d;
@@ -245,7 +257,9 @@ export default function TimeTracking() {
 
   const weekEntries = useMemo(() => {
     return (entries as any[]).filter((e: any) => {
-      if (!e.startTime || !e.endTime) return false;
+      // Accept entries with integer hour columns OR legacy timestamp columns
+      const hasTime = (e.startHour != null && e.endHour != null) || (e.startTime && e.endTime);
+      if (!hasTime) return false;
       const d = new Date(e.date);
       return d >= weekStart && d <= weekEnd;
     });
@@ -307,7 +321,7 @@ export default function TimeTracking() {
         if (el) {
           const entry = weekEntries.find((en: any) => en.id === resizeRef.current!.entryId);
           if (entry) {
-            const st = extractTime(entry.startTime);
+            const st = extractEntryTime(entry, "start");
             const startMins = (st.h - HOUR_START) * 60 + st.m;
             const endMins = (resizeRef.current.origEndH - HOUR_START) * 60 + resizeRef.current.origEndM;
             const heightPx = Math.max(8, (endMins / (TOTAL_HOURS * 60)) * gridHeight - (startMins / (TOTAL_HOURS * 60)) * gridHeight);
@@ -334,7 +348,7 @@ export default function TimeTracking() {
           const { entryId, origEndH, origEndM } = resizeRef.current;
           const entry = weekEntries.find((en: any) => en.id === entryId);
           if (entry) {
-            const st = extractTime(entry.startTime);
+            const st = extractEntryTime(entry, "start");
             const d = new Date(entry.date);
             updateEntry.mutate({
               id: entryId, date: format(d, "yyyy-MM-dd"),
@@ -406,8 +420,8 @@ export default function TimeTracking() {
 
   const openEditEntry = (entry: any) => {
     setEditingEntry(entry);
-    const st = extractTime(entry.startTime);
-    const en = extractTime(entry.endTime);
+    const st = extractEntryTime(entry, "start");
+    const en = extractEntryTime(entry, "end");
     setFormDate(format(new Date(entry.date), "yyyy-MM-dd"));
     setFormStart(st); setFormEnd(en);
     setFormTask(entry.taskName || ""); setFormType(entry.activityType || "proiectare");
@@ -459,7 +473,8 @@ export default function TimeTracking() {
   // ── Export logic ──
   const exportEntries = useMemo(() => {
     return (entries as any[]).filter((e: any) => {
-      if (!e.startTime || !e.date) return false;
+      const hasTime = (e.startHour != null) || e.startTime;
+      if (!hasTime || !e.date) return false;
       const d = format(new Date(e.date), "yyyy-MM-dd");
       if (d < exportFrom || d > exportTo) return false;
       if (exportProject !== "all" && String(e.projectId || "") !== exportProject) return false;
@@ -468,30 +483,23 @@ export default function TimeTracking() {
     });
   }, [entries, exportFrom, exportTo, exportProject, exportType]);
 
-  const handleExportCSV = () => {
-    const rows = exportEntries.map((e: any) => {
-      const st = extractTime(e.startTime);
-      const en = extractTime(e.endTime);
-      const proj = (projects as any[]).find((p: any) => p.id === e.projectId);
-      return [
-        format(new Date(e.date), "dd.MM.yyyy"),
-        e.taskName || "-",
-        e.activityType || "-",
-        proj?.name || "-",
-        `${pad2(st.h)}:${pad2(st.m)}`,
-        `${pad2(en.h)}:${pad2(en.m)}`,
-        `${Math.floor((e.durationMinutes || 0) / 60)}h ${(e.durationMinutes || 0) % 60}m`,
-        e.description || "",
-      ].join(",");
-    });
-    const header = "Data,Activitate,Tip,Proiect,Start,Final,Durată,Descriere";
-    const csv = [header, ...rows].join("\n");
-    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url; a.download = `time-tracking-${exportFrom}-${exportTo}.csv`; a.click();
-    URL.revokeObjectURL(url);
-    toast.success("CSV exportat");
+  const buildExportUrl = (fmt: "excel" | "pdf") => {
+    const params = new URLSearchParams();
+    if (exportFrom) params.set("dateFrom", exportFrom);
+    if (exportTo) params.set("dateTo", exportTo);
+    if (exportProject !== "all") params.set("projectId", exportProject);
+    if (exportType !== "all") params.set("activityType", exportType);
+    return `/api/reports/time-tracking/${fmt}?${params.toString()}`;
+  };
+
+  const handleExportExcel = () => {
+    window.open(buildExportUrl("excel"), "_blank");
+    toast.success("Export Excel \u00eenceput...");
+  };
+
+  const handleExportPDF = () => {
+    window.open(buildExportUrl("pdf"), "_blank");
+    toast.success("Export PDF \u00eenceput...");
   };
 
   // ── Time insights ──
@@ -648,10 +656,10 @@ export default function TimeTracking() {
                     <div key={`half-${i}`} className="absolute w-full border-t border-gray-50" style={{ top: `${i * slotH + slotH / 2}px` }} />
                   ))}
 
-                  {/* Click to add — DOUBLE CLICK */}
+                  {/* Click to add — SINGLE CLICK */}
                   <div
                     className="absolute inset-0 cursor-pointer"
-                    onDoubleClick={(e) => {
+                    onClick={(e) => {
                       const rect = e.currentTarget.getBoundingClientRect();
                       const relY = e.clientY - rect.top;
                       const totalMins = (relY / gridHeight) * TOTAL_HOURS * 60;
@@ -688,8 +696,8 @@ export default function TimeTracking() {
 
                   {/* User entries */}
                   {dayEntries.map((entry: any, eIdx: number) => {
-                    const st = extractTime(entry.startTime);
-                    const en = extractTime(entry.endTime);
+                    const st = extractEntryTime(entry, "start");
+                    const en = extractEntryTime(entry, "end");
                     const topPx = minsToY(st.h, st.m);
                     const heightPx = Math.max(8, minsToY(en.h, en.m) - topPx);
                     const colors = ENTRY_COLORS[eIdx % 2];
@@ -704,10 +712,12 @@ export default function TimeTracking() {
                         onMouseDown={(e) => {
                           if ((e.target as HTMLElement).dataset.resize) return;
                           e.preventDefault();
+                          const stMins = st.h * 60 + st.m;
+                          const enMins = en.h * 60 + en.m;
                           dragRef.current = {
                             entryId: entry.id, startY: e.clientY, startX: e.clientX,
-                            origDayIdx: dayIdx, origStartMins: (st.h - HOUR_START) * 60 + st.m,
-                            origDurMins: (en.h - HOUR_START) * 60 + en.m - ((st.h - HOUR_START) * 60 + st.m),
+                            origDayIdx: dayIdx, origStartMins: stMins - HOUR_START * 60,
+                            origDurMins: enMins - stMins,
                             activated: false,
                           };
                           document.body.style.userSelect = "none";
@@ -917,8 +927,8 @@ export default function TimeTracking() {
                   {exportEntries.length === 0 ? (
                     <tr><td colSpan={6} className="px-2 py-4 text-center text-gray-400">Nicio intrare în perioada selectată</td></tr>
                   ) : exportEntries.map((e: any, i: number) => {
-                    const st = extractTime(e.startTime);
-                    const en = extractTime(e.endTime);
+                    const stE = extractEntryTime(e, "start");
+                    const enE = extractEntryTime(e, "end");
                     const proj = (projects as any[]).find((p: any) => p.id === e.projectId);
                     return (
                       <tr key={i} className="border-t border-gray-50 hover:bg-gray-50">
@@ -926,7 +936,7 @@ export default function TimeTracking() {
                         <td className="px-2 py-1 truncate max-w-[120px]">{e.taskName || "-"}</td>
                         <td className="px-2 py-1 capitalize">{e.activityType}</td>
                         <td className="px-2 py-1 truncate max-w-[80px]">{proj?.name || "-"}</td>
-                        <td className="px-2 py-1">{pad2(st.h)}:{pad2(st.m)}–{pad2(en.h)}:{pad2(en.m)}</td>
+                        <td className="px-2 py-1">{pad2(stE.h)}:{pad2(stE.m)}–{pad2(enE.h)}:{pad2(enE.m)}</td>
                         <td className="px-2 py-1 font-medium">{formatDuration(e.durationMinutes || 0)}</td>
                       </tr>
                     );
@@ -941,8 +951,11 @@ export default function TimeTracking() {
               </div>
               <div className="flex gap-2">
                 <Button variant="ghost" size="sm" onClick={() => setExportOpen(false)} className="text-xs">Anulează</Button>
-                <Button size="sm" onClick={handleExportCSV} className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold gap-1">
-                  <Download className="h-3 w-3" /> Export CSV
+                <Button size="sm" onClick={handleExportPDF} variant="outline" className="text-xs font-semibold gap-1 border-[#221F1F]">
+                  <Download className="h-3 w-3" /> PDF
+                </Button>
+                <Button size="sm" onClick={handleExportExcel} className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold gap-1">
+                  <Download className="h-3 w-3" /> Excel
                 </Button>
               </div>
             </div>

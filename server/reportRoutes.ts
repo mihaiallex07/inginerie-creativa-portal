@@ -11,6 +11,8 @@ import {
   getOreSuplimentare,
   getPontajPerProiect,
   getActiveUsers,
+  getTimeEntriesForUser,
+  getProjects,
 } from "./db";
 import {
   generatePontajLunarExcel,
@@ -262,12 +264,209 @@ export function registerReportRoutes(app: Express) {
     res.send(buffer);
   });
 
-  // ── Lista angajați activi (pentru selectorul HR) ──────────────────────────
+  // ── Lista angajați activi (pentru selectorul HR) ──────────────────────
   app.get("/api/reports/users", async (req, res) => {
     const user = await requireHR(req, res);
     if (!user) return;
     const users = await getActiveUsers();
     res.json(users);
+  });
+
+  // ═══ TIME-TRACKING PERSONAL EXPORT (any authenticated user) ══════════════════
+
+  // Helper: authenticate any user (not just admin)
+  async function requireAuth(req: Request, res: Response) {
+    try {
+      const user = await sdk.authenticateRequest(req);
+      if (!user) { res.status(401).json({ error: "Neautentificat." }); return null; }
+      return user as { id: number; role: string; name: string | null };
+    } catch {
+      res.status(401).json({ error: "Neautentificat." });
+      return null;
+    }
+  }
+
+  // ── Time-Tracking Excel ────────────────────────────────────────────────
+  app.get("/api/reports/time-tracking/excel", async (req, res) => {
+    const user = await requireAuth(req, res);
+    if (!user) return;
+    const dateFrom = (req.query.dateFrom as string) || undefined;
+    const dateTo = (req.query.dateTo as string) || undefined;
+    const projectFilter = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
+    const typeFilter = (req.query.activityType as string) || undefined;
+
+    const allEntries = await getTimeEntriesForUser(user.id, dateFrom, dateTo);
+    const projects = await getProjects();
+    const projMap = new Map(projects.map((p: any) => [p.id, p.name]));
+
+    let entries = allEntries.filter((e: any) => {
+      const hasTime = (e.startHour != null) || e.startTime;
+      if (!hasTime) return false;
+      if (projectFilter && e.projectId !== projectFilter) return false;
+      if (typeFilter && typeFilter !== "all" && e.activityType !== typeFilter) return false;
+      return true;
+    });
+
+    const ExcelJS = (await import("exceljs")).default;
+    const wb = new ExcelJS.Workbook();
+    wb.creator = "Inginerie Creativ\u0103 SRL";
+    wb.created = new Date();
+    const ws = wb.addWorksheet("Time Tracking", { pageSetup: { orientation: "landscape", fitToPage: true } });
+
+    const cols = ["Data", "Activitate", "Tip", "Proiect", "Start", "Final", "Durat\u0103", "Descriere"];
+    const colCount = cols.length;
+
+    // Branding rows
+    ws.addRow([]);
+    const r1 = ws.lastRow!;
+    ws.mergeCells(`A${r1.number}:${String.fromCharCode(64 + colCount)}${r1.number}`);
+    const c1 = r1.getCell(1);
+    c1.value = "Inginerie Creativ\u0103 SRL";
+    c1.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FF221F1F" } };
+    c1.font = { bold: true, color: { argb: "FFFFCB09" }, size: 14, name: "Calibri" };
+    c1.alignment = { vertical: "middle", horizontal: "center" };
+    r1.height = 28;
+
+    ws.addRow([]);
+    const r2 = ws.lastRow!;
+    ws.mergeCells(`A${r2.number}:${String.fromCharCode(64 + colCount)}${r2.number}`);
+    const c2 = r2.getCell(1);
+    c2.value = `Raport Time-Tracking — ${user.name || "Utilizator"}`;
+    c2.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFCB09" } };
+    c2.font = { bold: true, color: { argb: "FF221F1F" }, size: 12, name: "Calibri" };
+    c2.alignment = { vertical: "middle", horizontal: "center" };
+    r2.height = 22;
+
+    ws.addRow([]);
+    const r3 = ws.lastRow!;
+    ws.mergeCells(`A${r3.number}:${String.fromCharCode(64 + colCount)}${r3.number}`);
+    const c3 = r3.getCell(1);
+    c3.value = `Perioad\u0103: ${dateFrom || "\u2014"} \u2192 ${dateTo || "\u2014"} | Generat: ${new Date().toLocaleString("ro-RO")}`;
+    c3.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFF5F5F5" } };
+    c3.font = { color: { argb: "FF666666" }, size: 9, name: "Calibri" };
+    c3.alignment = { vertical: "middle", horizontal: "center" };
+    r3.height = 16;
+
+    ws.addRow([]);
+    ws.lastRow!.height = 6;
+
+    // Header row
+    const headerRow = ws.addRow(cols);
+    headerRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFCB09" } };
+      cell.font = { bold: true, color: { argb: "FF221F1F" }, size: 10, name: "Calibri" };
+      cell.alignment = { vertical: "middle", horizontal: "center", wrapText: true };
+      cell.border = {
+        top: { style: "thin", color: { argb: "FF221F1F" } },
+        bottom: { style: "thin", color: { argb: "FF221F1F" } },
+      };
+    });
+
+    // Data rows
+    let totalMins = 0;
+    entries.forEach((e: any, idx: number) => {
+      const sh = e.startHour ?? 0;
+      const sm = e.startMin ?? 0;
+      const eh = e.endHour ?? 0;
+      const em = e.endMin ?? 0;
+      const dur = e.durationMinutes || 0;
+      totalMins += dur;
+      const dateStr = e.date ? new Date(e.date).toLocaleDateString("ro-RO") : "\u2014";
+      const row = ws.addRow([
+        dateStr,
+        e.taskName || "\u2014",
+        e.activityType || "\u2014",
+        projMap.get(e.projectId) || "\u2014",
+        `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}`,
+        `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`,
+        fmtDuration(dur),
+        e.description || "",
+      ]);
+      const isEven = idx % 2 === 0;
+      row.eachCell((cell) => {
+        cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: isEven ? "FFF9F9F9" : "FFFFFFFF" } };
+        cell.font = { color: { argb: "FF221F1F" }, size: 9, name: "Calibri" };
+        cell.alignment = { vertical: "middle", horizontal: "center" };
+        cell.border = { bottom: { style: "hair", color: { argb: "FFDDDDDD" } } };
+      });
+    });
+
+    // Totals row
+    const totRow = ws.addRow(["", "", "", "TOTAL", "", "", fmtDuration(totalMins), ""]);
+    totRow.eachCell((cell) => {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: "FFFFCB09" } };
+      cell.font = { bold: true, color: { argb: "FF221F1F" }, size: 10, name: "Calibri" };
+      cell.alignment = { vertical: "middle", horizontal: "center" };
+      cell.border = {
+        top: { style: "medium", color: { argb: "FF221F1F" } },
+        bottom: { style: "medium", color: { argb: "FF221F1F" } },
+      };
+    });
+
+    // Column widths
+    ws.columns = [
+      { width: 14 }, { width: 30 }, { width: 14 }, { width: 20 },
+      { width: 8 }, { width: 8 }, { width: 10 }, { width: 30 },
+    ];
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const filename = sanitizeFilename(`time-tracking-${user.name || "user"}-${dateFrom || "all"}.xlsx`);
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(Buffer.from(buffer as ArrayBuffer));
+  });
+
+  // ── Time-Tracking PDF ─────────────────────────────────────────────────
+  app.get("/api/reports/time-tracking/pdf", async (req, res) => {
+    const user = await requireAuth(req, res);
+    if (!user) return;
+    const dateFrom = (req.query.dateFrom as string) || undefined;
+    const dateTo = (req.query.dateTo as string) || undefined;
+    const projectFilter = req.query.projectId ? parseInt(req.query.projectId as string) : undefined;
+    const typeFilter = (req.query.activityType as string) || undefined;
+
+    const allEntries = await getTimeEntriesForUser(user.id, dateFrom, dateTo);
+    const projects = await getProjects();
+    const projMap = new Map(projects.map((p: any) => [p.id, p.name]));
+
+    let entries = allEntries.filter((e: any) => {
+      const hasTime = (e.startHour != null) || e.startTime;
+      if (!hasTime) return false;
+      if (projectFilter && e.projectId !== projectFilter) return false;
+      if (typeFilter && typeFilter !== "all" && e.activityType !== typeFilter) return false;
+      return true;
+    });
+
+    const headers = ["Data", "Activitate", "Tip", "Proiect", "Start", "Final", "Durat\u0103", "Descriere"];
+    let totalMins = 0;
+    const rows = entries.map((e: any) => {
+      const sh = e.startHour ?? 0;
+      const sm = e.startMin ?? 0;
+      const eh = e.endHour ?? 0;
+      const em = e.endMin ?? 0;
+      const dur = e.durationMinutes || 0;
+      totalMins += dur;
+      const dateStr = e.date ? new Date(e.date).toLocaleDateString("ro-RO") : "\u2014";
+      return [
+        dateStr,
+        e.taskName || "\u2014",
+        e.activityType || "\u2014",
+        projMap.get(e.projectId) || "\u2014",
+        `${String(sh).padStart(2, "0")}:${String(sm).padStart(2, "0")}`,
+        `${String(eh).padStart(2, "0")}:${String(em).padStart(2, "0")}`,
+        fmtDuration(dur),
+        e.description || "",
+      ];
+    });
+
+    const totalsRow = ["", "", "", "TOTAL", "", "", fmtDuration(totalMins), ""];
+    const title = `Raport Time-Tracking \u2014 ${user.name || "Utilizator"}`;
+    const subtitle = `Perioad\u0103: ${dateFrom || "\u2014"} \u2192 ${dateTo || "\u2014"}`;
+    const buffer = await generatePDF(title, subtitle, headers, rows, totalsRow);
+    const filename = sanitizeFilename(`time-tracking-${user.name || "user"}-${dateFrom || "all"}.pdf`);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.send(buffer);
   });
 }
 

@@ -255,3 +255,11 @@
 - [x] Export rapoarte: buton Export în header TimeTracking + dialog cu filtre (perioadă, proiect, tip)
 - [x] Export rapoarte: preview tabel cu datele filtrate + total ore
 - [x] Export rapoarte: generare CSV cu BOM UTF-8 (compatibil Excel)
+
+## Sprint 26 — Fix-uri critice Time-Tracking
+- [x] Fix: bug timezone — task adăugat la 07:00 se salvează la 14:00 (offset UTC)
+- [x] Fix: single click pe slot gol pentru adăugare (în loc de double-click)
+- [x] Fix: grid 24h — interval complet 00:00-23:00 (nu doar 06:00-23:00)
+- [x] Fix: prima oră (00:00) vizibilă fără a fi ascunsă
+- [x] Export: înlocuire CSV cu Excel (.xlsx) server-side branded
+- [x] Export: adăugare export PDF server-side branded

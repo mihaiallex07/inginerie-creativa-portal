@@ -425,17 +425,16 @@ export const appRouter = router({
         isBillable: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        // Build ISO strings WITHOUT timezone so JS Date parses as local
-        const pad = (n: number) => n.toString().padStart(2, "0");
-        const startISO = `${input.date}T${pad(input.startHour)}:${pad(input.startMin)}:00`;
-        const endISO = `${input.date}T${pad(input.endHour)}:${pad(input.endMin)}:00`;
+        // Store hours as plain integers — NO Date/timezone conversion
         const durationMinutes = (input.endHour * 60 + input.endMin) - (input.startHour * 60 + input.startMin);
         const id = await createTimeEntry({
           userId: ctx.user.id,
           projectId: input.projectId,
-          date: new Date(input.date + "T00:00:00"),
-          startTime: new Date(startISO),
-          endTime: new Date(endISO),
+          date: new Date(input.date + "T12:00:00Z"),
+          startHour: input.startHour,
+          startMin: input.startMin,
+          endHour: input.endHour,
+          endMin: input.endMin,
           durationMinutes: Math.max(0, durationMinutes),
           activityType: input.activityType ?? "proiectare",
           taskName: input.taskName,
@@ -465,15 +464,14 @@ export const appRouter = router({
         const entries = await getTimeEntriesForUser(ctx.user.id);
         const entry = entries.find(e => e.id === input.id);
         if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
-        const pad = (n: number) => n.toString().padStart(2, "0");
-        const startISO = `${input.date}T${pad(input.startHour)}:${pad(input.startMin)}:00`;
-        const endISO = `${input.date}T${pad(input.endHour)}:${pad(input.endMin)}:00`;
         const durationMinutes = (input.endHour * 60 + input.endMin) - (input.startHour * 60 + input.startMin);
         await updateTimeEntry(input.id, {
           projectId: input.projectId ?? undefined,
-          date: new Date(input.date + "T00:00:00"),
-          startTime: new Date(startISO),
-          endTime: new Date(endISO),
+          date: new Date(input.date + "T12:00:00Z"),
+          startHour: input.startHour,
+          startMin: input.startMin,
+          endHour: input.endHour,
+          endMin: input.endMin,
           durationMinutes: Math.max(0, durationMinutes),
           activityType: input.activityType ?? "proiectare",
           taskName: input.taskName,
