@@ -355,3 +355,9 @@
 - [x] Backend: proceduri settings.get / settings.set (admin only pentru set)
 - [x] Frontend: buton "Meet zilnic" albastru pe header Process Overview cu link extern
 - [x] Frontend: dialog editare link meet (admin only) cu suport Google Meet/Zoom/Teams
+
+## Sprint 38 — Evenimente recurente zilnice + management evenimente
+- [x] Backend: suport evenimente recurente zilnice (daily) cu oră fixă — expandă în calendar pe fiecare zi lucrătoare
+- [x] Frontend: opțiune "zilnic" la creare/editare eveniment de firmă (checkbox recurent + frecvență + dată sfârșit)
+- [x] Frontend: pagină Evenimente Firmă (/evenimente) cu listă completă — accesibilă din sidebar Administrare
+- [x] Frontend: editare și ștergere evenimente din lista de management cu dialog-uri dedicate

@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, desc, eq, gte, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   companyEvents,
@@ -973,12 +973,38 @@ export async function getOrgChartData() {
 export async function getCompanyEvents(dateFrom: string, dateTo: string) {
   const db = await getDb();
   if (!db) return [];
+  // Get non-recurring events in range + all active recurring events
   const rows = await db.select().from(companyEvents)
     .where(and(
       eq(companyEvents.isActive, true),
-      sql`DATE(${companyEvents.startTime}) <= ${dateTo}`,
-      sql`DATE(${companyEvents.endTime}) >= ${dateFrom}`,
+      or(
+        // Non-recurring: must overlap with date range
+        and(
+          sql`(${companyEvents.isRecurring} = false OR ${companyEvents.isRecurring} IS NULL)`,
+          sql`DATE(${companyEvents.startTime}) <= ${dateTo}`,
+          sql`DATE(${companyEvents.endTime}) >= ${dateFrom}`,
+        ),
+        // Recurring: started before range end and not expired
+        and(
+          eq(companyEvents.isRecurring, true),
+          sql`DATE(${companyEvents.startTime}) <= ${dateTo}`,
+          or(
+            sql`${companyEvents.recurringUntil} IS NULL`,
+            sql`${companyEvents.recurringUntil} >= ${dateFrom}`,
+          ),
+        ),
+      ),
     ));
+  return rows;
+}
+
+// Get all company events (for admin management)
+export async function getAllCompanyEvents() {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.select().from(companyEvents)
+    .where(eq(companyEvents.isActive, true))
+    .orderBy(desc(companyEvents.createdAt));
   return rows;
 }
 

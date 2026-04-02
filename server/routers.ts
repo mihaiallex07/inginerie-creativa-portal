@@ -82,6 +82,7 @@ import {
   updateUsersDisplayOrder,
   getAppSetting,
   setAppSetting,
+  getAllCompanyEvents,
 } from "./db";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -1159,6 +1160,12 @@ export const appRouter = router({
       .input(z.object({ dateFrom: z.string(), dateTo: z.string() }))
       .query(async ({ input }) => {
         return getCompanyEvents(input.dateFrom, input.dateTo);
+      }),
+
+    listAll: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+        return getAllCompanyEvents();
       }),
 
     create: protectedProcedure

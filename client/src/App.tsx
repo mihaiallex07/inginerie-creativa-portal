@@ -27,6 +27,7 @@ import ProfilColeg from "./pages/ProfilColeg";
 import TimeTracking from "./pages/TimeTracking";
 import ProiectDetaliu from "./pages/ProiectDetaliu";
 import ProcessOverview from "./pages/ProcessOverview";
+import Evenimente from "./pages/Evenimente";
 
 function Router() {
   return (
@@ -45,6 +46,7 @@ function Router() {
         <Route path="/proiecte" component={Proiecte} />
         <Route path="/proiecte/:id" component={ProiectDetaliu} />
         <Route path="/process-overview" component={ProcessOverview} />
+        <Route path="/evenimente" component={Evenimente} />
         <Route path="/profil" component={Profil} />
         <Route path="/cereri" component={CereriConcediu} />
         <Route path="/organigrama" component={Organigrama} />

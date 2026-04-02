@@ -109,18 +109,48 @@ export default function Dashboard() {
       }
     }
 
-    // Add company events
+    // Add company events (expand daily recurring ones)
     if (eventsData) {
+      const mStart = startOfMonth(calMonth);
+      const mEnd = endOfMonth(calMonth);
       for (const ev of eventsData) {
-        entries.push({
-          type: "event",
-          date: new Date(ev.startTime),
-          title: ev.title,
-          subtitle: ev.description ?? undefined,
-          color: ev.color ?? "#3b82f6",
-          description: ev.description ?? undefined,
-          link: ev.link ?? undefined,
-        });
+        if (ev.isRecurring && ev.recurringRule === "daily") {
+          // Expand daily recurring event across the month
+          const evStart = new Date(ev.startTime);
+          const evEnd = ev.recurringUntil ? new Date(ev.recurringUntil + "T23:59:59") : mEnd;
+          const rangeStart = mStart > evStart ? mStart : evStart;
+          const rangeEnd = mEnd < evEnd ? mEnd : evEnd;
+          const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });
+          const startHour = evStart.getHours();
+          const startMin = evStart.getMinutes();
+          const endTime = new Date(ev.endTime);
+          const endHour = endTime.getHours();
+          const endMin = endTime.getMinutes();
+          for (const day of days) {
+            // Skip weekends for daily work events
+            const dow = getDay(day);
+            if (dow === 0 || dow === 6) continue;
+            entries.push({
+              type: "event",
+              date: new Date(day.getFullYear(), day.getMonth(), day.getDate(), startHour, startMin),
+              title: ev.title,
+              subtitle: `${String(startHour).padStart(2,"0")}:${String(startMin).padStart(2,"0")} - ${String(endHour).padStart(2,"0")}:${String(endMin).padStart(2,"0")}${ev.description ? " \u2022 " + ev.description : ""}`,
+              color: ev.color ?? "#3b82f6",
+              description: ev.description ?? undefined,
+              link: ev.link ?? undefined,
+            });
+          }
+        } else {
+          entries.push({
+            type: "event",
+            date: new Date(ev.startTime),
+            title: ev.title,
+            subtitle: ev.description ?? undefined,
+            color: ev.color ?? "#3b82f6",
+            description: ev.description ?? undefined,
+            link: ev.link ?? undefined,
+          });
+        }
       }
     }
 
