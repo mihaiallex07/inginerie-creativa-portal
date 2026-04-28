@@ -117,7 +117,7 @@ export default function Dashboard() {
         if (ev.isRecurring && ev.recurringRule === "daily") {
           // Expand daily recurring event across the month
           const evStart = new Date(ev.startTime);
-          const evEnd = ev.recurringUntil ? new Date(ev.recurringUntil + "T23:59:59") : mEnd;
+          const evEnd = ev.recurringUntil ? (() => { const d = ev.recurringUntil instanceof Date ? ev.recurringUntil : new Date(ev.recurringUntil as string); return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 23, 59, 59); })() : mEnd;
           const rangeStart = mStart > evStart ? mStart : evStart;
           const rangeEnd = mEnd < evEnd ? mEnd : evEnd;
           const days = eachDayOfInterval({ start: rangeStart, end: rangeEnd });

@@ -371,3 +371,42 @@
 - [x] Frontend: buton "Conectează G Calendar" / "Import G Calendar" în toolbar Time-Tracking
 - [x] Frontend: dialog import — listare evenimente din ziua selectată, click pentru pre-completare formular
 - [x] Frontend: buton deconectare Google Calendar din dialog
+
+## Sprint 40 — Fast Time Tracking + Fix Evenimente + GCal one-way sync
+
+### Fix Evenimente Firmă
+- [ ] Fix: evenimentele recurente zilnice apar doar în ziua creării — corectare logică expandare
+- [ ] Fix: buton "Eveniment firmă" vizibil doar admin/coordonator
+- [ ] Fix: butonul "Eveniment firmă" să fie shortcut redirect la /evenimente (nu dialog)
+- [ ] Feature: audiență eveniment — toți / per proiect / per departament / per persoane selectate
+- [ ] Schema DB: câmp audience_type + audience_ids pe companyEvents
+- [ ] Backend: filtrare evenimente în calendar după audiență utilizatorului curent
+
+### Fast Time Tracking (Bubble)
+- [ ] Frontend: buton "Start Timer" în sidebar/header (vizibil pe toate paginile)
+- [ ] Frontend: bubble dreptunghiular flotant mutabil (drag & drop) cu timer activ
+- [ ] Frontend: bubble arată: proiect, activitate, timp scurs (HH:MM:SS)
+- [ ] Frontend: click pe bubble → selectare proiect + activitate + pornire timer
+- [ ] Frontend: shortcut tastatură editabil pentru start/stop timer (default: Alt+T)
+- [ ] Backend: salvare automată time entry la stop timer
+
+### Google Calendar — sincronizare unidirecțională
+- [ ] Simplificare: GCal → Hub only (import evenimente din GCal, fără scriere înapoi)
+- [ ] Auto-import: evenimentele din GCal apar ca sugestii în Time-Tracking zilnic
+
+## Sprint 40 — Fast Time Tracking + Fix Evenimente + Audiență Eveniment
+
+### Fix Evenimente Firmă
+- [x] Fix: buton "Eveniment firmă" vizibil pentru admin + coordonator (era doar admin)
+- [x] Fix: pagina /evenimente accesibilă coordonator (listAll, create, update, delete procedures)
+- [x] Fix: recurringUntil era Date object, nu string — fix expandare recurentă în Dashboard.tsx
+- [x] Feature: audiență eveniment — toți / departament / persoane selectate (targetType, targetDepartment, targetUserIds)
+- [x] Backend: procedura people.list adăugată (admin + coordonator) pentru selector utilizatori
+
+### Fast Time Tracking (Bubble)
+- [x] Frontend: FloatingTimer component — bubble dreptunghiular flotant mutabil (drag & drop)
+- [x] Frontend: bubble arată: activitate, proiect, timp scurs (HH:MM:SS)
+- [x] Frontend: click pe bubble → selectare activitate + proiect + pornire timer
+- [x] Frontend: shortcut tastatură configurabil (default: Alt+T), editabil din bubble
+- [x] Frontend: buton trigger vizibil permanent (bottom-right), verde + pulsant când timer activ
+- [x] Frontend: FloatingTimer adăugat în App.tsx ca overlay global

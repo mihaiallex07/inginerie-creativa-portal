@@ -102,6 +102,11 @@ import {
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
 const peopleRouter = router({
+  // List all active users (for audience targeting in events) — admin + coordonator
+  list: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
+    return getAllUsers();
+  }),
   upcomingBirthdays: protectedProcedure
     .input(z.object({ daysAhead: z.number().min(1).max(365).default(30) }).optional())
     .query(async ({ input }) => {
@@ -1179,7 +1184,7 @@ export const appRouter = router({
 
     listAll: protectedProcedure
       .query(async ({ ctx }) => {
-        if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+        if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
         return getAllCompanyEvents();
       }),
 
@@ -1199,7 +1204,7 @@ export const appRouter = router({
         targetUserIds: z.array(z.number()).optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new Error("Acces interzis — doar adminii pot crea evenimente");
+        if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis — doar adminii și coordonatorii pot crea evenimente");
         return createCompanyEvent({
           ...input,
           startTime: new Date(input.startTime),
@@ -1226,7 +1231,7 @@ export const appRouter = router({
         isActive: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+        if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
         const { id, startTime, endTime, ...rest } = input;
         const { recurringUntil: ru, ...restClean } = rest;
         return updateCompanyEvent(id, {
@@ -1240,7 +1245,7 @@ export const appRouter = router({
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
       .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+        if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
         return deleteCompanyEvent(input.id);
       }),
   }),

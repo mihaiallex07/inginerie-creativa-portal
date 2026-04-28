@@ -117,7 +117,7 @@ const navSections: NavSection[] = [
       { icon: BarChart3, label: "Rapoarte HR", path: "/rapoarte-hr", roles: ["admin", "coordonator"] },
       { icon: CalendarCheck, label: "Aprobări Concediu", path: "/aprobari-concediu", roles: ["admin"] },
       { icon: Shield, label: "Utilizatori", path: "/admin-utilizatori", roles: ["admin"] },
-      { icon: CalendarPlus, label: "Evenimente Firmă", path: "/evenimente", roles: ["admin"] },
+      { icon: CalendarPlus, label: "Evenimente Firmă", path: "/evenimente", roles: ["admin", "coordonator"] },
     ],
   },
 ];

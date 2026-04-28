@@ -6,11 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
-import { CalendarPlus, Pencil, Trash2, Video, Repeat, Clock, ExternalLink } from "lucide-react";
+import { useState, useMemo } from "react";
+import { CalendarPlus, Pencil, Trash2, Video, Repeat, Clock, ExternalLink, Users, Building2, FolderOpen, Globe } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ro } from "date-fns/locale";
+
+type TargetType = "all" | "department" | "users";
 
 type EventForm = {
   title: string;
@@ -23,6 +25,9 @@ type EventForm = {
   recurringRule: string;
   recurringUntil: string;
   color: string;
+  targetType: TargetType;
+  targetDepartment: string;
+  targetUserIds: number[];
 };
 
 const EMPTY_FORM: EventForm = {
@@ -36,6 +41,9 @@ const EMPTY_FORM: EventForm = {
   recurringRule: "daily",
   recurringUntil: "",
   color: "#3b82f6",
+  targetType: "all",
+  targetDepartment: "",
+  targetUserIds: [],
 };
 
 const COLORS = [
@@ -48,14 +56,45 @@ const COLORS = [
   { value: "#ec4899", label: "Roz" },
 ];
 
+const DEPARTMENTS = [
+  "proiectare arhitectura",
+  "structura",
+  "instalatii",
+  "vanzari",
+  "executie",
+  "management",
+];
+
+const TARGET_LABELS: Record<TargetType, string> = {
+  all: "Toți angajații",
+  department: "Departament",
+  users: "Persoane selectate",
+};
+
+const TARGET_ICONS: Record<TargetType, React.ReactNode> = {
+  all: <Globe className="h-3.5 w-3.5" />,
+  department: <Building2 className="h-3.5 w-3.5" />,
+  users: <Users className="h-3.5 w-3.5" />,
+};
+
 export default function Evenimente() {
   const { user } = useAuth();
   const utils = trpc.useUtils();
-  const isAdmin = user?.role === "admin";
+  const isAdmin = user?.role === "admin" || user?.role === "coordonator";
 
   const { data: events, isLoading } = trpc.companyEvents.listAll.useQuery(undefined, {
     enabled: isAdmin,
   });
+
+  // Fetch users for audience targeting
+  const { data: usersData } = trpc.people.list.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+
+  const activeUsers = useMemo(() =>
+    (usersData ?? []).filter((u: any) => u.isActive !== false),
+    [usersData]
+  );
 
   const [formOpen, setFormOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -104,6 +143,12 @@ export default function Evenimente() {
   function openEdit(ev: any) {
     const start = new Date(ev.startTime);
     const end = new Date(ev.endTime);
+    // Handle recurringUntil — could be Date object or string
+    let recurringUntilStr = "";
+    if (ev.recurringUntil) {
+      const d = ev.recurringUntil instanceof Date ? ev.recurringUntil : new Date(ev.recurringUntil);
+      recurringUntilStr = format(d, "yyyy-MM-dd");
+    }
     setForm({
       title: ev.title,
       description: ev.description ?? "",
@@ -113,8 +158,11 @@ export default function Evenimente() {
       endTime: `${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`,
       isRecurring: ev.isRecurring ?? false,
       recurringRule: ev.recurringRule ?? "daily",
-      recurringUntil: ev.recurringUntil ?? "",
+      recurringUntil: recurringUntilStr,
       color: ev.color ?? "#3b82f6",
+      targetType: (ev.targetType as TargetType) ?? "all",
+      targetDepartment: ev.targetDepartment ?? "",
+      targetUserIds: Array.isArray(ev.targetUserIds) ? ev.targetUserIds : [],
     });
     setEditingId(ev.id);
     setFormOpen(true);
@@ -123,6 +171,12 @@ export default function Evenimente() {
   function handleSave() {
     const startTime = new Date(`${form.startDate}T${form.startTime}:00`).toISOString();
     const endTime = new Date(`${form.startDate}T${form.endTime}:00`).toISOString();
+
+    const audienceFields = {
+      targetType: form.targetType,
+      targetDepartment: form.targetType === "department" ? form.targetDepartment || undefined : undefined,
+      targetUserIds: form.targetType === "users" ? form.targetUserIds : undefined,
+    };
 
     if (editingId) {
       updateMutation.mutate({
@@ -136,6 +190,7 @@ export default function Evenimente() {
         recurringRule: form.isRecurring ? form.recurringRule : undefined,
         recurringUntil: form.isRecurring && form.recurringUntil ? form.recurringUntil : null,
         color: form.color,
+        ...audienceFields,
       });
     } else {
       createMutation.mutate({
@@ -148,9 +203,18 @@ export default function Evenimente() {
         recurringRule: form.isRecurring ? form.recurringRule : undefined,
         recurringUntil: form.isRecurring && form.recurringUntil ? form.recurringUntil : null,
         color: form.color,
-        targetType: "all",
+        ...audienceFields,
       });
     }
+  }
+
+  function toggleUserId(id: number) {
+    setForm(f => ({
+      ...f,
+      targetUserIds: f.targetUserIds.includes(id)
+        ? f.targetUserIds.filter(x => x !== id)
+        : [...f.targetUserIds, id],
+    }));
   }
 
   const isSaving = createMutation.isPending || updateMutation.isPending;
@@ -158,7 +222,7 @@ export default function Evenimente() {
   if (!isAdmin) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-muted-foreground">Acces interzis — doar administratorii pot gestiona evenimentele.</p>
+        <p className="text-muted-foreground">Acces interzis — doar adminii și coordonatorii pot gestiona evenimentele.</p>
       </div>
     );
   }
@@ -195,6 +259,7 @@ export default function Evenimente() {
             const start = new Date(ev.startTime);
             const end = new Date(ev.endTime);
             const timeStr = `${String(start.getHours()).padStart(2, "0")}:${String(start.getMinutes()).padStart(2, "0")} - ${String(end.getHours()).padStart(2, "0")}:${String(end.getMinutes()).padStart(2, "0")}`;
+            const targetType = (ev.targetType ?? "all") as TargetType;
 
             return (
               <Card key={ev.id} className="hover:shadow-md transition-shadow">
@@ -214,6 +279,12 @@ export default function Evenimente() {
                               {ev.recurringRule === "daily" ? "Zilnic" : ev.recurringRule === "weekly" ? "Săptămânal" : ev.recurringRule}
                             </Badge>
                           )}
+                          <Badge variant="outline" className="text-[10px] gap-1 text-muted-foreground">
+                            {TARGET_ICONS[targetType]}
+                            {targetType === "department" && ev.targetDepartment
+                              ? ev.targetDepartment
+                              : TARGET_LABELS[targetType]}
+                          </Badge>
                         </div>
                         <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1">
@@ -227,7 +298,7 @@ export default function Evenimente() {
                           )}
                           {ev.isRecurring && ev.recurringUntil && (
                             <span>
-                              până la {format(new Date(ev.recurringUntil), "d MMM yyyy", { locale: ro })}
+                              până la {format(ev.recurringUntil instanceof Date ? ev.recurringUntil : new Date(ev.recurringUntil as string), "d MMM yyyy", { locale: ro })}
                             </span>
                           )}
                           {ev.isRecurring && !ev.recurringUntil && (
@@ -280,7 +351,7 @@ export default function Evenimente() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={formOpen} onOpenChange={(o) => { if (!o) { setFormOpen(false); resetForm(); } }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarPlus className="h-5 w-5 text-[#FFCB09]" />
@@ -387,6 +458,76 @@ export default function Evenimente() {
                 </div>
               </div>
             )}
+
+            {/* Audience targeting */}
+            <div className="space-y-2">
+              <Label className="text-xs font-semibold flex items-center gap-1.5">
+                <Users className="h-3.5 w-3.5" /> Audiență
+              </Label>
+              <div className="grid grid-cols-3 gap-2">
+                {(["all", "department", "users"] as TargetType[]).map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setForm(f => ({ ...f, targetType: t }))}
+                    className={`flex items-center justify-center gap-1.5 h-9 rounded-md border text-xs font-medium transition-all
+                      ${form.targetType === t
+                        ? "border-[#FFCB09] bg-[#FFCB09]/10 text-foreground"
+                        : "border-border text-muted-foreground hover:border-foreground/40"
+                      }`}
+                  >
+                    {TARGET_ICONS[t]}
+                    {t === "all" ? "Toți" : t === "department" ? "Departament" : "Persoane"}
+                  </button>
+                ))}
+              </div>
+
+              {form.targetType === "department" && (
+                <div>
+                  <Label className="text-xs text-muted-foreground">Selectează departamentul</Label>
+                  <select
+                    value={form.targetDepartment}
+                    onChange={e => setForm(f => ({ ...f, targetDepartment: e.target.value }))}
+                    className="mt-1 w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                  >
+                    <option value="">-- Alege departament --</option>
+                    {DEPARTMENTS.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {form.targetType === "users" && (
+                <div>
+                  <Label className="text-xs text-muted-foreground mb-1 block">
+                    Selectează persoanele ({form.targetUserIds.length} selectate)
+                  </Label>
+                  <div className="max-h-40 overflow-y-auto border border-border rounded-md divide-y divide-border">
+                    {activeUsers.map((u: any) => (
+                      <label
+                        key={u.id}
+                        className="flex items-center gap-2.5 px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={form.targetUserIds.includes(u.id)}
+                          onChange={() => toggleUserId(u.id)}
+                          className="h-3.5 w-3.5 accent-[#FFCB09]"
+                        />
+                        <span className="text-sm">{u.name}</span>
+                        {u.department && (
+                          <span className="text-xs text-muted-foreground ml-auto">{u.department}</span>
+                        )}
+                      </label>
+                    ))}
+                    {activeUsers.length === 0 && (
+                      <p className="text-xs text-muted-foreground px-3 py-2">Nu există utilizatori activi.</p>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             {/* Color picker */}
             <div>

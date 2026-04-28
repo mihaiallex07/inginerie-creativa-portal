@@ -28,6 +28,7 @@ import TimeTracking from "./pages/TimeTracking";
 import ProiectDetaliu from "./pages/ProiectDetaliu";
 import ProcessOverview from "./pages/ProcessOverview";
 import Evenimente from "./pages/Evenimente";
+import FloatingTimer from "./components/FloatingTimer";
 
 function Router() {
   return (
@@ -75,6 +76,7 @@ function App() {
         <TooltipProvider>
           <Toaster richColors position="top-right" />
           <Router />
+          <FloatingTimer />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>
