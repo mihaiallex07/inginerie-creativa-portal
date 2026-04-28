@@ -43,6 +43,13 @@
       "when": 1775046591180,
       "tag": "0005_burly_korvac",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1777383580816,
+      "tag": "0006_new_menace",
+      "breakpoints": true
     }
   ]
 }

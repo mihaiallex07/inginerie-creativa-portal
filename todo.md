@@ -361,3 +361,13 @@
 - [x] Frontend: opțiune "zilnic" la creare/editare eveniment de firmă (checkbox recurent + frecvență + dată sfârșit)
 - [x] Frontend: pagină Evenimente Firmă (/evenimente) cu listă completă — accesibilă din sidebar Administrare
 - [x] Frontend: editare și ștergere evenimente din lista de management cu dialog-uri dedicate
+
+## Sprint 39 — Sincronizare Google Calendar ↔ Time-Tracking
+- [x] Actualizare GOOGLE_CLIENT_SECRET cu noul secret
+- [x] Schema DB: tabel google_calendar_tokens (access_token, refresh_token per user)
+- [x] Backend: OAuth flow Google Calendar (authorize + callback + token refresh automat)
+- [x] Backend: proceduri googleCalendar.status, getAuthUrl, importTodayEvents, disconnect
+- [x] Backend: route Express /api/oauth/google-calendar/callback
+- [x] Frontend: buton "Conectează G Calendar" / "Import G Calendar" în toolbar Time-Tracking
+- [x] Frontend: dialog import — listare evenimente din ziua selectată, click pentru pre-completare formular
+- [x] Frontend: buton deconectare Google Calendar din dialog

@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Lock, Download } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Lock, Download, Calendar, RefreshCw, Unlink } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
 
@@ -231,6 +231,26 @@ export default function TimeTracking() {
   const [adminDate, setAdminDate] = useState("");
   const [adminStart, setAdminStart] = useState<{ h: number; m: number }>({ h: 10, m: 0 });
   const [adminEnd, setAdminEnd] = useState<{ h: number; m: number }>({ h: 10, m: 15 });
+
+  // ── Google Calendar state ──
+  const [gcalImportOpen, setGcalImportOpen] = useState(false);
+  const [gcalImportDate, setGcalImportDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+
+  // ── Google Calendar queries ──
+  const { data: gcalStatus, refetch: refetchGcalStatus } = trpc.googleCalendar.status.useQuery();
+  const gcalConnected = gcalStatus?.connected ?? false;
+  const { data: gcalAuthData } = trpc.googleCalendar.getAuthUrl.useQuery(
+    { origin: typeof window !== "undefined" ? window.location.origin : "" },
+    { enabled: !gcalConnected }
+  );
+  const { data: gcalTodayEvents, refetch: refetchGcalEvents } = trpc.googleCalendar.importTodayEvents.useQuery(
+    { date: gcalImportDate },
+    { enabled: gcalConnected && gcalImportOpen }
+  );
+  const gcalDisconnect = trpc.googleCalendar.disconnect.useMutation({
+    onSuccess: () => { refetchGcalStatus(); toast.success("Google Calendar deconectat"); },
+  });
+  const gcalSyncEntry = trpc.googleCalendar.syncTimeEntry.useMutation();
 
   // ── Export dialog ──
   const [exportOpen, setExportOpen] = useState(false);
@@ -599,6 +619,15 @@ export default function TimeTracking() {
             <Button variant="outline" size="sm" onClick={() => setExportOpen(true)} className="text-[10px] h-6 px-2 gap-1">
               <Download className="h-3 w-3" /> Export
             </Button>
+            {gcalConnected ? (
+              <Button variant="outline" size="sm" onClick={() => { setGcalImportDate(format(selectedDate, "yyyy-MM-dd")); setGcalImportOpen(true); }} className="text-[10px] h-6 px-2 gap-1 border-blue-300 text-blue-600 hover:bg-blue-50">
+                <Calendar className="h-3 w-3" /> Import G Calendar
+              </Button>
+            ) : (
+              <Button variant="outline" size="sm" onClick={() => gcalAuthData?.url && window.open(gcalAuthData.url, "_self")} className="text-[10px] h-6 px-2 gap-1 border-blue-300 text-blue-600 hover:bg-blue-50">
+                <Calendar className="h-3 w-3" /> Conectează G Calendar
+              </Button>
+            )}
           </div>
         </div>
 
@@ -985,6 +1014,80 @@ export default function TimeTracking() {
                   <Download className="h-3 w-3" /> Excel
                 </Button>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ GOOGLE CALENDAR IMPORT DIALOG ═══ */}
+      <Dialog open={gcalImportOpen} onOpenChange={setGcalImportOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#221F1F]">
+              <Calendar className="h-4 w-4 text-blue-500" /> Import din Google Calendar
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className="flex-1">
+                <Label className="text-xs">Zi de importat</Label>
+                <Input type="date" value={gcalImportDate} onChange={e => setGcalImportDate(e.target.value)} className="h-8" />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchGcalEvents()} className="mt-4 h-8 text-xs gap-1">
+                <RefreshCw className="h-3 w-3" /> Reîncarcă
+              </Button>
+            </div>
+
+            {!gcalTodayEvents ? (
+              <div className="text-center py-4 text-sm text-gray-400">Se încarcă evenimentele...</div>
+            ) : gcalTodayEvents.events.length === 0 ? (
+              <div className="text-center py-4 text-sm text-gray-400">Nu sunt evenimente în Google Calendar pentru această zi.</div>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                <p className="text-[10px] text-gray-500">{gcalTodayEvents.events.length} eveniment(e) găsite. Apasă pe un eveniment pentru a-l importa ca activitate.</p>
+                {gcalTodayEvents.events.map((ev: any) => {
+                  const start = new Date(ev.startTime);
+                  const end = new Date(ev.endTime);
+                  return (
+                    <div
+                      key={ev.id}
+                      className="border rounded-lg p-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-blue-100"
+                      onClick={() => {
+                        setFormDate(gcalImportDate);
+                        setFormStart({ h: start.getHours(), m: start.getMinutes() });
+                        setFormEnd({ h: end.getHours(), m: end.getMinutes() });
+                        setFormTask(ev.title);
+                        setFormType("sedinta");
+                        setFormProject("");
+                        setFormDesc("");
+                        setEditingEntry(null);
+                        setGcalImportOpen(false);
+                        setDialogOpen(true);
+                        toast.info("Eveniment importat. Verifică detaliile și salvează.");
+                      }}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <span className="text-xs font-medium text-gray-800 flex-1">{ev.title}</span>
+                        {ev.htmlLink && (
+                          <a href={ev.htmlLink} target="_blank" rel="noopener" onClick={e => e.stopPropagation()}>
+                            <ExternalLink className="h-3 w-3 text-blue-400 shrink-0" />
+                          </a>
+                        )}
+                      </div>
+                      <div className="text-[10px] text-gray-500 mt-0.5">
+                        {pad2(start.getHours())}:{pad2(start.getMinutes())} – {pad2(end.getHours())}:{pad2(end.getMinutes())}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            <div className="flex justify-between pt-1 border-t">
+              <Button variant="ghost" size="sm" onClick={() => gcalDisconnect.mutate()} className="text-[10px] text-red-500 hover:text-red-600 gap-1">
+                <Unlink className="h-3 w-3" /> Deconectează
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setGcalImportOpen(false)} className="text-xs">Închide</Button>
             </div>
           </div>
         </DialogContent>

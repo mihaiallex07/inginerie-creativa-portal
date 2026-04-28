@@ -4,6 +4,21 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import {
+  getGoogleCalendarAuthUrl,
+  exchangeCodeForTokens,
+  saveTokens,
+  getValidAccessToken,
+  fetchCalendarEvents,
+  createCalendarEvent,
+  updateCalendarEvent,
+  deleteCalendarEvent,
+  hasGoogleCalendarConnected,
+  disconnectGoogleCalendar,
+  upsertSyncMap,
+  getSyncMapByTimeEntry,
+  deleteSyncMapByTimeEntry,
+} from "./googleCalendar";
+import {
   getTodayPontaj,
   upsertPontaj,
   getPontajByMonth,
@@ -1239,6 +1254,118 @@ export const appRouter = router({
       }))
       .query(async ({ input }) => {
         return getProcessOverview(input.dateFrom, input.dateTo);
+      }),
+  }),
+  // ─── GOOGLE CALENDAR ─────────────────────────────────────────────────────────
+  googleCalendar: router({
+    // Check if user has connected Google Calendar
+    status: protectedProcedure.query(async ({ ctx }) => {
+      const connected = await hasGoogleCalendarConnected(ctx.user.id);
+      return { connected };
+    }),
+
+    // Get OAuth URL to connect Google Calendar
+    getAuthUrl: protectedProcedure
+      .input(z.object({ origin: z.string() }))
+      .query(async ({ ctx, input }) => {
+        const redirectUri = `${input.origin}/api/oauth/google-calendar/callback`;
+        const state = Buffer.from(JSON.stringify({ userId: ctx.user.id, origin: input.origin })).toString("base64");
+        const url = getGoogleCalendarAuthUrl(redirectUri, state);
+        return { url };
+      }),
+
+    // Fetch events from Google Calendar for a date range
+    getEvents: protectedProcedure
+      .input(z.object({ dateFrom: z.string(), dateTo: z.string() }))
+      .query(async ({ ctx }) => {
+        const accessToken = await getValidAccessToken(ctx.user.id);
+        if (!accessToken) return { events: [], connected: false };
+        // Return empty for now - will be populated after OAuth
+        return { events: [], connected: true };
+      }),
+
+    // Sync time entry to Google Calendar (create/update event)
+    syncTimeEntry: protectedProcedure
+      .input(z.object({
+        timeEntryId: z.number(),
+        title: z.string(),
+        startTime: z.string(),
+        endTime: z.string(),
+        description: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const accessToken = await getValidAccessToken(ctx.user.id);
+        if (!accessToken) return { success: false, reason: "not_connected" };
+
+        const existing = await getSyncMapByTimeEntry(ctx.user.id, input.timeEntryId);
+        const eventPayload = {
+          summary: input.title,
+          description: input.description,
+          start: { dateTime: input.startTime },
+          end: { dateTime: input.endTime },
+        };
+
+        if (existing) {
+          await updateCalendarEvent(accessToken, existing.gcalEventId, eventPayload);
+        } else {
+          const created = await createCalendarEvent(accessToken, eventPayload);
+          await upsertSyncMap(ctx.user.id, input.timeEntryId, created.id);
+        }
+        return { success: true };
+      }),
+
+    // Delete synced Google Calendar event when time entry is deleted
+    deleteSyncedEvent: protectedProcedure
+      .input(z.object({ timeEntryId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const accessToken = await getValidAccessToken(ctx.user.id);
+        const existing = await getSyncMapByTimeEntry(ctx.user.id, input.timeEntryId);
+        if (accessToken && existing) {
+          await deleteCalendarEvent(accessToken, existing.gcalEventId);
+        }
+        await deleteSyncMapByTimeEntry(ctx.user.id, input.timeEntryId);
+        return { success: true };
+      }),
+
+    // Disconnect Google Calendar
+    disconnect: protectedProcedure.mutation(async ({ ctx }) => {
+      await disconnectGoogleCalendar(ctx.user.id);
+      return { success: true };
+    }),
+
+    // Import today's Google Calendar events as time entry suggestions
+    importTodayEvents: protectedProcedure
+      .input(z.object({ date: z.string() }))
+      .query(async ({ ctx, input }) => {
+        const accessToken = await getValidAccessToken(ctx.user.id);
+        if (!accessToken) return { events: [], connected: false };
+
+        const dayStart = new Date(input.date);
+        dayStart.setHours(0, 0, 0, 0);
+        const dayEnd = new Date(input.date);
+        dayEnd.setHours(23, 59, 59, 999);
+
+        try {
+          const events = await fetchCalendarEvents(
+            accessToken,
+            dayStart.toISOString(),
+            dayEnd.toISOString()
+          );
+          return {
+            connected: true,
+            events: events
+              .filter(e => e.start.dateTime) // only timed events, not all-day
+              .map(e => ({
+                id: e.id,
+                title: e.summary ?? "(fără titlu)",
+                startTime: e.start.dateTime!,
+                endTime: e.end.dateTime!,
+                htmlLink: e.htmlLink,
+              })),
+          };
+        } catch {
+          return { events: [], connected: false };
+        }
       }),
   }),
 });

@@ -367,3 +367,32 @@ export const appSettings = mysqlTable("app_settings", {
 });
 
 export type AppSetting = typeof appSettings.$inferSelect;
+
+// ─── GOOGLE CALENDAR TOKENS ──────────────────────────────────────────────────
+export const googleCalendarTokens = mysqlTable("google_calendar_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  accessToken: text("accessToken").notNull(),
+  refreshToken: text("refreshToken"),
+  expiresAt: timestamp("expiresAt"),
+  scope: text("scope"),
+  calendarId: varchar("calendarId", { length: 256 }).default("primary"),
+  syncEnabled: boolean("syncEnabled").default(true).notNull(),
+  lastSyncedAt: timestamp("lastSyncedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type GoogleCalendarToken = typeof googleCalendarTokens.$inferSelect;
+export type InsertGoogleCalendarToken = typeof googleCalendarTokens.$inferInsert;
+
+// ─── GOOGLE CALENDAR SYNC MAP ─────────────────────────────────────────────────
+// Maps time entries to Google Calendar event IDs for bidirectional sync
+export const gcalSyncMap = mysqlTable("gcal_sync_map", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  timeEntryId: int("timeEntryId"),
+  gcalEventId: varchar("gcalEventId", { length: 256 }).notNull(),
+  direction: mysqlEnum("direction", ["gcal_to_portal", "portal_to_gcal", "both"]).default("both").notNull(),
+  lastSyncedAt: timestamp("lastSyncedAt").defaultNow().notNull(),
+});
+export type GcalSyncMap = typeof gcalSyncMap.$inferSelect;
