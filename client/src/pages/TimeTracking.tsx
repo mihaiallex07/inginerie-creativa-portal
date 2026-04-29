@@ -527,7 +527,7 @@ export default function TimeTracking() {
       }
       if (dragRef.current) {
         if (dragRef.current.activated && gridContainerRef.current) {
-          const { entryId, origDurMins } = dragRef.current;
+          const { entryId, origDurMins, origDayIdx } = dragRef.current;
           const gridRect = gridContainerRef.current.getBoundingClientRect();
           // Subtract the gutter width (w-10 = 40px)
           const gutterW = 40;
@@ -545,10 +545,21 @@ export default function TimeTracking() {
           const newEndH = Math.floor(newEndMins / 60);
           const newEndM = newEndMins % 60;
           if (newStartH >= HOUR_START && newEndH <= HOUR_END) {
-            updateEntry.mutate({
-              id: entryId, date: format(weekDays[newDayIdx], "yyyy-MM-dd"),
-              startHour: newStartH, startMin: newStartM, endHour: newEndH, endMin: newEndM,
-            });
+            if (entryId < 0) {
+              // Recurring block drag — create exception with new time
+              const recurringId = Math.floor((-entryId) / 1000);
+              const exceptionDate = format(weekDays[origDayIdx], "yyyy-MM-dd");
+              upsertException.mutate({
+                recurringId, exceptionDate,
+                overrideStartHour: newStartH, overrideStartMin: newStartM,
+                overrideDuration: origDurMins,
+              });
+            } else {
+              updateEntry.mutate({
+                id: entryId, date: format(weekDays[newDayIdx], "yyyy-MM-dd"),
+                startHour: newStartH, startMin: newStartM, endHour: newEndH, endMin: newEndM,
+              });
+            }
           }
         }
         const el = document.getElementById(`entry-${dragRef.current.entryId}`);
@@ -602,16 +613,19 @@ export default function TimeTracking() {
       projectId: formProject && formProject !== "none" ? Number(formProject) : undefined,
     };
     if (editingEntry) {
-      updateEntry.mutate({ id: editingEntry.id, ...payload });
-      setSavedEntryId(editingEntry.id);
+      updateEntry.mutate({ id: editingEntry.id, ...payload }, {
+        onSuccess: () => { setSavedEntryId(editingEntry.id); },
+      });
     } else {
       addEntry.mutate(payload, {
         onSuccess: (result: any) => {
-          if (result?.id) { setSavedEntryId(result.id); setInvitePanelOpen(true); }
+          if (result?.id) { setSavedEntryId(result.id); }
+          // Keep dialog open so user can invite colleagues
         },
       });
     }
-    setDialogOpen(false);
+    // Don't close dialog — user may want to invite colleagues
+    // Dialog closes when user clicks Anulează or the X button
   };
 
   const handleDelete = () => { if (editingEntry) { deleteEntry.mutate({ id: editingEntry.id }); setDialogOpen(false); } };
@@ -957,10 +971,8 @@ export default function TimeTracking() {
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          // On click: create an exception for today to allow editing
-                          const dayStr = format(weekDays[dayIdx], "yyyy-MM-dd");
-                          upsertException.mutate({ recurringId: block.recurringId, exceptionDate: dayStr, overrideStartHour: block.startHour, overrideStartMin: block.startMin, overrideDuration: block.durationMinutes });
-                          toast.info(`Activitate recurentă modificată pentru ${format(weekDays[dayIdx], "d MMM", { locale: ro })}. Drag pentru a muta.`);
+                          // Clicking a recurring block just shows info — drag to move it
+                          toast.info(`Trage blocul pentru a muta activitatea recurentă în această zi.`);
                         }}
                       >
                         <div className="text-[10px] font-bold truncate leading-tight text-[#221F1F]">{block.taskName}</div>
@@ -970,19 +982,38 @@ export default function TimeTracking() {
                     );
                   })}
 
+                  {/* Current time indicator */}
+                  {(() => {
+                    const now = new Date();
+                    const todayStr = format(now, "yyyy-MM-dd");
+                    if (dayStr !== todayStr) return null;
+                    const nowH = now.getHours();
+                    const nowM = now.getMinutes();
+                    if (nowH < HOUR_START || nowH >= HOUR_END) return null;
+                    const nowY = minsToY(nowH, nowM);
+                    return (
+                      <div key="now-line" className="absolute left-0 right-0 pointer-events-none" style={{ top: `${nowY}px`, zIndex: 20 }}>
+                        <div className="absolute left-0 right-0 h-[2px] bg-black" />
+                        <div className="absolute left-0 h-2.5 w-2.5 rounded-full bg-black" style={{ top: "-5px", left: "-5px" }} />
+                      </div>
+                    );
+                  })()}
+
                   {/* User entries */}
                   {dayEntries.map((entry: any) => {
                     const st = extractEntryTime(entry, "start");
                     const en = extractEntryTime(entry, "end");
                     const topPx = minsToY(st.h, st.m);
-                    const heightPx = Math.max(16, minsToY(en.h, en.m) - topPx);
+                    // Add 2px gap at top and bottom so consecutive entries don't touch
+                    const rawH = Math.max(16, minsToY(en.h, en.m) - topPx);
+                    const heightPx = rawH - 2;
 
                     return (
                       <div
                         key={entry.id}
                         id={`entry-${entry.id}`}
                         className="absolute left-0.5 right-0.5 rounded-md px-1.5 py-0.5 cursor-pointer select-none group overflow-hidden border border-[#FFCB09]/60 shadow-sm"
-                        style={{ top: `${topPx}px`, height: `${heightPx}px`, backgroundColor: ENTRY_BG, color: ENTRY_TEXT, zIndex: 10 }}
+                        style={{ top: `${topPx + 1}px`, height: `${heightPx}px`, backgroundColor: ENTRY_BG, color: ENTRY_TEXT, zIndex: 10 }}
                         onClick={(e) => { e.stopPropagation(); if (!dragRef.current || !dragRef.current.activated) openEditEntry(entry); }}
                         onMouseDown={(e) => {
                           if ((e.target as HTMLElement).dataset.resize) return;
@@ -1034,8 +1065,8 @@ export default function TimeTracking() {
       )}
 
       {/* ═══ ADD/EDIT ENTRY DIALOG ═══ */}
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) { setSavedEntryId(null); setInviteSearch(""); } }}>
+        <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[#221F1F]">
               {editingEntry ? <Pencil className="h-4 w-4" /> : <Plus className="h-4 w-4 text-[#FFCB09]" />}
@@ -1087,22 +1118,86 @@ export default function TimeTracking() {
               <Label className="text-xs">Descriere (opțional)</Label>
               <Textarea value={formDesc} onChange={e => setFormDesc(e.target.value)} placeholder="Detalii..." rows={2} className="text-xs" />
             </div>
+
+            {/* Invite colleagues section — always visible, scroll down */}
+            <div className="border-t border-gray-100 pt-3">
+              <div className="flex items-center gap-1.5 mb-2">
+                <UserPlus className="h-3.5 w-3.5 text-[#FFCB09]" />
+                <span className="text-xs font-semibold text-[#221F1F]">Invită colegi (opțional)</span>
+              </div>
+              <Input
+                placeholder="Caută coleg..."
+                value={inviteSearch}
+                onChange={e => setInviteSearch(e.target.value)}
+                className="h-7 text-xs mb-2"
+              />
+              {/* Already invited */}
+              {savedEntryId && (entryInvitations as any[]).length > 0 && (
+                <div className="space-y-1 mb-2">
+                  {(entryInvitations as any[]).map((inv: any) => (
+                    <div key={inv.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 py-1">
+                      <div className="h-5 w-5 rounded-full bg-[#FFCB09]/30 flex items-center justify-center text-[9px] font-bold text-[#221F1F]">
+                        {(inv.inviteeName || "?").slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="text-[11px] flex-1 truncate">{inv.inviteeName}</span>
+                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
+                        inv.status === "accepted" ? "bg-green-100 text-green-700" :
+                        inv.status === "declined" ? "bg-red-100 text-red-600" :
+                        "bg-yellow-100 text-yellow-700"
+                      }`}>
+                        {inv.status === "accepted" ? "✓ Acceptat" : inv.status === "declined" ? "✕ Refuzat" : "Aşteptă"}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              {/* Users to invite */}
+              <div className="max-h-32 overflow-y-auto space-y-1">
+                {(allUsersForInvite as any[])
+                  .filter((u: any) => u.id !== user?.id && (inviteSearch === "" || (u.name || "").toLowerCase().includes(inviteSearch.toLowerCase())))
+                  .filter((u: any) => !savedEntryId || !(entryInvitations as any[]).some((inv: any) => inv.inviteeUserId === u.id))
+                  .map((u: any) => (
+                    <div
+                      key={u.id}
+                      className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1 cursor-pointer hover:bg-yellow-50 transition-colors"
+                      onClick={() => {
+                        if (!savedEntryId) {
+                          // Entry not saved yet — save first then invite
+                          toast.info("Salvează activitatea mai întâi, apoi invită colegi.");
+                          return;
+                        }
+                        inviteUser.mutate({ timeEntryId: savedEntryId, inviteeUserId: u.id });
+                      }}
+                    >
+                      <div className="h-5 w-5 rounded-full bg-[#FFCB09]/20 flex items-center justify-center text-[9px] font-bold text-[#221F1F]">
+                        {(u.name || "?").slice(0, 2).toUpperCase()}
+                      </div>
+                      <span className="text-[11px] flex-1 truncate">{u.name}</span>
+                      <UserPlus className="h-3 w-3 text-gray-400" />
+                    </div>
+                  ))}
+              </div>
+            </div>
+
             <div className="flex justify-between pt-2">
-              {editingEntry && (
+              {editingEntry && !savedEntryId && (
                 <Button variant="destructive" size="sm" onClick={handleDelete} className="text-xs">
                   <Trash2 className="h-3 w-3 mr-1" /> Șterge
                 </Button>
               )}
               <div className="flex gap-2 ml-auto">
-                {editingEntry && (
-                  <Button variant="outline" size="sm" onClick={() => { setSavedEntryId(editingEntry.id); setInvitePanelOpen(true); setDialogOpen(false); }} className="text-xs gap-1">
-                    <UserPlus className="h-3 w-3" /> Invită
+                {savedEntryId ? (
+                  <Button size="sm" onClick={() => { setDialogOpen(false); setSavedEntryId(null); setInviteSearch(""); }} className="bg-green-600 hover:bg-green-700 text-white text-xs font-semibold gap-1">
+                    ✓ Închide
                   </Button>
+                ) : (
+                  <>
+                    <Button variant="ghost" size="sm" onClick={() => setDialogOpen(false)} className="text-xs">Anulează</Button>
+                    <Button size="sm" onClick={handleSave} className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold">
+                      {editingEntry ? "Salvează" : "Adaugă"}
+                    </Button>
+                  </>
                 )}
-                <Button variant="ghost" size="sm" onClick={() => setDialogOpen(false)} className="text-xs">Anulează</Button>
-                <Button size="sm" onClick={handleSave} className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold">
-                  {editingEntry ? "Salvează" : "Adaugă"}
-                </Button>
               </div>
             </div>
           </div>
