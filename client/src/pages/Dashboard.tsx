@@ -43,7 +43,7 @@ function getInitials(name: string | null | undefined) {
 }
 
 type CalendarEntry = {
-  type: "birthday" | "event";
+  type: "birthday" | "anniversary" | "event";
   date: Date;
   title: string;
   subtitle?: string;
@@ -65,6 +65,7 @@ export default function Dashboard() {
   const { data: projectsData } = trpc.projects.list.useQuery({ status: "activ" });
   const { data: proposalsData } = trpc.proposals.list.useQuery({ status: "deschisa" });
   const { data: birthdaysData } = trpc.people.upcomingBirthdays.useQuery({ daysAhead: 365 });
+  const { data: anniversariesData } = trpc.people.upcomingAnniversaries.useQuery({ daysAhead: 365 });
 
   // Calendar state
   const [calMonth, setCalMonth] = useState(() => new Date());
@@ -86,6 +87,27 @@ export default function Dashboard() {
   // Build calendar entries (birthdays + events)
   const calendarEntries = useMemo(() => {
     const entries: CalendarEntry[] = [];
+
+    // Add work anniversaries
+    if (anniversariesData) {
+      for (const person of anniversariesData) {
+        if (!person.hireDate) continue;
+        const hd = new Date(person.hireDate);
+        const anniversaryThisYear = new Date(calMonth.getFullYear(), hd.getMonth(), hd.getDate());
+        if (isSameMonth(anniversaryThisYear, calMonth)) {
+          entries.push({
+            type: "anniversary",
+            date: anniversaryThisYear,
+            title: person.name ?? "Coleg",
+            subtitle: `${person.yearsCompleted} ${person.yearsCompleted === 1 ? "an" : "ani"} la IC${person.jobTitle ? " · " + person.jobTitle : ""}`,
+            initials: getInitials(person.name),
+            color: "#10b981",
+            avatarUrl: person.avatarUrl,
+            personId: person.id,
+          });
+        }
+      }
+    }
 
     // Add birthdays
     if (birthdaysData) {
@@ -155,7 +177,7 @@ export default function Dashboard() {
     }
 
     return entries;
-  }, [birthdaysData, eventsData, calMonth.getFullYear(), calMonth.getMonth()]);
+  }, [birthdaysData, anniversariesData, eventsData, calMonth.getFullYear(), calMonth.getMonth()]);
 
   // Get entries for a specific day
   function getEntriesForDay(day: Date) {
@@ -429,6 +451,7 @@ export default function Dashboard() {
             {daysInMonth.map(day => {
               const dayEntries = getEntriesForDay(day);
               const hasBirthday = dayEntries.some(e => e.type === "birthday");
+              const hasAnniversary = dayEntries.some(e => e.type === "anniversary");
               const hasEvent = dayEntries.some(e => e.type === "event");
               const isToday = isSameDay(day, new Date());
               const isWeekend = getDay(day) === 0 || getDay(day) === 6;
@@ -452,10 +475,13 @@ export default function Dashboard() {
                     {format(day, "d")}
                   </span>
                   {/* Indicators */}
-                  {(hasBirthday || hasEvent) && (
+                  {(hasBirthday || hasAnniversary || hasEvent) && (
                     <div className="flex items-center justify-center gap-0.5 leading-none">
                       {hasBirthday && (
                         <span className="text-[8px] leading-none" title="Zi de naștere">🎂</span>
+                      )}
+                      {hasAnniversary && (
+                        <span className="text-[8px] leading-none" title="Aniversare angajare">🏆</span>
                       )}
                       {hasEvent && (
                         <span className="h-1 w-1 rounded-full bg-blue-500 inline-block" title="Eveniment" />
@@ -476,6 +502,7 @@ export default function Dashboard() {
           {/* Legend */}
           <div className="flex items-center gap-4 mt-2 text-[10px] text-muted-foreground">
             <span className="flex items-center gap-1">🎂 Zi de naștere</span>
+            <span className="flex items-center gap-1">🏆 Aniversare IC</span>
             <span className="flex items-center gap-1">📎 Eveniment firmă</span>
           </div>
         </CardContent>
@@ -498,11 +525,13 @@ export default function Dashboard() {
               <div
                 key={idx}
                 className={`flex items-start gap-3 p-3 rounded-lg ${
-                  entry.type === "birthday" ? "bg-[#FFCB09]/10 border border-[#FFCB09]/20" : "bg-blue-50 border border-blue-100"
+                  entry.type === "birthday" ? "bg-[#FFCB09]/10 border border-[#FFCB09]/20" :
+                  entry.type === "anniversary" ? "bg-emerald-50 border border-emerald-100" :
+                  "bg-blue-50 border border-blue-100"
                 }`}
               >
-                {entry.type === "birthday" ? (
-                  <div className="h-10 w-10 rounded-full bg-[#FFCB09] flex items-center justify-center text-sm font-bold text-[#221F1F] shrink-0 overflow-hidden">
+                {entry.type === "birthday" || entry.type === "anniversary" ? (
+                  <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold shrink-0 overflow-hidden ${entry.type === "anniversary" ? "bg-emerald-500 text-white" : "bg-[#FFCB09] text-[#221F1F]"}`}>
                     {entry.avatarUrl ? (
                       <img src={entry.avatarUrl} alt={entry.title} className="h-full w-full object-cover" />
                     ) : (
@@ -517,11 +546,16 @@ export default function Dashboard() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     {entry.type === "birthday" && <span className="text-base">🎂</span>}
+                    {entry.type === "anniversary" && <span className="text-base">🏆</span>}
                     <p className="text-sm font-semibold text-foreground">{entry.title}</p>
                   </div>
                   {entry.type === "birthday" ? (
                     <p className="text-xs text-muted-foreground mt-0.5">
                       Zi de naștere · {entry.subtitle}
+                    </p>
+                  ) : entry.type === "anniversary" ? (
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      Aniversare IC · {entry.subtitle}
                     </p>
                   ) : (
                     <>

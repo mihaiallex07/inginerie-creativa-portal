@@ -951,6 +951,79 @@ export async function getUpcomingBirthdays(daysAhead = 30) {
   return result.sort((a, b) => a.daysUntil - b.daysUntil);
 }
 
+export async function getUpcomingAnniversaries(daysAhead = 30) {
+  const db = await getDb();
+  if (!db) return [];
+  const allUsers = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      avatarUrl: users.avatarUrl,
+      department: users.department,
+      jobTitle: users.jobTitle,
+      hireDate: users.hireDate,
+    })
+    .from(users)
+    .where(and(eq(users.isActive, true)));
+
+  const today = new Date();
+  const todayMonth = today.getMonth() + 1;
+  const todayDay = today.getDate();
+
+  const result: Array<{
+    id: number;
+    name: string | null;
+    avatarUrl: string | null;
+    department: string | null;
+    jobTitle: string | null;
+    hireDate: string;
+    yearsCompleted: number;
+    daysUntil: number;
+    isToday: boolean;
+  }> = [];
+
+  for (const u of allUsers) {
+    if (!u.hireDate) continue;
+    const hd = new Date(u.hireDate as any);
+    const hMonth = hd.getMonth() + 1;
+    const hDay = hd.getDate();
+    const hYear = hd.getFullYear();
+
+    // Skip if hired this year (no anniversary yet)
+    if (hYear >= today.getFullYear()) continue;
+
+    // Calculate next anniversary date
+    let nextAnniv = new Date(today.getFullYear(), hMonth - 1, hDay);
+    let yearsCompleted = today.getFullYear() - hYear;
+    if (
+      nextAnniv.getMonth() + 1 < todayMonth ||
+      (nextAnniv.getMonth() + 1 === todayMonth && hDay < todayDay)
+    ) {
+      nextAnniv = new Date(today.getFullYear() + 1, hMonth - 1, hDay);
+      yearsCompleted = today.getFullYear() + 1 - hYear;
+    }
+
+    const diffMs = nextAnniv.getTime() - new Date(today.getFullYear(), todayMonth - 1, todayDay).getTime();
+    const daysUntil = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
+    if (daysUntil <= daysAhead) {
+      result.push({
+        id: u.id,
+        name: u.name,
+        avatarUrl: u.avatarUrl,
+        department: u.department,
+        jobTitle: u.jobTitle,
+        hireDate: String(u.hireDate).slice(0, 10),
+        yearsCompleted,
+        daysUntil,
+        isToday: daysUntil === 0,
+      });
+    }
+  }
+
+  return result.sort((a, b) => a.daysUntil - b.daysUntil);
+}
+
 export async function getOrgChartData() {
   const db = await getDb();
   if (!db) return [];

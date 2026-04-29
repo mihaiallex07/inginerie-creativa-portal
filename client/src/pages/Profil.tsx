@@ -579,7 +579,7 @@ export default function Profil() {
             </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <FieldRow label="IBAN" {...f("iban")} sensitive showSensitive={showSensitive} onToggleSensitive={() => setShowSensitive(p => !p)} placeholder="RO49AAAA1B31007593840000" maxLength={34} />
+            <FieldRow label="IBAN" {...f("iban")} sensitive showSensitive={showSensitive} onToggleSensitive={() => setShowSensitive(p => !p)} placeholder="RO49AAAA1B31007593840000" maxLength={24} hint={editing ? "Format: RO + 22 caractere (24 total)" : undefined} />
             <FieldRow label="Bancă" {...f("bankName")} placeholder="ex: Banca Transilvania" />
           </div>
         </CardContent>

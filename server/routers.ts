@@ -77,6 +77,7 @@ import {
   getFullProfile,
   updateFullProfile,
   getUpcomingBirthdays,
+  getUpcomingAnniversaries,
   getOrgChartData,
   getCompanyEvents,
   createCompanyEvent,
@@ -111,6 +112,11 @@ const peopleRouter = router({
     .input(z.object({ daysAhead: z.number().min(1).max(365).default(30) }).optional())
     .query(async ({ input }) => {
       return getUpcomingBirthdays(input?.daysAhead ?? 30);
+    }),
+  upcomingAnniversaries: protectedProcedure
+    .input(z.object({ daysAhead: z.number().min(1).max(365).default(30) }).optional())
+    .query(async ({ input }) => {
+      return getUpcomingAnniversaries(input?.daysAhead ?? 30);
     }),
   orgChart: protectedProcedure
     .query(async () => {
