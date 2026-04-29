@@ -284,6 +284,8 @@ export default function TimeTracking() {
   const [gcalImportDate, setGcalImportDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [gcalImportDateTo, setGcalImportDateTo] = useState(() => format(new Date(), "yyyy-MM-dd"));
   const [gcalFilter, setGcalFilter] = useState("");
+  const [gcalSelectedIds, setGcalSelectedIds] = useState<Set<string>>(new Set());
+  const [gcalBulkImporting, setGcalBulkImporting] = useState(false);
 
   // ── Google Calendar queries ──
   const { data: gcalStatus, refetch: refetchGcalStatus } = trpc.googleCalendar.status.useQuery();
@@ -341,6 +343,9 @@ export default function TimeTracking() {
   // ── Mutations ──
   const addEntry = trpc.timeTracking.addCalendarEntry.useMutation({
     onSuccess: () => { refetchEntries(); toast.success("Activitate adăugată"); },
+    onError: (e) => toast.error(e.message),
+  });
+  const addManualEntry = trpc.timeTracking.addManual.useMutation({
     onError: (e) => toast.error(e.message),
   });
   const updateEntry = trpc.timeTracking.updateCalendarEntry.useMutation({
@@ -1115,6 +1120,45 @@ export default function TimeTracking() {
                 const filtered = (gcalTodayEvents?.events ?? []).filter((ev: any) =>
                   !gcalFilter.trim() || ev.title.toLowerCase().includes(gcalFilter.toLowerCase())
                 );
+                const allIds = filtered.map((ev: any) => ev.id as string);
+                const allSelected = allIds.length > 0 && allIds.every(id => gcalSelectedIds.has(id));
+                const someSelected = allIds.some(id => gcalSelectedIds.has(id));
+
+                const toggleAll = () => {
+                  if (allSelected) {
+                    setGcalSelectedIds(prev => { const n = new Set(prev); allIds.forEach(id => n.delete(id)); return n; });
+                  } else {
+                    setGcalSelectedIds(prev => { const n = new Set(prev); allIds.forEach(id => n.add(id)); return n; });
+                  }
+                };
+
+                const handleBulkImport = async () => {
+                  const toImport = filtered.filter((ev: any) => gcalSelectedIds.has(ev.id as string));
+                  if (toImport.length === 0) return;
+                  setGcalBulkImporting(true);
+                  let ok = 0;
+                  for (const ev of toImport) {
+                    const start = new Date(ev.startTime);
+                    const end = new Date(ev.endTime);
+                    const durationMinutes = Math.max(1, Math.floor((end.getTime() - start.getTime()) / 60000));
+                    try {
+                      await addManualEntry.mutateAsync({
+                        date: format(start, "yyyy-MM-dd"),
+                        durationMinutes,
+                        activityType: "sedinta",
+                        taskName: ev.title,
+                        isBillable: true,
+                      });
+                      ok++;
+                    } catch { /* individual errors already toasted */ }
+                  }
+                  setGcalBulkImporting(false);
+                  setGcalSelectedIds(new Set());
+                  refetchEntries();
+                  toast.success(`${ok} activitate(i) importate cu succes!`);
+                  if (ok === toImport.length) setGcalImportOpen(false);
+                };
+
                 return filtered.length === 0 ? (
                   <div className="text-center py-4 text-sm text-gray-400">
                     {gcalTodayEvents?.events.length === 0
@@ -1122,44 +1166,99 @@ export default function TimeTracking() {
                       : `Niciun eveniment nu corespunde filtrului "${gcalFilter}".`}
                   </div>
                 ) : (
-                  <div className="space-y-2 max-h-64 overflow-y-auto">
-                    <p className="text-[10px] text-gray-500">{filtered.length} eveniment(e) găsite. Apasă pe un eveniment pentru a-l importa ca activitate.</p>
-                    {filtered.map((ev: any) => {
-                      const start = new Date(ev.startTime);
-                      const end = new Date(ev.endTime);
-                      const evDate = format(start, "yyyy-MM-dd");
-                      return (
-                        <div
-                          key={ev.id}
-                          className="border rounded-lg p-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-blue-100"
-                          onClick={() => {
-                            setFormDate(evDate);
-                            setFormStart({ h: start.getHours(), m: start.getMinutes() });
-                            setFormEnd({ h: end.getHours(), m: end.getMinutes() });
-                            setFormTask(ev.title);
-                            setFormType("sedinta");
-                            setFormProject("");
-                            setFormDesc("");
-                            setEditingEntry(null);
-                            setGcalImportOpen(false);
-                            setDialogOpen(true);
-                            toast.info("Eveniment importat. Verifică detaliile şi salvează.");
-                          }}
+                  <div className="space-y-2">
+                    {/* Select-all header */}
+                    <div className="flex items-center justify-between px-1">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={allSelected}
+                          ref={el => { if (el) el.indeterminate = someSelected && !allSelected; }}
+                          onChange={toggleAll}
+                          className="h-3.5 w-3.5 accent-blue-600"
+                        />
+                        <span className="text-[10px] text-gray-500">
+                          {someSelected ? `${allIds.filter(id => gcalSelectedIds.has(id)).length} selectate din ${filtered.length}` : `${filtered.length} eveniment(e) găsite`}
+                        </span>
+                      </label>
+                      {someSelected && (
+                        <Button
+                          size="sm"
+                          className="h-6 text-[10px] bg-blue-600 hover:bg-blue-700 text-white gap-1 px-2"
+                          onClick={handleBulkImport}
+                          disabled={gcalBulkImporting}
                         >
-                          <div className="flex items-start justify-between gap-2">
-                            <span className="text-xs font-medium text-gray-800 flex-1">{ev.title}</span>
-                            {ev.htmlLink && (
-                              <a href={ev.htmlLink} target="_blank" rel="noopener" onClick={e => e.stopPropagation()}>
-                                <ExternalLink className="h-3 w-3 text-blue-400 shrink-0" />
-                              </a>
-                            )}
+                          <Download className="h-3 w-3" />
+                          {gcalBulkImporting ? "Se importă..." : `Import (${allIds.filter(id => gcalSelectedIds.has(id)).length})`}
+                        </Button>
+                      )}
+                    </div>
+                    {/* Events list with checkboxes */}
+                    <div className="space-y-1.5 max-h-56 overflow-y-auto">
+                      {filtered.map((ev: any) => {
+                        const start = new Date(ev.startTime);
+                        const end = new Date(ev.endTime);
+                        const evDate = format(start, "yyyy-MM-dd");
+                        const isChecked = gcalSelectedIds.has(ev.id as string);
+                        return (
+                          <div
+                            key={ev.id}
+                            className={`flex items-start gap-2.5 border rounded-lg p-2.5 cursor-pointer transition-colors ${
+                              isChecked ? "border-blue-400 bg-blue-50" : "border-blue-100 hover:bg-blue-50"
+                            }`}
+                            onClick={() => {
+                              setGcalSelectedIds(prev => {
+                                const n = new Set(prev);
+                                if (n.has(ev.id)) n.delete(ev.id); else n.add(ev.id);
+                                return n;
+                              });
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={isChecked}
+                              onChange={() => {}}
+                              onClick={e => e.stopPropagation()}
+                              className="h-3.5 w-3.5 mt-0.5 accent-blue-600 shrink-0"
+                            />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-start justify-between gap-2">
+                                <span className="text-xs font-medium text-gray-800 flex-1 truncate">{ev.title}</span>
+                                <div className="flex items-center gap-1 shrink-0">
+                                  {ev.htmlLink && (
+                                    <a href={ev.htmlLink} target="_blank" rel="noopener" onClick={e => e.stopPropagation()}>
+                                      <ExternalLink className="h-3 w-3 text-blue-400" />
+                                    </a>
+                                  )}
+                                  <button
+                                    className="text-[9px] text-blue-600 hover:underline"
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      setFormDate(evDate);
+                                      setFormStart({ h: start.getHours(), m: start.getMinutes() });
+                                      setFormEnd({ h: end.getHours(), m: end.getMinutes() });
+                                      setFormTask(ev.title);
+                                      setFormType("sedinta");
+                                      setFormProject("");
+                                      setFormDesc("");
+                                      setEditingEntry(null);
+                                      setGcalImportOpen(false);
+                                      setDialogOpen(true);
+                                      toast.info("Eveniment importat. Verifică detaliile şi salvează.");
+                                    }}
+                                  >
+                                    Editare
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="text-[10px] text-gray-500 mt-0.5">
+                                {format(start, "d MMM", { locale: ro })} · {pad2(start.getHours())}:{pad2(start.getMinutes())} – {pad2(end.getHours())}:{pad2(end.getMinutes())}
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-[10px] text-gray-500 mt-0.5">
-                            {format(start, "d MMM", { locale: ro })} · {pad2(start.getHours())}:{pad2(start.getMinutes())} – {pad2(end.getHours())}:{pad2(end.getMinutes())}
-                          </div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
                 );
               })()

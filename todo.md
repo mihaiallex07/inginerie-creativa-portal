@@ -419,3 +419,12 @@
 - [x] Feature: import Google Calendar — data importată se setează automat pe ziua evenimentului (nu pe ziua selectată)
 - [x] Feature: TimerQuickButton inline în secțiunea TIME INSIGHTS din sidebar-ul TimeTracking
 - [x] Backend: procedura importTodayEvents acceptă acum parametrul opțional dateTo pentru interval de date
+
+## Sprint 40c — Bulk Import Google Calendar
+
+- [x] Feature: checkbox per eveniment în dialogul de import Google Calendar
+- [x] Feature: checkbox "Selectează tot" cu stare indeterminată (parțial selectat)
+- [x] Feature: buton "Import (N)" apare când sunt selectate evenimente — importă toate deodată
+- [x] Feature: import bulk salvează direct ca activități (tip: ședință) fără a deschide dialog individual
+- [x] Feature: link "Editare" pe fiecare eveniment pentru import individual cu editare detalii
+- [x] Feature: după import bulk, selecția se resetează și dialogul se închide automat
