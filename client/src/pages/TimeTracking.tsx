@@ -280,6 +280,11 @@ export default function TimeTracking() {
   const [recurringOpen, setRecurringOpen] = useState(false);
   const [editingRecurring, setEditingRecurring] = useState<any>(null);
   const [recForm, setRecForm] = useState({ taskName: "", activityType: "administrativ", projectId: "", startHour: 13, startMin: 0, durationMinutes: 30, countInTime: false, startDate: format(new Date(), "yyyy-MM-dd"), endDate: "" });
+  // editingRecurringBlock: click-to-edit a recurring block for a specific day (creates exception)
+  const [editingRecurringBlock, setEditingRecurringBlock] = useState<{ block: { recurringId: number; dayIdx: number; startHour: number; startMin: number; durationMinutes: number; taskName: string }; dayStr: string } | null>(null);
+  const [recBlockStartH, setRecBlockStartH] = useState(13);
+  const [recBlockStartM, setRecBlockStartM] = useState(0);
+  const [recBlockDurMins, setRecBlockDurMins] = useState(30);
 
   // ── Invite state ──
   const [savedEntryId, setSavedEntryId] = useState<number | null>(null);
@@ -304,7 +309,10 @@ export default function TimeTracking() {
   const createRecurring = trpc.recurring.create.useMutation({ onSuccess: () => { refetchRecurring(); toast.success("Activitate recurentă creată"); setRecurringOpen(false); }, onError: (e) => toast.error(e.message) });
   const updateRecurring = trpc.recurring.update.useMutation({ onSuccess: () => { refetchRecurring(); toast.success("Activitate recurentă actualizată"); setRecurringOpen(false); }, onError: (e) => toast.error(e.message) });
   const deleteRecurring = trpc.recurring.delete.useMutation({ onSuccess: () => { refetchRecurring(); toast.success("Activitate recurentă oprită"); }, onError: (e) => toast.error(e.message) });
-  const upsertException = trpc.recurring.upsertException.useMutation({ onError: (e) => toast.error(e.message) });
+  const upsertException = trpc.recurring.upsertException.useMutation({
+    onSuccess: () => { utils.recurring.exceptions.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
 
   // ── Compute recurring blocks for the current week ──
   const recurringWeekBlocks = useMemo(() => {
@@ -568,7 +576,10 @@ export default function TimeTracking() {
             }
           }
         }
-        const el = document.getElementById(`entry-${dragRef.current.entryId}`);
+        const entryIdForEl = dragRef.current.entryId;
+        const el = entryIdForEl < 0
+          ? document.querySelector(`[data-rec-id="${-entryIdForEl}"]`) as HTMLElement | null
+          : document.getElementById(`entry-${entryIdForEl}`);
         if (el) { el.style.opacity = "1"; el.style.zIndex = ""; }
         dragRef.current = null;
         setDragGhost(null);
@@ -585,7 +596,16 @@ export default function TimeTracking() {
     };
   }, [weekEntries, weekDays, updateEntry, gridHeight, slotH]);
 
-  // ── Handlers ──
+  // Pre-populate recBlock fields when a recurring block is clicked for editing
+  useEffect(() => {
+    if (editingRecurringBlock) {
+      setRecBlockStartH(editingRecurringBlock.block.startHour);
+      setRecBlockStartM(editingRecurringBlock.block.startMin);
+      setRecBlockDurMins(editingRecurringBlock.block.durationMinutes);
+    }
+  }, [editingRecurringBlock]);
+
+  // ── Handlers ───
   const goToday = () => { const t = new Date(); setSelectedDate(t); setWeekStart(startOfWeek(t, { weekStartsOn: 1 })); };
   const goPrev = () => setWeekStart(w => subWeeks(w, 1));
   const goNext = () => setWeekStart(w => addWeeks(w, 1));
@@ -979,6 +999,7 @@ export default function TimeTracking() {
                     return (
                       <div
                         key={`rec-${block.recurringId}-${bi}`}
+                        data-rec-id={block.recurringId * 1000 + block.dayIdx}
                         className="absolute left-0.5 right-0.5 rounded-md px-1.5 py-0.5 overflow-hidden border border-dashed border-[#FFCB09]/50 cursor-pointer select-none"
                         style={{ top: `${topPx}px`, height: `${heightPx}px`, backgroundColor: "rgba(255,203,9,0.12)", zIndex: 8 }}
                         onMouseDown={(e) => {
@@ -994,8 +1015,10 @@ export default function TimeTracking() {
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          // Clicking a recurring block just shows info — drag to move it
-                          toast.info(`Trage blocul pentru a muta activitatea recurentă în această zi.`);
+                          // Only open edit if drag was NOT activated
+                          if (!dragRef.current || !dragRef.current.activated) {
+                            setEditingRecurringBlock({ block, dayStr });
+                          }
                         }}
                       >
                         <div className="text-[10px] font-bold truncate leading-tight text-[#221F1F]">{block.taskName}</div>
@@ -1804,6 +1827,75 @@ export default function TimeTracking() {
                   {editingRecurring ? "Salvează" : "Creează"}
                 </Button>
               </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Click-to-edit recurring block exception dialog */}
+      <Dialog open={!!editingRecurringBlock} onOpenChange={(open) => { if (!open) setEditingRecurringBlock(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-sm font-semibold">
+              Modifică "{editingRecurringBlock?.block.taskName}" pentru {editingRecurringBlock?.dayStr ? format(new Date(editingRecurringBlock.dayStr + "T12:00:00"), "d MMM", { locale: ro }) : ""}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <p className="text-xs text-gray-500">Modificarea se aplică doar pentru această zi. Celelalte zile rămân neschimbate.</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Oră start</label>
+                <div className="flex gap-1 items-center">
+                  <input type="number" min={HOUR_START} max={23} value={recBlockStartH}
+                    onChange={e => setRecBlockStartH(Number(e.target.value))}
+                    className="w-14 border rounded px-2 py-1 text-xs" />
+                  <span className="text-xs">:</span>
+                  <select value={recBlockStartM} onChange={e => setRecBlockStartM(Number(e.target.value))}
+                    className="w-14 border rounded px-2 py-1 text-xs">
+                    {[0,15,30,45].map(m => <option key={m} value={m}>{pad2(m)}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 block mb-1">Durată (min)</label>
+                <input type="number" min={15} max={480} step={15} value={recBlockDurMins}
+                  onChange={e => setRecBlockDurMins(Number(e.target.value))}
+                  className="w-20 border rounded px-2 py-1 text-xs" />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-between pt-1">
+            <Button variant="ghost" size="sm" className="text-xs text-red-500 hover:text-red-600"
+              onClick={() => {
+                if (!editingRecurringBlock) return;
+                // Delete exception (reset to default) by upserting with isDeleted=false and default times
+                upsertException.mutate({
+                  recurringId: editingRecurringBlock.block.recurringId,
+                  exceptionDate: editingRecurringBlock.dayStr,
+                  overrideStartHour: editingRecurringBlock.block.startHour,
+                  overrideStartMin: editingRecurringBlock.block.startMin,
+                  overrideDuration: editingRecurringBlock.block.durationMinutes,
+                });
+                setEditingRecurringBlock(null);
+                toast.success("Resetat la ora implicită");
+              }}
+            >Resetează la default</Button>
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" className="text-xs" onClick={() => setEditingRecurringBlock(null)}>Anulează</Button>
+              <Button size="sm" className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold"
+                onClick={() => {
+                  if (!editingRecurringBlock) return;
+                  upsertException.mutate({
+                    recurringId: editingRecurringBlock.block.recurringId,
+                    exceptionDate: editingRecurringBlock.dayStr,
+                    overrideStartHour: recBlockStartH,
+                    overrideStartMin: recBlockStartM,
+                    overrideDuration: recBlockDurMins,
+                  });
+                  setEditingRecurringBlock(null);
+                  toast.success("Activitate recurentă modificată pentru această zi");
+                }}
+              >Salvează excepție</Button>
             </div>
           </div>
         </DialogContent>
