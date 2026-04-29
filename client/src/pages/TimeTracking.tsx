@@ -12,9 +12,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Lock, Download, Calendar, RefreshCw, Unlink } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Lock, Download, Calendar, RefreshCw, Unlink, Search } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
+import { useLocation } from "wouter";
 
 // ─── Constants ─────────────────────────────────────────────────────────────
 const HOUR_START = 0;
@@ -186,9 +187,55 @@ function TimePicker({ value, onChange, label, minTime }: {
   );
 }
 
+// ─── Timer Quick Button (inline, for TIME INSIGHTS sidebar) ─────────────────
+function TimerQuickButton() {
+  const utils = trpc.useUtils();
+  const { data: runningTimer } = trpc.timeTracking.runningTimer.useQuery(undefined, { refetchInterval: 5000 });
+  const stopMutation = trpc.timeTracking.stopTimer.useMutation({
+    onSuccess: (data) => {
+      utils.timeTracking.runningTimer.invalidate();
+      utils.timeTracking.myEntries.invalidate();
+      const mins = data.durationMinutes ?? 0;
+      const h = Math.floor(mins / 60); const m = mins % 60;
+      toast.success(`Timer oprit — ${h > 0 ? `${h}h ` : ""}${m}m înregistrate`);
+    },
+  });
+
+  const isRunning = !!runningTimer?.isRunning;
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!isRunning || !runningTimer?.startTime) { setElapsed(0); return; }
+    const update = () => setElapsed(Math.floor((Date.now() - new Date(runningTimer.startTime!).getTime()) / 1000));
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [isRunning, runningTimer?.startTime]);
+
+  const fmt = (s: number) => `${String(Math.floor(s/3600)).padStart(2,"0")}:${String(Math.floor((s%3600)/60)).padStart(2,"0")}:${String(s%60).padStart(2,"0")}`;
+
+  if (!isRunning) return null;
+
+  return (
+    <div className="flex items-center justify-between gap-1">
+      <div className="flex items-center gap-1 min-w-0">
+        <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse shrink-0" />
+        <span className="text-[10px] font-mono text-green-400 tabular-nums">{fmt(elapsed)}</span>
+      </div>
+      <button
+        onClick={() => runningTimer?.id && stopMutation.mutate({ id: runningTimer.id })}
+        disabled={stopMutation.isPending}
+        className="text-[9px] px-1.5 py-0.5 rounded bg-red-600/80 hover:bg-red-600 text-white transition-colors shrink-0"
+      >
+        Stop
+      </button>
+    </div>
+  );
+}
+
 // ─── Main Component ────────────────────────────────────────────────────────
 export default function TimeTracking() {
   const { user } = useAuth();
+  const [, setLocation] = useLocation();
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date(), { weekStartsOn: 1 }));
   const isCurrentWeek = isSameDay(weekStart, startOfWeek(new Date(), { weekStartsOn: 1 }));
@@ -235,6 +282,8 @@ export default function TimeTracking() {
   // ── Google Calendar state ──
   const [gcalImportOpen, setGcalImportOpen] = useState(false);
   const [gcalImportDate, setGcalImportDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [gcalImportDateTo, setGcalImportDateTo] = useState(() => format(new Date(), "yyyy-MM-dd"));
+  const [gcalFilter, setGcalFilter] = useState("");
 
   // ── Google Calendar queries ──
   const { data: gcalStatus, refetch: refetchGcalStatus } = trpc.googleCalendar.status.useQuery();
@@ -244,7 +293,7 @@ export default function TimeTracking() {
     { enabled: !gcalConnected }
   );
   const { data: gcalTodayEvents, refetch: refetchGcalEvents } = trpc.googleCalendar.importTodayEvents.useQuery(
-    { date: gcalImportDate },
+    { date: gcalImportDate, dateTo: gcalImportDateTo },
     { enabled: gcalConnected && gcalImportOpen }
   );
   const gcalDisconnect = trpc.googleCalendar.disconnect.useMutation({
@@ -564,8 +613,8 @@ export default function TimeTracking() {
           <Plus className="h-3 w-3 mr-1" /> Adaugă activitate
         </Button>
 
-        {user?.role === "admin" && (
-          <Button variant="outline" size="sm" onClick={openAdminEventNew} className="w-full text-[10px] border-[#221F1F] h-7">
+        {(user?.role === "admin" || user?.role === "coordonator") && (
+          <Button variant="outline" size="sm" onClick={() => setLocation("/evenimente")} className="w-full text-[10px] border-[#221F1F] h-7">
             <Lock className="h-3 w-3 mr-1" /> Eveniment firmă
           </Button>
         )}
@@ -588,6 +637,10 @@ export default function TimeTracking() {
           </div>
           <div className="w-full bg-gray-700 rounded-full h-1">
             <div className="bg-[#FFCB09] h-1 rounded-full transition-all" style={{ width: `${Math.min(100, (weekMins / 2400) * 100)}%` }} />
+          </div>
+          {/* Timer rapid — buton sub TIME INSIGHTS */}
+          <div className="mt-2 pt-2 border-t border-white/10">
+            <TimerQuickButton />
           </div>
         </div>
 
@@ -1023,64 +1076,93 @@ export default function TimeTracking() {
       <Dialog open={gcalImportOpen} onOpenChange={setGcalImportOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-[#221F1F]">
+        <DialogTitle className="flex items-center gap-2 text-[#221F1F]">
               <Calendar className="h-4 w-4 text-blue-500" /> Import din Google Calendar
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className="flex-1">
-                <Label className="text-xs">Zi de importat</Label>
+            {/* Date range */}
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <Label className="text-xs">De la</Label>
                 <Input type="date" value={gcalImportDate} onChange={e => setGcalImportDate(e.target.value)} className="h-8" />
               </div>
-              <Button variant="outline" size="sm" onClick={() => refetchGcalEvents()} className="mt-4 h-8 text-xs gap-1">
+              <div>
+                <Label className="text-xs">Până la</Label>
+                <Input type="date" value={gcalImportDateTo} onChange={e => setGcalImportDateTo(e.target.value)} className="h-8" />
+              </div>
+            </div>
+            {/* Keyword filter + reload */}
+            <div className="flex items-center gap-2">
+              <div className="flex-1 relative">
+                <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-gray-400" />
+                <Input
+                  value={gcalFilter}
+                  onChange={e => setGcalFilter(e.target.value)}
+                  placeholder="Filtrează după titlu..."
+                  className="h-8 pl-7 text-xs"
+                />
+              </div>
+              <Button variant="outline" size="sm" onClick={() => refetchGcalEvents()} className="h-8 text-xs gap-1 shrink-0">
                 <RefreshCw className="h-3 w-3" /> Reîncarcă
               </Button>
             </div>
 
             {!gcalTodayEvents ? (
               <div className="text-center py-4 text-sm text-gray-400">Se încarcă evenimentele...</div>
-            ) : gcalTodayEvents.events.length === 0 ? (
-              <div className="text-center py-4 text-sm text-gray-400">Nu sunt evenimente în Google Calendar pentru această zi.</div>
             ) : (
-              <div className="space-y-2 max-h-64 overflow-y-auto">
-                <p className="text-[10px] text-gray-500">{gcalTodayEvents.events.length} eveniment(e) găsite. Apasă pe un eveniment pentru a-l importa ca activitate.</p>
-                {gcalTodayEvents.events.map((ev: any) => {
-                  const start = new Date(ev.startTime);
-                  const end = new Date(ev.endTime);
-                  return (
-                    <div
-                      key={ev.id}
-                      className="border rounded-lg p-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-blue-100"
-                      onClick={() => {
-                        setFormDate(gcalImportDate);
-                        setFormStart({ h: start.getHours(), m: start.getMinutes() });
-                        setFormEnd({ h: end.getHours(), m: end.getMinutes() });
-                        setFormTask(ev.title);
-                        setFormType("sedinta");
-                        setFormProject("");
-                        setFormDesc("");
-                        setEditingEntry(null);
-                        setGcalImportOpen(false);
-                        setDialogOpen(true);
-                        toast.info("Eveniment importat. Verifică detaliile și salvează.");
-                      }}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <span className="text-xs font-medium text-gray-800 flex-1">{ev.title}</span>
-                        {ev.htmlLink && (
-                          <a href={ev.htmlLink} target="_blank" rel="noopener" onClick={e => e.stopPropagation()}>
-                            <ExternalLink className="h-3 w-3 text-blue-400 shrink-0" />
-                          </a>
-                        )}
-                      </div>
-                      <div className="text-[10px] text-gray-500 mt-0.5">
-                        {pad2(start.getHours())}:{pad2(start.getMinutes())} – {pad2(end.getHours())}:{pad2(end.getMinutes())}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+              (() => {
+                const filtered = (gcalTodayEvents?.events ?? []).filter((ev: any) =>
+                  !gcalFilter.trim() || ev.title.toLowerCase().includes(gcalFilter.toLowerCase())
+                );
+                return filtered.length === 0 ? (
+                  <div className="text-center py-4 text-sm text-gray-400">
+                    {gcalTodayEvents?.events.length === 0
+                      ? "Nu sunt evenimente în Google Calendar pentru perioada selectată."
+                      : `Niciun eveniment nu corespunde filtrului "${gcalFilter}".`}
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    <p className="text-[10px] text-gray-500">{filtered.length} eveniment(e) găsite. Apasă pe un eveniment pentru a-l importa ca activitate.</p>
+                    {filtered.map((ev: any) => {
+                      const start = new Date(ev.startTime);
+                      const end = new Date(ev.endTime);
+                      const evDate = format(start, "yyyy-MM-dd");
+                      return (
+                        <div
+                          key={ev.id}
+                          className="border rounded-lg p-2.5 hover:bg-blue-50 cursor-pointer transition-colors border-blue-100"
+                          onClick={() => {
+                            setFormDate(evDate);
+                            setFormStart({ h: start.getHours(), m: start.getMinutes() });
+                            setFormEnd({ h: end.getHours(), m: end.getMinutes() });
+                            setFormTask(ev.title);
+                            setFormType("sedinta");
+                            setFormProject("");
+                            setFormDesc("");
+                            setEditingEntry(null);
+                            setGcalImportOpen(false);
+                            setDialogOpen(true);
+                            toast.info("Eveniment importat. Verifică detaliile şi salvează.");
+                          }}
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="text-xs font-medium text-gray-800 flex-1">{ev.title}</span>
+                            {ev.htmlLink && (
+                              <a href={ev.htmlLink} target="_blank" rel="noopener" onClick={e => e.stopPropagation()}>
+                                <ExternalLink className="h-3 w-3 text-blue-400 shrink-0" />
+                              </a>
+                            )}
+                          </div>
+                          <div className="text-[10px] text-gray-500 mt-0.5">
+                            {format(start, "d MMM", { locale: ro })} · {pad2(start.getHours())}:{pad2(start.getMinutes())} – {pad2(end.getHours())}:{pad2(end.getMinutes())}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()
             )}
 
             <div className="flex justify-between pt-1 border-t">

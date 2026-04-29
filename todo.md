@@ -410,3 +410,12 @@
 - [x] Frontend: shortcut tastatură configurabil (default: Alt+T), editabil din bubble
 - [x] Frontend: buton trigger vizibil permanent (bottom-right), verde + pulsant când timer activ
 - [x] Frontend: FloatingTimer adăugat în App.tsx ca overlay global
+
+## Sprint 40b — Visual Edits (TimeTracking + FloatingTimer)
+
+- [x] Fix: buton "Eveniment firmă" din TimeTracking navighează la /evenimente (admin + coordonator)
+- [x] Feature: import Google Calendar — suport interval de date (De la / Până la) în loc de o singură zi
+- [x] Feature: import Google Calendar — filtru după cuvânt cheie (titlu eveniment)
+- [x] Feature: import Google Calendar — data importată se setează automat pe ziua evenimentului (nu pe ziua selectată)
+- [x] Feature: TimerQuickButton inline în secțiunea TIME INSIGHTS din sidebar-ul TimeTracking
+- [x] Backend: procedura importTodayEvents acceptă acum parametrul opțional dateTo pentru interval de date

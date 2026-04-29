@@ -1340,14 +1340,15 @@ export const appRouter = router({
 
     // Import today's Google Calendar events as time entry suggestions
     importTodayEvents: protectedProcedure
-      .input(z.object({ date: z.string() }))
+      .input(z.object({ date: z.string(), dateTo: z.string().optional() }))
       .query(async ({ ctx, input }) => {
         const accessToken = await getValidAccessToken(ctx.user.id);
         if (!accessToken) return { events: [], connected: false };
 
         const dayStart = new Date(input.date);
         dayStart.setHours(0, 0, 0, 0);
-        const dayEnd = new Date(input.date);
+        // If dateTo is provided, use end of that day; otherwise end of dateFrom day
+        const dayEnd = new Date(input.dateTo ?? input.date);
         dayEnd.setHours(23, 59, 59, 999);
 
         try {
