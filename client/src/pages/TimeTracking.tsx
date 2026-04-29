@@ -738,10 +738,49 @@ export default function TimeTracking() {
   // ── Time insights ──
   const todayEntries = weekEntries.filter((e: any) => isToday(new Date(e.date)));
   const todayRecurring = recurringWeekBlocks.filter(b => isToday(weekDays[b.dayIdx]) && b.countInTime);
+  // Company events for today (include in time insights as work time)
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const todayCompanyEventMins = (companyEvents as any[]).flatMap((ev: any) => {
+    if (ev.isRecurring && ev.recurringRule === "daily") {
+      const evStart = new Date(ev.startTime);
+      const evStartDate = format(evStart, "yyyy-MM-dd");
+      const evEnd = ev.recurringUntil ? format(new Date(ev.recurringUntil instanceof Date ? ev.recurringUntil : new Date(ev.recurringUntil as string)), "yyyy-MM-dd") : "9999-12-31";
+      const dow = getDay(new Date());
+      if (todayStr >= evStartDate && todayStr <= evEnd && dow !== 0 && dow !== 6) return [ev];
+      return [];
+    }
+    return format(new Date(ev.startTime), "yyyy-MM-dd") === todayStr ? [ev] : [];
+  }).reduce((s: number, ev: any) => {
+    const st = extractTime(ev.startTime); const en = extractTime(ev.endTime);
+    return s + Math.max(0, (en.h * 60 + en.m) - (st.h * 60 + st.m));
+  }, 0);
+  // Company events for the whole week
+  const weekCompanyEventMins = (companyEvents as any[]).flatMap((ev: any) => {
+    const days: any[] = [];
+    if (ev.isRecurring && ev.recurringRule === "daily") {
+      weekDays.forEach(day => {
+        const ds = format(day, "yyyy-MM-dd");
+        const evStart = new Date(ev.startTime);
+        const evStartDate = format(evStart, "yyyy-MM-dd");
+        const evEnd = ev.recurringUntil ? format(new Date(ev.recurringUntil instanceof Date ? ev.recurringUntil : new Date(ev.recurringUntil as string)), "yyyy-MM-dd") : "9999-12-31";
+        const dow = getDay(day);
+        if (ds >= evStartDate && ds <= evEnd && dow !== 0 && dow !== 6) days.push(ev);
+      });
+    } else {
+      const evDate = format(new Date(ev.startTime), "yyyy-MM-dd");
+      if (weekDays.some(d => format(d, "yyyy-MM-dd") === evDate)) days.push(ev);
+    }
+    return days;
+  }).reduce((s: number, ev: any) => {
+    const st = extractTime(ev.startTime); const en = extractTime(ev.endTime);
+    return s + Math.max(0, (en.h * 60 + en.m) - (st.h * 60 + st.m));
+  }, 0);
   const todayMins = todayEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0)
-    + todayRecurring.reduce((s, b) => s + b.durationMinutes, 0);
+    + todayRecurring.reduce((s, b) => s + b.durationMinutes, 0)
+    + todayCompanyEventMins;
   const weekMins = weekEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0)
-    + recurringWeekBlocks.filter(b => b.countInTime).reduce((s, b) => s + b.durationMinutes, 0);
+    + recurringWeekBlocks.filter(b => b.countInTime).reduce((s, b) => s + b.durationMinutes, 0)
+    + weekCompanyEventMins;
 
   const headerLabel = useMemo(() => {
     const m1 = format(weekStart, "MMM", { locale: ro });
@@ -1589,9 +1628,16 @@ export default function TimeTracking() {
                             <input
                               type="checkbox"
                               checked={isChecked}
-                              onChange={() => {}}
+                              onChange={(e) => {
+                                e.stopPropagation();
+                                setGcalSelectedIds(prev => {
+                                  const n = new Set(prev);
+                                  if (n.has(ev.id)) n.delete(ev.id); else n.add(ev.id);
+                                  return n;
+                                });
+                              }}
                               onClick={e => e.stopPropagation()}
-                              className="h-3.5 w-3.5 mt-0.5 accent-blue-600 shrink-0"
+                              className="h-3.5 w-3.5 mt-0.5 accent-blue-600 shrink-0 cursor-pointer"
                             />
                             <div className="flex-1 min-w-0">
                               <div className="flex items-start justify-between gap-2">
