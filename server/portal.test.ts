@@ -15,6 +15,7 @@ vi.mock("./db", () => ({
   // Time entries
   getTimeEntriesForUser: vi.fn().mockResolvedValue([]),
   getRunningTimer: vi.fn().mockResolvedValue(undefined),
+  checkTimeEntryExists: vi.fn().mockResolvedValue(false),
   createTimeEntry: vi.fn().mockResolvedValue(undefined),
   updateTimeEntry: vi.fn().mockResolvedValue(undefined),
   getTimeEntriesForProject: vi.fn().mockResolvedValue([]),

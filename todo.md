@@ -472,3 +472,10 @@
 
 - [x] Fix: Dashboard arată 18h/17 intrări în loc de 5h/5 intrări din Time-Tracking azi
 - [x] Debug: myEntries query cu dateFrom/dateTo nu filtrează corect după ziua curentă
+
+## Sprint 42c — Google Calendar import deduplication
+
+- [x] Backend: checkTimeEntryExists helper în db.ts (userId + date + taskName)
+- [x] Backend: addCalendarEntry procedure verifică duplicat înainte de insert, returnează { skipped: true }
+- [x] Frontend: handleBulkImport numără ok/skipped, afișează toast detaliat (X importate, Y deja existau)
+- [x] Tests: mock checkTimeEntryExists în portal.test.ts — 34/34 trec

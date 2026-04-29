@@ -99,6 +99,7 @@ import {
   getAppSetting,
   setAppSetting,
   getAllCompanyEvents,
+  checkTimeEntryExists,
 } from "./db";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -426,6 +427,11 @@ export const appRouter = router({
         isBillable: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
+        // Deduplication: skip if entry with same date + taskName already exists for this user
+        if (input.taskName) {
+          const exists = await checkTimeEntryExists(ctx.user.id, input.date, input.taskName);
+          if (exists) return { success: true, id: null, skipped: true };
+        }
         // Store hours as plain integers — NO Date/timezone conversion
         const durationMinutes = (input.endHour * 60 + input.endMin) - (input.startHour * 60 + input.startMin);
         const id = await createTimeEntry({
@@ -444,7 +450,7 @@ export const appRouter = router({
           isRunning: false,
           status: "salvat",
         });
-        return { success: true, id };
+        return { success: true, id, skipped: false };
       }),
 
     updateCalendarEntry: protectedProcedure

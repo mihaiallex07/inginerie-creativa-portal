@@ -1153,11 +1153,12 @@ export default function TimeTracking() {
                   if (toImport.length === 0) return;
                   setGcalBulkImporting(true);
                   let ok = 0;
+                  let skipped = 0;
                   for (const ev of toImport) {
                     const start = new Date(ev.startTime);
                     const end = new Date(ev.endTime);
                     try {
-                      await addManualEntry.mutateAsync({
+                      const result = await addManualEntry.mutateAsync({
                         // projectId omis intentionat — apare ca "Diverse" pana la alocare manuala
                         date: format(start, "yyyy-MM-dd"),
                         startHour: start.getHours(),
@@ -1168,17 +1169,26 @@ export default function TimeTracking() {
                         taskName: ev.title,
                         isBillable: true,
                       });
-                      ok++;
+                      if (result.skipped) {
+                        skipped++;
+                      } else {
+                        ok++;
+                      }
                     } catch { /* individual errors already toasted */ }
                   }
                   setGcalBulkImporting(false);
                   setGcalSelectedIds(new Set());
                   refetchEntries();
-                  if (ok > 0) {
-                    toast.success(`${ok} activitate(i) importate!`, { duration: 6000 });
+                  if (ok > 0 && skipped === 0) {
+                    toast.success(`${ok} activitate(i) importate cu succes!`, { duration: 6000 });
                     toast.info("⚠️ Activitățile importate nu au proiect alocat. Editează-le în calendar pentru a le atribui un proiect.", { duration: 8000 });
+                  } else if (ok > 0 && skipped > 0) {
+                    toast.success(`${ok} activitate(i) importate, ${skipped} deja existau (șărite).`, { duration: 7000 });
+                    toast.info("⚠️ Activitățile noi nu au proiect alocat. Editează-le în calendar pentru a le atribui un proiect.", { duration: 8000 });
+                  } else if (ok === 0 && skipped > 0) {
+                    toast.info(`Toate cele ${skipped} activitate(i) selectate există deja în Time-Tracking. Nimic nou de importat.`, { duration: 7000 });
                   }
-                  if (ok === toImport.length) setGcalImportOpen(false);
+                  if (skipped < toImport.length) setGcalImportOpen(false);
                 };
 
                 return filtered.length === 0 ? (

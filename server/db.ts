@@ -220,6 +220,23 @@ export async function getRunningTimer(userId: number) {
   return result[0] ?? null;
 }
 
+export async function checkTimeEntryExists(userId: number, date: string, taskName: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db
+    .select({ id: timeEntries.id })
+    .from(timeEntries)
+    .where(
+      and(
+        eq(timeEntries.userId, userId),
+        sql`DATE(${timeEntries.date}) = ${date}`,
+        eq(timeEntries.taskName, taskName)
+      )
+    )
+    .limit(1);
+  return result.length > 0;
+}
+
 export async function createTimeEntry(data: typeof timeEntries.$inferInsert) {
   const db = await getDb();
   if (!db) return null;
