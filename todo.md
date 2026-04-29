@@ -436,3 +436,14 @@
 - [x] Feature: formular creare/editare eveniment firmă include tip activitate și proiect (opțional)
 - [x] Fix: db.ts createCompanyEvent/updateCompanyEvent să accepte activityType și projectId
 - [x] Fix: routers.ts companyEvents.create/update să accepte activityType și projectId
+
+## Sprint 41 — Fix Profilul meu - date personale (feedback colegi)
+
+- [x] Fix: data nașterii afișată în format american (MM/DD/YYYY) → format românesc (DD/MM/YYYY)
+- [x] Fix: câmpurile de date personale sunt editabile fără a apăsa "Editează profil" (trebuie să fie read-only implicit)
+- [x] Fix: eroare la salvare profil după apăsarea "Editează profil"
+- [x] Fix: data nașterii dispare din câmp când intri în modul editare
+- [x] Fix: CNP detectat ca parolă de browser (adaugă autocomplete="off" pe câmpul CNP)
+- [x] Fix: câmpurile CNP/serie CI/număr CI nu au limită de caractere (CNP=13, serie=2 litere, număr CI=6 cifre sau 7 cifre formate noi)
+- [x] Fix: validare dată naștere să fie în trecut (nu permite date viitoare)
+- [x] Fix: câmpurile de adresă nu pot fi completate
