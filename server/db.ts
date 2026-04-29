@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, lte, or, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   companyEvents,
@@ -223,6 +223,8 @@ export async function getRunningTimer(userId: number) {
 export async function checkTimeEntryExists(userId: number, date: string, taskName: string): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
+  // Only check entries with startHour set (visible in the weekly grid).
+  // Old bulk-import entries without startHour are invisible and should not block re-import.
   const result = await db
     .select({ id: timeEntries.id })
     .from(timeEntries)
@@ -230,7 +232,8 @@ export async function checkTimeEntryExists(userId: number, date: string, taskNam
       and(
         eq(timeEntries.userId, userId),
         sql`DATE(${timeEntries.date}) = ${date}`,
-        eq(timeEntries.taskName, taskName)
+        eq(timeEntries.taskName, taskName),
+        isNotNull(timeEntries.startHour)
       )
     )
     .limit(1);
