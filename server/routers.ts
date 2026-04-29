@@ -100,6 +100,16 @@ import {
   setAppSetting,
   getAllCompanyEvents,
   checkTimeEntryExists,
+  getRecurringActivities,
+  createRecurringActivity,
+  updateRecurringActivity,
+  deleteRecurringActivity,
+  getRecurringExceptions,
+  upsertRecurringException,
+  createActivityInvitation,
+  getPendingInvitationsForUser,
+  getInvitationsForEntry,
+  respondToInvitation,
 } from "./db";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -144,9 +154,114 @@ const settingsRouter = router({
     }),
 });
 
+// ─── RECURRING ACTIVITIES ROUTER ───────────────────────────────────────────
+const recurringRouter = router({
+  list: protectedProcedure.query(async ({ ctx }) => {
+    return getRecurringActivities(ctx.user.id);
+  }),
+
+  create: protectedProcedure
+    .input(z.object({
+      taskName: z.string().min(1),
+      activityType: z.enum(["proiectare","consultanta","sedinta","documentare","deplasare","administrativ","verificare","executie"]),
+      projectId: z.number().optional(),
+      startHour: z.number().min(0).max(23),
+      startMin: z.number().min(0).max(59).default(0),
+      durationMinutes: z.number().min(5).max(480),
+      countInTime: z.boolean().default(true),
+      startDate: z.string(),
+      endDate: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return createRecurringActivity({ ...input, userId: ctx.user.id });
+    }),
+
+  update: protectedProcedure
+    .input(z.object({
+      id: z.number(),
+      taskName: z.string().optional(),
+      activityType: z.enum(["proiectare","consultanta","sedinta","documentare","deplasare","administrativ","verificare","executie"]).optional(),
+      projectId: z.number().optional().nullable(),
+      startHour: z.number().optional(),
+      startMin: z.number().optional(),
+      durationMinutes: z.number().optional(),
+      countInTime: z.boolean().optional(),
+      startDate: z.string().optional(),
+      endDate: z.string().optional().nullable(),
+      isActive: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const { id, ...data } = input;
+      return updateRecurringActivity(id, ctx.user.id, data as any);
+    }),
+
+  delete: protectedProcedure
+    .input(z.object({ id: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      return deleteRecurringActivity(input.id, ctx.user.id);
+    }),
+
+  // Get exceptions for a date range (to resolve overrides in the calendar)
+  exceptions: protectedProcedure
+    .input(z.object({ dateFrom: z.string(), dateTo: z.string() }))
+    .query(async ({ ctx, input }) => {
+      return getRecurringExceptions(ctx.user.id, input.dateFrom, input.dateTo);
+    }),
+
+  // Create/update an exception for a specific day (from drag or edit)
+  upsertException: protectedProcedure
+    .input(z.object({
+      recurringId: z.number(),
+      exceptionDate: z.string(),
+      overrideStartHour: z.number().optional(),
+      overrideStartMin: z.number().optional(),
+      overrideDuration: z.number().optional(),
+      isDeleted: z.boolean().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      return upsertRecurringException({ ...input, userId: ctx.user.id });
+    }),
+});
+
+// ─── ACTIVITY INVITATIONS ROUTER ─────────────────────────────────────────────
+const invitationsRouter = router({
+  // Get pending invitations for the current user
+  pending: protectedProcedure.query(async ({ ctx }) => {
+    return getPendingInvitationsForUser(ctx.user.id);
+  }),
+
+  // Get invitation statuses for a specific time entry (host view)
+  forEntry: protectedProcedure
+    .input(z.object({ timeEntryId: z.number() }))
+    .query(async ({ input }) => {
+      return getInvitationsForEntry(input.timeEntryId);
+    }),
+
+  // Invite a user to a time entry
+  invite: protectedProcedure
+    .input(z.object({ timeEntryId: z.number(), inviteeUserId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const id = await createActivityInvitation({
+        timeEntryId: input.timeEntryId,
+        hostUserId: ctx.user.id,
+        inviteeUserId: input.inviteeUserId,
+      });
+      return { id };
+    }),
+
+  // Accept or decline an invitation
+  respond: protectedProcedure
+    .input(z.object({ id: z.number(), accept: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      return respondToInvitation(input.id, ctx.user.id, input.accept);
+    }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   settings: settingsRouter,
+  recurring: recurringRouter,
+  invitations: invitationsRouter,
 
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),

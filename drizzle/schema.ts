@@ -398,3 +398,57 @@ export const gcalSyncMap = mysqlTable("gcal_sync_map", {
   lastSyncedAt: timestamp("lastSyncedAt").defaultNow().notNull(),
 });
 export type GcalSyncMap = typeof gcalSyncMap.$inferSelect;
+
+// ─── RECURRING ACTIVITIES ────────────────────────────────────────────────────
+// Per-user recurring activity templates (e.g. "Pauză de masă" daily at 13:00)
+export const recurringActivities = mysqlTable("recurring_activities", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  taskName: varchar("taskName", { length: 256 }).notNull(),
+  activityType: mysqlEnum("activityType", ["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).default("administrativ").notNull(),
+  projectId: int("projectId"),
+  startHour: int("startHour").notNull(),
+  startMin: int("startMin").notNull().default(0),
+  durationMinutes: int("durationMinutes").notNull(),
+  countInTime: boolean("countInTime").default(true).notNull(), // if false: shown with hourglass icon, excluded from Time Insights
+  startDate: date("startDate").notNull(),   // first day it applies
+  endDate: date("endDate"),                 // null = indefinite
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type RecurringActivity = typeof recurringActivities.$inferSelect;
+export type InsertRecurringActivity = typeof recurringActivities.$inferInsert;
+
+// ─── RECURRING EXCEPTIONS ────────────────────────────────────────────────────
+// Per-day overrides for a recurring activity (drag/edit creates an exception)
+export const recurringExceptions = mysqlTable("recurring_exceptions", {
+  id: int("id").autoincrement().primaryKey(),
+  recurringId: int("recurringId").notNull(),
+  userId: int("userId").notNull(),
+  exceptionDate: date("exceptionDate").notNull(), // the specific day being overridden
+  overrideStartHour: int("overrideStartHour"),    // null = use parent values
+  overrideStartMin: int("overrideStartMin"),
+  overrideDuration: int("overrideDuration"),
+  isDeleted: boolean("isDeleted").default(false).notNull(), // true = hidden on this day
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type RecurringException = typeof recurringExceptions.$inferSelect;
+export type InsertRecurringException = typeof recurringExceptions.$inferInsert;
+
+// ─── ACTIVITY INVITATIONS ────────────────────────────────────────────────────
+// Invitations from one user to another for a shared time entry (meeting/session)
+export const activityInvitations = mysqlTable("activity_invitations", {
+  id: int("id").autoincrement().primaryKey(),
+  timeEntryId: int("timeEntryId").notNull(),   // the host's time_entries row
+  hostUserId: int("hostUserId").notNull(),
+  inviteeUserId: int("inviteeUserId").notNull(),
+  status: mysqlEnum("status", ["pending", "accepted", "declined"]).default("pending").notNull(),
+  inviteeEntryId: int("inviteeEntryId"),        // set after acceptance (cloned entry id)
+  notifiedAt: timestamp("notifiedAt"),
+  respondedAt: timestamp("respondedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ActivityInvitation = typeof activityInvitations.$inferSelect;
+export type InsertActivityInvitation = typeof activityInvitations.$inferInsert;

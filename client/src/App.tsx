@@ -24,6 +24,7 @@ import ProiectDetaliu from "./pages/ProiectDetaliu";
 import ProcessOverview from "./pages/ProcessOverview";
 import Evenimente from "./pages/Evenimente";
 import FloatingTimer from "./components/FloatingTimer";
+import Notificari from "./pages/Notificari";
 
 function Router() {
   return (
@@ -50,7 +51,7 @@ function Router() {
         <Route path="/biblioteca" component={() => <PlaceholderPage title="Bibliotecă Tehnică" />} />
         <Route path="/formulare" component={() => <PlaceholderPage title="Formulare & Cereri" />} />
         <Route path="/admin-utilizatori" component={AdminUtilizatori} />
-        <Route path="/notificari" component={() => <PlaceholderPage title="Notificări" />} />
+        <Route path="/notificari" component={Notificari} />
         <Route path="/setari" component={() => <PlaceholderPage title="Setări" />} />
         <Route path="/404" component={NotFound} />
         <Route component={NotFound} />

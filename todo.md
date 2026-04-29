@@ -479,3 +479,29 @@
 - [x] Backend: addCalendarEntry procedure verifică duplicat înainte de insert, returnează { skipped: true }
 - [x] Frontend: handleBulkImport numără ok/skipped, afișează toast detaliat (X importate, Y deja existau)
 - [x] Tests: mock checkTimeEntryExists în portal.test.ts — 34/34 trec
+
+## Sprint 43 — Time-Tracking major redesign + recurring + invitations
+
+### 43a — Visual redesign
+- [ ] All entries yellow (#FFCB09/80) with dark text, larger font (14px title, 12px time)
+- [ ] Vertical scroll: page loads scrolled to 07:00, shows 07:00–23:00 visible range
+- [ ] Drag ghost preview showing day column + time slot while dragging
+
+### 43b — Recurring activities
+- [ ] DB: recurringActivities table (userId, taskName, projectId, categoryId, startHour, startMin, durationMinutes, countInTime, startDate, endDate nullable)
+- [ ] DB: recurringExceptions table (recurringId, exceptionDate, overrideStartHour, overrideStartMin, overrideDuration, deleted)
+- [ ] Backend: CRUD procedures for recurring activities
+- [ ] Backend: getRecurringForWeek — returns virtual entries merged with exceptions
+- [ ] Frontend: Recurring management card under Time Insights sidebar
+- [ ] Frontend: Recurring entries auto-appear in calendar grid (hourglass icon if not counted in time)
+- [ ] Frontend: Drag/edit on recurring entry creates an exception for that day only
+
+### 43c — Activity invitations
+- [ ] DB: activityInvitations table (activityId, inviteeUserId, status: pending/accepted/declined, notifiedAt)
+- [ ] Backend: inviteToActivity, respondToInvitation procedures
+- [ ] Backend: on accept — clone entry to invitee's timeEntries
+- [ ] Backend: bell notification + email to invitee on invite
+- [ ] Backend: bell notification to host on accept/decline
+- [ ] Frontend: invite UI in add/edit activity dialog (search users, add invitees)
+- [ ] Frontend: pending invitations in bell dropdown with Accept/Decline buttons
+- [ ] Frontend: host sees accepted/declined status on activity block

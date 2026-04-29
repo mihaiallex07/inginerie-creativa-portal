@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, isNotNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   companyEvents,
@@ -19,6 +19,9 @@ import {
   timeEntries,
   users,
   appSettings,
+  recurringActivities,
+  recurringExceptions,
+  activityInvitations,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1390,4 +1393,211 @@ export async function updateUsersDisplayOrder(orderList: { userId: number; displ
     await db.update(users).set({ displayOrder: item.displayOrder }).where(eq(users.id, item.userId));
   }
   return { success: true };
+}
+
+// ─── RECURRING ACTIVITIES ────────────────────────────────────────────────────
+
+export async function getRecurringActivities(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(recurringActivities)
+    .where(and(eq(recurringActivities.userId, userId), eq(recurringActivities.isActive, true)))
+    .orderBy(asc(recurringActivities.startHour));
+}
+
+export async function createRecurringActivity(data: {
+  userId: number; taskName: string; activityType: string; projectId?: number;
+  startHour: number; startMin: number; durationMinutes: number;
+  countInTime: boolean; startDate: string; endDate?: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [res] = await db.insert(recurringActivities).values({
+    userId: data.userId,
+    taskName: data.taskName,
+    activityType: data.activityType as any,
+    projectId: data.projectId ?? null,
+    startHour: data.startHour,
+    startMin: data.startMin,
+    durationMinutes: data.durationMinutes,
+    countInTime: data.countInTime,
+    startDate: data.startDate as any,
+    endDate: data.endDate ? (data.endDate as any) : null,
+    isActive: true,
+  });
+  return res;
+}
+
+export async function updateRecurringActivity(id: number, userId: number, data: Partial<{
+  taskName: string; activityType: string; projectId: number | null;
+  startHour: number; startMin: number; durationMinutes: number;
+  countInTime: boolean; startDate: string; endDate: string | null; isActive: boolean;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(recurringActivities)
+    .set(data as any)
+    .where(and(eq(recurringActivities.id, id), eq(recurringActivities.userId, userId)));
+  return { success: true };
+}
+
+export async function deleteRecurringActivity(id: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  await db.update(recurringActivities)
+    .set({ isActive: false })
+    .where(and(eq(recurringActivities.id, id), eq(recurringActivities.userId, userId)));
+  return { success: true };
+}
+
+export async function getRecurringExceptions(userId: number, dateFrom: string, dateTo: string) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(recurringExceptions)
+    .where(and(
+      eq(recurringExceptions.userId, userId),
+      gte(recurringExceptions.exceptionDate, dateFrom as any),
+      lte(recurringExceptions.exceptionDate, dateTo as any),
+    ));
+}
+
+export async function upsertRecurringException(data: {
+  recurringId: number; userId: number; exceptionDate: string;
+  overrideStartHour?: number; overrideStartMin?: number; overrideDuration?: number;
+  isDeleted?: boolean;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  // Check if exception already exists for this recurring+date
+  const existing = await db.select().from(recurringExceptions)
+    .where(and(
+      eq(recurringExceptions.recurringId, data.recurringId),
+      eq(recurringExceptions.userId, data.userId),
+      eq(recurringExceptions.exceptionDate, data.exceptionDate as any),
+    )).limit(1);
+  if (existing.length > 0) {
+    await db.update(recurringExceptions)
+      .set({
+        overrideStartHour: data.overrideStartHour ?? null,
+        overrideStartMin: data.overrideStartMin ?? null,
+        overrideDuration: data.overrideDuration ?? null,
+        isDeleted: data.isDeleted ?? false,
+      })
+      .where(eq(recurringExceptions.id, existing[0].id));
+    return existing[0].id;
+  } else {
+    const [res] = await db.insert(recurringExceptions).values({
+      recurringId: data.recurringId,
+      userId: data.userId,
+      exceptionDate: data.exceptionDate as any,
+      overrideStartHour: data.overrideStartHour ?? null,
+      overrideStartMin: data.overrideStartMin ?? null,
+      overrideDuration: data.overrideDuration ?? null,
+      isDeleted: data.isDeleted ?? false,
+    });
+    return (res as any).insertId;
+  }
+}
+
+// ─── ACTIVITY INVITATIONS ────────────────────────────────────────────────────
+
+export async function createActivityInvitation(data: {
+  timeEntryId: number; hostUserId: number; inviteeUserId: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const [res] = await db.insert(activityInvitations).values({
+    timeEntryId: data.timeEntryId,
+    hostUserId: data.hostUserId,
+    inviteeUserId: data.inviteeUserId,
+    status: "pending",
+  });
+  return (res as any).insertId as number;
+}
+
+export async function getPendingInvitationsForUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  // Join with time_entries and users for display info
+  const rows = await db.select({
+    id: activityInvitations.id,
+    status: activityInvitations.status,
+    createdAt: activityInvitations.createdAt,
+    timeEntryId: activityInvitations.timeEntryId,
+    hostUserId: activityInvitations.hostUserId,
+    taskName: timeEntries.taskName,
+    activityType: timeEntries.activityType,
+    date: timeEntries.date,
+    startHour: timeEntries.startHour,
+    startMin: timeEntries.startMin,
+    endHour: timeEntries.endHour,
+    endMin: timeEntries.endMin,
+    projectId: timeEntries.projectId,
+    hostName: users.name,
+  })
+    .from(activityInvitations)
+    .innerJoin(timeEntries, eq(activityInvitations.timeEntryId, timeEntries.id))
+    .innerJoin(users, eq(activityInvitations.hostUserId, users.id))
+    .where(and(
+      eq(activityInvitations.inviteeUserId, userId),
+      eq(activityInvitations.status, "pending"),
+    ))
+    .orderBy(desc(activityInvitations.createdAt));
+  return rows;
+}
+
+export async function getInvitationsForEntry(timeEntryId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({
+    id: activityInvitations.id,
+    status: activityInvitations.status,
+    inviteeUserId: activityInvitations.inviteeUserId,
+    inviteeName: users.name,
+    inviteeEntryId: activityInvitations.inviteeEntryId,
+  })
+    .from(activityInvitations)
+    .innerJoin(users, eq(activityInvitations.inviteeUserId, users.id))
+    .where(eq(activityInvitations.timeEntryId, timeEntryId));
+}
+
+export async function respondToInvitation(id: number, inviteeUserId: number, accept: boolean) {
+  const db = await getDb();
+  if (!db) throw new Error("DB not available");
+  const inv = await db.select().from(activityInvitations)
+    .where(and(eq(activityInvitations.id, id), eq(activityInvitations.inviteeUserId, inviteeUserId)))
+    .limit(1);
+  if (!inv.length) throw new Error("Invitație negăsită");
+  const invitation = inv[0];
+  if (!accept) {
+    await db.update(activityInvitations)
+      .set({ status: "declined", respondedAt: new Date() })
+      .where(eq(activityInvitations.id, id));
+    return { accepted: false };
+  }
+  // Clone the host's time entry for the invitee
+  const hostEntry = await db.select().from(timeEntries)
+    .where(eq(timeEntries.id, invitation.timeEntryId)).limit(1);
+  if (!hostEntry.length) throw new Error("Activitate negăsită");
+  const he = hostEntry[0];
+  const [ins] = await db.insert(timeEntries).values({
+    userId: inviteeUserId,
+    projectId: he.projectId ?? null,
+    date: he.date,
+    startHour: he.startHour,
+    startMin: he.startMin,
+    endHour: he.endHour,
+    endMin: he.endMin,
+    durationMinutes: he.durationMinutes,
+    activityType: he.activityType,
+    taskName: he.taskName,
+    description: he.description,
+    isBillable: he.isBillable,
+    status: "salvat",
+  });
+  const newEntryId = (ins as any).insertId as number;
+  await db.update(activityInvitations)
+    .set({ status: "accepted", respondedAt: new Date(), inviteeEntryId: newEntryId })
+    .where(eq(activityInvitations.id, id));
+  return { accepted: true, newEntryId };
 }

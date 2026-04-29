@@ -49,6 +49,7 @@ import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+import { trpc } from "@/lib/trpc";
 
 const LOGO_YELLOW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/LOGOtipgalben_transparent_fdda5790.png";
 const LOGO_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/LOGOtipgalben_transparent_fdda5790.png";
@@ -202,8 +203,9 @@ function DashboardLayoutContent({
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
-  // Notifications count — will be wired after router is added
-  const unreadCount = 0;
+  // Pending invitations count
+  const { data: pendingInvitations = [] } = trpc.invitations.pending.useQuery(undefined, { refetchInterval: 30000 });
+  const unreadCount = (pendingInvitations as any[]).length;
 
   useEffect(() => {
     if (isCollapsed) setIsResizing(false);

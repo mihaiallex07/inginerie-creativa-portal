@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Lock, Download, Calendar, RefreshCw, Unlink, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Lock, Download, Calendar, RefreshCw, Unlink, Search, Repeat2, Hourglass, X, Check, UserPlus, Users } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
@@ -21,6 +21,8 @@ import { useLocation } from "wouter";
 const HOUR_START = 0;
 const HOUR_END = 24;
 const TOTAL_HOURS = HOUR_END - HOUR_START; // 24 hours
+const SLOT_HEIGHT = 52; // px per hour — fixed, enables vertical scroll
+const SCROLL_TO_HOUR = 7; // auto-scroll to 07:00 on load
 const DRAG_THRESHOLD = 5;
 
 const ACTIVITY_TYPES = [
@@ -28,10 +30,10 @@ const ACTIVITY_TYPES = [
   "deplasare", "administrativ", "verificare", "executie",
 ] as const;
 
-const ENTRY_COLORS = [
-  { bg: "#FFCB09", text: "#221F1F" },
-  { bg: "#221F1F", text: "#FFCB09" },
-];
+// All entries: yellow with 75% opacity, dark text
+const ENTRY_BG = "rgba(255,203,9,0.75)";
+const ENTRY_TEXT = "#221F1F";
+const ENTRY_BORDER = "#FFCB09";
 
 // Romanian public holidays
 function getRomanianHolidays(year: number) {
@@ -243,20 +245,15 @@ export default function TimeTracking() {
   const weekDays = useMemo(() => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)), [weekStart]);
   const weekNum = getISOWeek(weekStart);
 
-  // ── Dynamic grid height — fills available space, NO scroll ──
+  // ── Grid: fixed SLOT_HEIGHT per hour, vertical scroll, auto-scroll to 07:00 ──
   const gridContainerRef = useRef<HTMLDivElement>(null);
-  const [gridHeight, setGridHeight] = useState(500);
+  const gridHeight = TOTAL_HOURS * SLOT_HEIGHT; // total scrollable height
+  const slotH = SLOT_HEIGHT;
   useEffect(() => {
-    const measure = () => {
-      if (gridContainerRef.current) {
-        setGridHeight(gridContainerRef.current.clientHeight);
-      }
-    };
-    measure();
-    window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    if (gridContainerRef.current) {
+      gridContainerRef.current.scrollTop = SCROLL_TO_HOUR * SLOT_HEIGHT;
+    }
   }, []);
-  const slotH = gridHeight / TOTAL_HOURS; // px per hour — dynamic!
 
   // ── Dialog state (user entries) ──
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -279,6 +276,15 @@ export default function TimeTracking() {
   const [adminStart, setAdminStart] = useState<{ h: number; m: number }>({ h: 10, m: 0 });
   const [adminEnd, setAdminEnd] = useState<{ h: number; m: number }>({ h: 10, m: 15 });
 
+  // ── Recurring activities state ──
+  const [recurringOpen, setRecurringOpen] = useState(false);
+  const [editingRecurring, setEditingRecurring] = useState<any>(null);
+  const [recForm, setRecForm] = useState({ taskName: "", activityType: "administrativ", projectId: "", startHour: 13, startMin: 0, durationMinutes: 30, countInTime: false, startDate: format(new Date(), "yyyy-MM-dd"), endDate: "" });
+
+  // ── Invite state ──
+  const [savedEntryId, setSavedEntryId] = useState<number | null>(null);
+  const [invitePanelOpen, setInvitePanelOpen] = useState(false);
+  const [inviteSearch, setInviteSearch] = useState("");
   // ── Google Calendar state ──
   const [gcalImportOpen, setGcalImportOpen] = useState(false);
   const [gcalImportDate, setGcalImportDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -286,6 +292,48 @@ export default function TimeTracking() {
   const [gcalFilter, setGcalFilter] = useState("");
   const [gcalSelectedIds, setGcalSelectedIds] = useState<Set<string>>(new Set());
   const [gcalBulkImporting, setGcalBulkImporting] = useState(false);
+
+  // ── Recurring queries ──
+  const { data: recurringList = [], refetch: refetchRecurring } = trpc.recurring.list.useQuery();
+  const { data: recurringExceptions = [] } = trpc.recurring.exceptions.useQuery(
+    { dateFrom: format(weekStart, "yyyy-MM-dd"), dateTo: format(weekEnd, "yyyy-MM-dd") },
+    { enabled: (recurringList as any[]).length > 0 }
+  );
+  const createRecurring = trpc.recurring.create.useMutation({ onSuccess: () => { refetchRecurring(); toast.success("Activitate recurentă creată"); setRecurringOpen(false); }, onError: (e) => toast.error(e.message) });
+  const updateRecurring = trpc.recurring.update.useMutation({ onSuccess: () => { refetchRecurring(); toast.success("Activitate recurentă actualizată"); setRecurringOpen(false); }, onError: (e) => toast.error(e.message) });
+  const deleteRecurring = trpc.recurring.delete.useMutation({ onSuccess: () => { refetchRecurring(); toast.success("Activitate recurentă oprită"); }, onError: (e) => toast.error(e.message) });
+  const upsertException = trpc.recurring.upsertException.useMutation({ onError: (e) => toast.error(e.message) });
+
+  // ── Compute recurring blocks for the current week ──
+  const recurringWeekBlocks = useMemo(() => {
+    const blocks: Array<{ recurringId: number; dayIdx: number; startHour: number; startMin: number; durationMinutes: number; taskName: string; activityType: string; projectId: number | null; countInTime: boolean; isException: boolean; isDeleted: boolean }> = [];
+    for (const rec of (recurringList as any[])) {
+      for (let i = 0; i < 7; i++) {
+        const day = weekDays[i];
+        const dayStr = format(day, "yyyy-MM-dd");
+        // Check period
+        if (dayStr < rec.startDate) continue;
+        if (rec.endDate && dayStr > rec.endDate) continue;
+        // Check for exception
+        const exc = (recurringExceptions as any[]).find(e => e.recurringId === rec.id && format(new Date(e.exceptionDate), "yyyy-MM-dd") === dayStr);
+        if (exc?.isDeleted) continue;
+        blocks.push({
+          recurringId: rec.id,
+          dayIdx: i,
+          startHour: exc?.overrideStartHour ?? rec.startHour,
+          startMin: exc?.overrideStartMin ?? rec.startMin,
+          durationMinutes: exc?.overrideDuration ?? rec.durationMinutes,
+          taskName: rec.taskName,
+          activityType: rec.activityType,
+          projectId: rec.projectId ?? null,
+          countInTime: rec.countInTime,
+          isException: !!exc,
+          isDeleted: false,
+        });
+      }
+    }
+    return blocks;
+  }, [recurringList, recurringExceptions, weekDays]);
 
   // ── Google Calendar queries ──
   const { data: gcalStatus, refetch: refetchGcalStatus } = trpc.googleCalendar.status.useQuery();
@@ -321,6 +369,8 @@ export default function TimeTracking() {
   const { data: birthdays = [] } = trpc.people.upcomingBirthdays.useQuery({ daysAhead: 14 });
   const isAdmin = user?.role === "admin";
   const { data: allUsers = [] } = trpc.users.list.useQuery(undefined as any, { enabled: !!isAdmin });
+  // All users for invitations (available to everyone)
+  const { data: allUsersForInvite = [] } = trpc.users.list.useQuery(undefined as any);
 
   const holidays = useMemo(() => {
     const y1 = weekStart.getFullYear();
@@ -356,6 +406,15 @@ export default function TimeTracking() {
     onSuccess: () => { refetchEntries(); toast.success("Activitate ștearsă"); },
     onError: (e) => toast.error(e.message),
   });
+  const inviteUser = trpc.invitations.invite.useMutation({
+    onSuccess: () => { toast.success("Invitație trimisă!"); utils.invitations.forEntry.invalidate(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const { data: entryInvitations = [] } = trpc.invitations.forEntry.useQuery(
+    { timeEntryId: savedEntryId! },
+    { enabled: !!savedEntryId && invitePanelOpen }
+  );
+  const utils = trpc.useUtils();
   const createEvent = trpc.companyEvents.create.useMutation({
     onSuccess: () => { refetchEvents(); toast.success("Eveniment creat"); },
     onError: (e) => toast.error(e.message),
@@ -369,7 +428,8 @@ export default function TimeTracking() {
     onError: (e) => toast.error(e.message),
   });
 
-  // ── Drag state with threshold ──
+  // ── Drag state with threshold + ghost ──
+  const [dragGhost, setDragGhost] = useState<{ x: number; y: number; label: string; height: number } | null>(null);
   const dragRef = useRef<{
     entryId: number; startY: number; startX: number;
     origDayIdx: number; origStartMins: number; origDurMins: number; activated: boolean;
@@ -416,7 +476,33 @@ export default function TimeTracking() {
           dragRef.current.activated = true;
         }
         const el = document.getElementById(`entry-${dragRef.current.entryId}`);
-        if (el) { el.style.opacity = "0.6"; el.style.zIndex = "50"; }
+        if (el) { el.style.opacity = "0.3"; el.style.zIndex = "50"; }
+        // Update ghost position
+        if (gridContainerRef.current) {
+          const gridRect = gridContainerRef.current.getBoundingClientRect();
+          const scrollTop = gridContainerRef.current.scrollTop;
+          const gutterW = 40;
+          const colAreaWidth = gridRect.width - gutterW;
+          const relX = e.clientX - gridRect.left - gutterW;
+          let colIdx = Math.floor((relX / colAreaWidth) * 7);
+          colIdx = Math.max(0, Math.min(6, colIdx));
+          const relY = e.clientY - gridRect.top + scrollTop;
+          const totalMins = (relY / gridHeight) * TOTAL_HOURS * 60;
+          const snapped = Math.round(totalMins / 15) * 15;
+          const newH = Math.floor(snapped / 60);
+          const newM = snapped % 60;
+          const { origDurMins } = dragRef.current;
+          const endMins = snapped + origDurMins;
+          const endH = Math.floor(endMins / 60);
+          const endM = endMins % 60;
+          const dayName = weekDays[colIdx] ? format(weekDays[colIdx], "EEE d", { locale: ro }) : "";
+          setDragGhost({
+            x: e.clientX,
+            y: e.clientY,
+            label: `${dayName}  ${pad2(newH)}:${pad2(newM)} – ${pad2(endH)}:${pad2(endM)}`,
+            height: Math.max(16, (origDurMins / (TOTAL_HOURS * 60)) * gridHeight),
+          });
+        }
       }
     };
 
@@ -468,6 +554,7 @@ export default function TimeTracking() {
         const el = document.getElementById(`entry-${dragRef.current.entryId}`);
         if (el) { el.style.opacity = "1"; el.style.zIndex = ""; }
         dragRef.current = null;
+        setDragGhost(null);
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
       }
@@ -479,7 +566,7 @@ export default function TimeTracking() {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [weekEntries, weekDays, updateEntry, gridHeight]);
+  }, [weekEntries, weekDays, updateEntry, gridHeight, slotH]);
 
   // ── Handlers ──
   const goToday = () => { const t = new Date(); setSelectedDate(t); setWeekStart(startOfWeek(t, { weekStartsOn: 1 })); };
@@ -514,8 +601,16 @@ export default function TimeTracking() {
       taskName: formTask || undefined, description: formDesc || undefined,
       projectId: formProject && formProject !== "none" ? Number(formProject) : undefined,
     };
-    if (editingEntry) { updateEntry.mutate({ id: editingEntry.id, ...payload }); }
-    else { addEntry.mutate(payload); }
+    if (editingEntry) {
+      updateEntry.mutate({ id: editingEntry.id, ...payload });
+      setSavedEntryId(editingEntry.id);
+    } else {
+      addEntry.mutate(payload, {
+        onSuccess: (result: any) => {
+          if (result?.id) { setSavedEntryId(result.id); setInvitePanelOpen(true); }
+        },
+      });
+    }
     setDialogOpen(false);
   };
 
@@ -585,8 +680,11 @@ export default function TimeTracking() {
 
   // ── Time insights ──
   const todayEntries = weekEntries.filter((e: any) => isToday(new Date(e.date)));
-  const todayMins = todayEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0);
-  const weekMins = weekEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0);
+  const todayRecurring = recurringWeekBlocks.filter(b => isToday(weekDays[b.dayIdx]) && b.countInTime);
+  const todayMins = todayEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0)
+    + todayRecurring.reduce((s, b) => s + b.durationMinutes, 0);
+  const weekMins = weekEntries.reduce((s: number, e: any) => s + (e.durationMinutes || 0), 0)
+    + recurringWeekBlocks.filter(b => b.countInTime).reduce((s, b) => s + b.durationMinutes, 0);
 
   const headerLabel = useMemo(() => {
     const m1 = format(weekStart, "MMM", { locale: ro });
@@ -647,6 +745,39 @@ export default function TimeTracking() {
           <div className="mt-2 pt-2 border-t border-white/10">
             <TimerQuickButton />
           </div>
+        </div>
+
+        {/* Recurring Activities Card */}
+        <div className="bg-[#1a1717] rounded-lg p-2 text-white">
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-[9px] font-semibold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+              <Repeat2 className="h-2.5 w-2.5" /> Activități recurente
+            </p>
+            <button
+              onClick={() => { setEditingRecurring(null); setRecForm({ taskName: "", activityType: "administrativ", projectId: "", startHour: 13, startMin: 0, durationMinutes: 30, countInTime: false, startDate: format(new Date(), "yyyy-MM-dd"), endDate: "" }); setRecurringOpen(true); }}
+              className="text-[#FFCB09] hover:text-yellow-300 transition-colors"
+            ><Plus className="h-3 w-3" /></button>
+          </div>
+          {(recurringList as any[]).length === 0 ? (
+            <p className="text-[9px] text-gray-500 italic">Nicio activitate recurentă</p>
+          ) : (
+            <div className="space-y-1">
+              {(recurringList as any[]).map((rec: any) => (
+                <div key={rec.id} className="flex items-center justify-between gap-1">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-[9px] font-medium text-white truncate">{rec.taskName}</div>
+                    <div className="text-[8px] text-gray-400">{pad2(rec.startHour)}:{pad2(rec.startMin)} · {rec.durationMinutes}min
+                      {!rec.countInTime && <span className="ml-1 text-gray-500"><Hourglass className="inline h-2 w-2" /></span>}
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => { setEditingRecurring(rec); setRecForm({ taskName: rec.taskName, activityType: rec.activityType, projectId: rec.projectId ? String(rec.projectId) : "", startHour: rec.startHour, startMin: rec.startMin, durationMinutes: rec.durationMinutes, countInTime: rec.countInTime, startDate: typeof rec.startDate === 'string' ? rec.startDate : format(new Date(rec.startDate), "yyyy-MM-dd"), endDate: rec.endDate ? (typeof rec.endDate === 'string' ? rec.endDate : format(new Date(rec.endDate), "yyyy-MM-dd")) : "" }); setRecurringOpen(true); }}
+                    className="text-gray-500 hover:text-[#FFCB09] transition-colors shrink-0"
+                  ><Pencil className="h-2.5 w-2.5" /></button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {(birthdays as any[]).length > 0 && (
@@ -714,8 +845,8 @@ export default function TimeTracking() {
           })}
         </div>
 
-        {/* Grid — NO scroll, fills remaining space */}
-        <div ref={gridContainerRef} className="flex-1 flex overflow-hidden">
+        {/* Grid — vertical scroll, fixed SLOT_HEIGHT per hour */}
+        <div ref={gridContainerRef} className="flex-1 flex overflow-y-auto overflow-x-hidden">
           <div className="flex relative w-full" style={{ height: `${gridHeight}px` }}>
             {/* Hour labels */}
             <div className="w-10 shrink-0 relative">
@@ -801,20 +932,57 @@ export default function TimeTracking() {
                     );
                   })}
 
+                  {/* Recurring blocks */}
+                  {recurringWeekBlocks.filter(b => b.dayIdx === dayIdx).map((block, bi) => {
+                    const endMins = block.startHour * 60 + block.startMin + block.durationMinutes;
+                    const endH = Math.floor(endMins / 60);
+                    const endM = endMins % 60;
+                    const topPx = minsToY(block.startHour, block.startMin);
+                    const heightPx = Math.max(16, minsToY(endH, endM) - topPx);
+                    return (
+                      <div
+                        key={`rec-${block.recurringId}-${bi}`}
+                        className="absolute left-0.5 right-0.5 rounded-md px-1.5 py-0.5 overflow-hidden border border-dashed border-[#FFCB09]/50 cursor-pointer select-none"
+                        style={{ top: `${topPx}px`, height: `${heightPx}px`, backgroundColor: "rgba(255,203,9,0.12)", zIndex: 8 }}
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          const stMins = block.startHour * 60 + block.startMin;
+                          dragRef.current = {
+                            entryId: -(block.recurringId * 1000 + block.dayIdx),
+                            startY: e.clientY, startX: e.clientX,
+                            origDayIdx: block.dayIdx, origStartMins: stMins - HOUR_START * 60,
+                            origDurMins: block.durationMinutes, activated: false,
+                          };
+                          document.body.style.userSelect = "none";
+                        }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          // On click: create an exception for today to allow editing
+                          const dayStr = format(weekDays[dayIdx], "yyyy-MM-dd");
+                          upsertException.mutate({ recurringId: block.recurringId, exceptionDate: dayStr, overrideStartHour: block.startHour, overrideStartMin: block.startMin, overrideDuration: block.durationMinutes });
+                          toast.info(`Activitate recurentă modificată pentru ${format(weekDays[dayIdx], "d MMM", { locale: ro })}. Drag pentru a muta.`);
+                        }}
+                      >
+                        <div className="text-[10px] font-bold truncate leading-tight text-[#221F1F]">{block.taskName}</div>
+                        {heightPx > 22 && <div className="text-[9px] font-medium opacity-60 truncate text-[#221F1F]">{pad2(block.startHour)}:{pad2(block.startMin)} – {pad2(endH)}:{pad2(endM)}</div>}
+                        {!block.countInTime && <Hourglass className="absolute top-0.5 right-0.5 h-2.5 w-2.5 text-gray-500 opacity-60" />}
+                      </div>
+                    );
+                  })}
+
                   {/* User entries */}
-                  {dayEntries.map((entry: any, eIdx: number) => {
+                  {dayEntries.map((entry: any) => {
                     const st = extractEntryTime(entry, "start");
                     const en = extractEntryTime(entry, "end");
                     const topPx = minsToY(st.h, st.m);
-                    const heightPx = Math.max(8, minsToY(en.h, en.m) - topPx);
-                    const colors = ENTRY_COLORS[eIdx % 2];
+                    const heightPx = Math.max(16, minsToY(en.h, en.m) - topPx);
 
                     return (
                       <div
                         key={entry.id}
                         id={`entry-${entry.id}`}
-                        className="absolute left-0.5 right-0.5 rounded px-1 py-0 cursor-pointer select-none group overflow-hidden"
-                        style={{ top: `${topPx}px`, height: `${heightPx}px`, backgroundColor: colors.bg, color: colors.text, zIndex: 10 }}
+                        className="absolute left-0.5 right-0.5 rounded-md px-1.5 py-0.5 cursor-pointer select-none group overflow-hidden border border-[#FFCB09]/60 shadow-sm"
+                        style={{ top: `${topPx}px`, height: `${heightPx}px`, backgroundColor: ENTRY_BG, color: ENTRY_TEXT, zIndex: 10 }}
                         onClick={(e) => { e.stopPropagation(); if (!dragRef.current || !dragRef.current.activated) openEditEntry(entry); }}
                         onMouseDown={(e) => {
                           if ((e.target as HTMLElement).dataset.resize) return;
@@ -830,15 +998,15 @@ export default function TimeTracking() {
                           document.body.style.userSelect = "none";
                         }}
                       >
-                        <div className="text-[9px] font-semibold truncate leading-tight">{entry.taskName || entry.activityType}</div>
-                        {heightPx > 18 && <div className="text-[8px] opacity-80 truncate">{pad2(st.h)}:{pad2(st.m)}–{pad2(en.h)}:{pad2(en.m)}</div>}
-                        {!entry.projectId && heightPx > 24 && (
-                          <div className="text-[7px] opacity-70 italic truncate">Diverse</div>
+                        <div className="text-[11px] font-bold truncate leading-tight">{entry.taskName || entry.activityType}</div>
+                        {heightPx > 22 && <div className="text-[10px] font-medium opacity-75 truncate">{pad2(st.h)}:{pad2(st.m)} – {pad2(en.h)}:{pad2(en.m)}</div>}
+                        {heightPx > 36 && (
+                          <div className="text-[9px] opacity-60 italic truncate">{entry.projectId ? (projects as any[]).find((p:any)=>p.id===entry.projectId)?.name || "" : "Diverse"}</div>
                         )}
                         <div
                           data-resize="true"
-                          className="absolute bottom-0 left-0 right-0 h-1.5 cursor-s-resize opacity-0 group-hover:opacity-100 transition-opacity"
-                          style={{ backgroundColor: colors.text + "33" }}
+                          className="absolute bottom-0 left-0 right-0 h-2 cursor-s-resize opacity-0 group-hover:opacity-100 transition-opacity rounded-b-md"
+                          style={{ backgroundColor: "rgba(34,31,31,0.25)" }}
                           onMouseDown={(e) => {
                             e.preventDefault(); e.stopPropagation();
                             resizeRef.current = { entryId: entry.id, startY: e.clientY, origEndH: en.h, origEndM: en.m, activated: false };
@@ -854,6 +1022,16 @@ export default function TimeTracking() {
           </div>
         </div>
       </div>
+
+      {/* ═══ DRAG GHOST ═══ */}
+      {dragGhost && (
+        <div
+          className="fixed pointer-events-none z-[200] bg-[#FFCB09] text-[#221F1F] text-[11px] font-bold px-2 py-1 rounded-md shadow-lg border border-[#221F1F]/20 whitespace-nowrap"
+          style={{ left: dragGhost.x + 12, top: dragGhost.y - 12 }}
+        >
+          {dragGhost.label}
+        </div>
+      )}
 
       {/* ═══ ADD/EDIT ENTRY DIALOG ═══ */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -916,6 +1094,11 @@ export default function TimeTracking() {
                 </Button>
               )}
               <div className="flex gap-2 ml-auto">
+                {editingEntry && (
+                  <Button variant="outline" size="sm" onClick={() => { setSavedEntryId(editingEntry.id); setInvitePanelOpen(true); setDialogOpen(false); }} className="text-xs gap-1">
+                    <UserPlus className="h-3 w-3" /> Invită
+                  </Button>
+                )}
                 <Button variant="ghost" size="sm" onClick={() => setDialogOpen(false)} className="text-xs">Anulează</Button>
                 <Button size="sm" onClick={handleSave} className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold">
                   {editingEntry ? "Salvează" : "Adaugă"}
@@ -1302,6 +1485,192 @@ export default function TimeTracking() {
                 <Unlink className="h-3 w-3" /> Deconectează
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setGcalImportOpen(false)} className="text-xs">Închide</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ INVITE COLLEAGUES DIALOG ═══ */}
+      <Dialog open={invitePanelOpen} onOpenChange={(o) => { setInvitePanelOpen(o); if (!o) { setSavedEntryId(null); setInviteSearch(""); } }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#221F1F]">
+              <UserPlus className="h-4 w-4 text-[#FFCB09]" />
+              Invită colegi la activitate
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-xs text-gray-500">Activitatea a fost salvată. Doreşti să inviți colegi? Ei vor primi o notificare şi pot accepta sau refuza.</p>
+            <Input
+              placeholder="Caută coleg..."
+              value={inviteSearch}
+              onChange={e => setInviteSearch(e.target.value)}
+              className="h-8"
+            />
+            {/* Already invited */}
+            {(entryInvitations as any[]).length > 0 && (
+              <div className="space-y-1">
+                <p className="text-[10px] font-semibold text-gray-400 uppercase">Invitații trimise</p>
+                {(entryInvitations as any[]).map((inv: any) => (
+                  <div key={inv.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2.5 py-1.5">
+                    <div className="h-6 w-6 rounded-full bg-[#FFCB09]/30 flex items-center justify-center text-[10px] font-bold text-[#221F1F]">
+                      {(inv.inviteeName || "?").slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-xs flex-1 truncate">{inv.inviteeName}</span>
+                    <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
+                      inv.status === "accepted" ? "bg-green-100 text-green-700" :
+                      inv.status === "declined" ? "bg-red-100 text-red-600" :
+                      "bg-yellow-100 text-yellow-700"
+                    }`}>
+                      {inv.status === "accepted" ? "✓ Acceptat" : inv.status === "declined" ? "✕ Refuzat" : "Aşteptă"}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* Users to invite */}
+            <div className="max-h-48 overflow-y-auto space-y-1">
+              {(allUsersForInvite as any[])
+                .filter((u: any) => u.id !== user?.id && (inviteSearch === "" || (u.name || "").toLowerCase().includes(inviteSearch.toLowerCase())))
+                .filter((u: any) => !(entryInvitations as any[]).some((inv: any) => inv.inviteeUserId === u.id))
+                .map((u: any) => (
+                  <div
+                    key={u.id}
+                    className="flex items-center gap-2 border border-gray-200 rounded-lg px-2.5 py-1.5 cursor-pointer hover:bg-yellow-50 transition-colors"
+                    onClick={() => savedEntryId && inviteUser.mutate({ timeEntryId: savedEntryId, inviteeUserId: u.id })}
+                  >
+                    <div className="h-6 w-6 rounded-full bg-[#FFCB09]/20 flex items-center justify-center text-[10px] font-bold text-[#221F1F]">
+                      {(u.name || "?").slice(0, 2).toUpperCase()}
+                    </div>
+                    <span className="text-xs flex-1 truncate">{u.name}</span>
+                    <UserPlus className="h-3.5 w-3.5 text-gray-400" />
+                  </div>
+                ))}
+            </div>
+            <div className="flex justify-end pt-1">
+              <Button size="sm" variant="ghost" onClick={() => { setInvitePanelOpen(false); setSavedEntryId(null); setInviteSearch(""); }} className="text-xs">Gata</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══ RECURRING ACTIVITIES DIALOG ═══ */}
+      <Dialog open={recurringOpen} onOpenChange={setRecurringOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-[#221F1F]">
+              <Repeat2 className="h-4 w-4 text-[#FFCB09]" />
+              {editingRecurring ? "Editează activitate recurentă" : "Activitate recurentă nouă"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div>
+              <Label className="text-xs">Titlu activitate</Label>
+              <Input value={recForm.taskName} onChange={e => setRecForm(f => ({ ...f, taskName: e.target.value }))} placeholder="ex: #Pauză de masă" className="h-8" />
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Label className="text-xs">Ora start</Label>
+                <div className="flex gap-1">
+                  <Select value={String(recForm.startHour)} onValueChange={v => setRecForm(f => ({ ...f, startHour: Number(v) }))}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-48">
+                      {Array.from({ length: 24 }, (_, i) => <SelectItem key={i} value={String(i)} className="text-xs">{pad2(i)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  <Select value={String(recForm.startMin)} onValueChange={v => setRecForm(f => ({ ...f, startMin: Number(v) }))}>
+                    <SelectTrigger className="h-8 text-xs w-16"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {[0, 15, 30, 45].map(m => <SelectItem key={m} value={String(m)} className="text-xs">{pad2(m)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex-1">
+                <Label className="text-xs">Durată (minute)</Label>
+                <Select value={String(recForm.durationMinutes)} onValueChange={v => setRecForm(f => ({ ...f, durationMinutes: Number(v) }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {[15, 30, 45, 60, 90, 120].map(d => <SelectItem key={d} value={String(d)} className="text-xs">{d} min</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Label className="text-xs">Tip activitate</Label>
+                <Select value={recForm.activityType} onValueChange={v => setRecForm(f => ({ ...f, activityType: v }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ACTIVITY_TYPES.map(t => <SelectItem key={t} value={t} className="text-xs capitalize">{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <Label className="text-xs">Proiect (opțional)</Label>
+                <Select value={recForm.projectId || "none"} onValueChange={v => setRecForm(f => ({ ...f, projectId: v === "none" ? "" : v }))}>
+                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fără proiect" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-xs">Fără proiect</SelectItem>
+                    {(projects as any[]).map((p: any) => <SelectItem key={p.id} value={String(p.id)} className="text-xs">{p.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <div className="flex-1">
+                <Label className="text-xs">Data început</Label>
+                <Input type="date" value={recForm.startDate} onChange={e => setRecForm(f => ({ ...f, startDate: e.target.value }))} className="h-8" />
+              </div>
+              <div className="flex-1">
+                <Label className="text-xs">Data sfârşit (opțional)</Label>
+                <Input type="date" value={recForm.endDate} onChange={e => setRecForm(f => ({ ...f, endDate: e.target.value }))} className="h-8" />
+              </div>
+            </div>
+            <div className="flex items-center gap-2 bg-gray-50 rounded-lg p-2">
+              <input
+                type="checkbox"
+                id="countInTime"
+                checked={recForm.countInTime}
+                onChange={e => setRecForm(f => ({ ...f, countInTime: e.target.checked }))}
+                className="h-3.5 w-3.5 accent-[#FFCB09]"
+              />
+              <label htmlFor="countInTime" className="text-xs text-gray-700 cursor-pointer flex-1">
+                Calculează în <strong>Timp lucrat</strong>
+              </label>
+              {!recForm.countInTime && <Hourglass className="h-3.5 w-3.5 text-gray-400" />}
+            </div>
+            <div className="flex justify-between pt-2">
+              {editingRecurring && (
+                <Button variant="destructive" size="sm" onClick={() => { deleteRecurring.mutate({ id: editingRecurring.id }); setRecurringOpen(false); }} className="text-xs">
+                  <Trash2 className="h-3 w-3 mr-1" /> Opreşte
+                </Button>
+              )}
+              <div className="flex gap-2 ml-auto">
+                <Button variant="ghost" size="sm" onClick={() => setRecurringOpen(false)} className="text-xs">Anulează</Button>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    if (!recForm.taskName.trim()) { toast.error("Titlul este obligatoriu"); return; }
+                    const payload = {
+                      taskName: recForm.taskName.trim(),
+                      activityType: recForm.activityType as any,
+                      projectId: recForm.projectId ? Number(recForm.projectId) : undefined,
+                      startHour: recForm.startHour,
+                      startMin: recForm.startMin,
+                      durationMinutes: recForm.durationMinutes,
+                      countInTime: recForm.countInTime,
+                      startDate: recForm.startDate,
+                      endDate: recForm.endDate || undefined,
+                    };
+                    if (editingRecurring) { updateRecurring.mutate({ id: editingRecurring.id, ...payload }); }
+                    else { createRecurring.mutate(payload); }
+                  }}
+                  className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] text-xs font-semibold"
+                >
+                  {editingRecurring ? "Salvează" : "Creează"}
+                </Button>
+              </div>
             </div>
           </div>
         </DialogContent>
