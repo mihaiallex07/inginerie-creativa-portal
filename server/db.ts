@@ -941,7 +941,7 @@ export async function getUpcomingBirthdays(daysAhead = 30) {
         avatarUrl: u.avatarUrl,
         department: u.department,
         jobTitle: u.jobTitle,
-        birthDate: String(u.birthDate).slice(0, 10),
+        birthDate: (u.birthDate instanceof Date ? u.birthDate.toISOString() : String(u.birthDate)).slice(0, 10),
         daysUntil,
         isToday: daysUntil === 0,
       });
@@ -1017,7 +1017,7 @@ export async function getUpcomingAnniversaries(daysAhead = 30) {
         avatarUrl: u.avatarUrl,
         department: u.department,
         jobTitle: u.jobTitle,
-        hireDate: String(u.hireDate).slice(0, 10),
+        hireDate: (u.hireDate instanceof Date ? u.hireDate.toISOString() : String(u.hireDate)).slice(0, 10),
         yearsCompleted,
         daysUntil,
         isToday: daysUntil === 0,
