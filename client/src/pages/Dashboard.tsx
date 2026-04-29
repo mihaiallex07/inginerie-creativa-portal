@@ -93,13 +93,18 @@ export default function Dashboard() {
       for (const person of anniversariesData) {
         if (!person.hireDate) continue;
         const hd = new Date(person.hireDate);
+        const hireYear = hd.getFullYear();
+        // Place anniversary on the correct day within the viewed calendar month/year
         const anniversaryThisYear = new Date(calMonth.getFullYear(), hd.getMonth(), hd.getDate());
         if (isSameMonth(anniversaryThisYear, calMonth)) {
+          // yearsCompleted = how many full years on this anniversary date in the viewed year
+          const yearsCompleted = calMonth.getFullYear() - hireYear;
+          if (yearsCompleted <= 0) continue; // skip if hired this year
           entries.push({
             type: "anniversary",
             date: anniversaryThisYear,
             title: person.name ?? "Coleg",
-            subtitle: `${person.yearsCompleted} ${person.yearsCompleted === 1 ? "an" : "ani"} la IC${person.jobTitle ? " · " + person.jobTitle : ""}`,
+            subtitle: `${yearsCompleted} ${yearsCompleted === 1 ? "an" : "ani"} la IC${person.jobTitle ? " \u00b7 " + person.jobTitle : ""}`,
             initials: getInitials(person.name),
             color: "#10b981",
             avatarUrl: person.avatarUrl,

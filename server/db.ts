@@ -994,7 +994,9 @@ export async function getUpcomingAnniversaries(daysAhead = 30) {
 
     // Calculate next anniversary date
     let nextAnniv = new Date(today.getFullYear(), hMonth - 1, hDay);
+    // yearsCompleted = how many full years since hire on the anniversary date
     let yearsCompleted = today.getFullYear() - hYear;
+    // If this year's anniversary has already passed (strictly before today), push to next year
     if (
       nextAnniv.getMonth() + 1 < todayMonth ||
       (nextAnniv.getMonth() + 1 === todayMonth && hDay < todayDay)
@@ -1002,6 +1004,8 @@ export async function getUpcomingAnniversaries(daysAhead = 30) {
       nextAnniv = new Date(today.getFullYear() + 1, hMonth - 1, hDay);
       yearsCompleted = today.getFullYear() + 1 - hYear;
     }
+    // If anniversary is today or in the future this year, yearsCompleted = this year - hire year
+    // (already set correctly above as today.getFullYear() - hYear)
 
     const diffMs = nextAnniv.getTime() - new Date(today.getFullYear(), todayMonth - 1, todayDay).getTime();
     const daysUntil = Math.round(diffMs / (1000 * 60 * 60 * 24));
