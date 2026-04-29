@@ -467,3 +467,8 @@
 - [x] Feature: Dashboard card "Timp lucrat azi" linked to Time-Tracking hours (today's total from time entries)
 - [x] Feature: Dashboard card includes iFlow button → opens https://app.hriflow.ro in new tab
 - [x] Fix: Remove any concediu/recuperare/medical/deplasare references from other pages
+
+## Sprint 42b — Fix Dashboard "Timp lucrat azi"
+
+- [x] Fix: Dashboard arată 18h/17 intrări în loc de 5h/5 intrări din Time-Tracking azi
+- [x] Debug: myEntries query cu dateFrom/dateTo nu filtrează corect după ziua curentă

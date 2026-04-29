@@ -197,15 +197,22 @@ export default function Dashboard() {
   const firstName = user?.name?.split(" ")[0] ?? "Coleg";
   const today = format(new Date(), "EEEE, d MMMM yyyy", { locale: ro });
 
-  // Calculate today's total from time entries (durationMinutes or startHour/endHour)
+  // Calculate today's total from time entries — only count entries with startHour/endHour set
+  // (matching what Time-Tracking weekly grid shows; excludes bulk-imported entries without hours)
+  const todayVisibleEntries = useMemo(() => {
+    if (!todayEntries) return [];
+    return todayEntries.filter((e: { startHour?: number | null; endHour?: number | null }) =>
+      e.startHour != null && e.endHour != null
+    );
+  }, [todayEntries]);
+
   const todayWorkedMinutes = useMemo(() => {
-    if (!todayEntries) return 0;
-    return todayEntries.reduce((sum: number, e: { durationMinutes?: number | null; startHour?: number | null; endHour?: number | null }) => {
+    return todayVisibleEntries.reduce((sum: number, e: { durationMinutes?: number | null; startHour?: number | null; endHour?: number | null }) => {
       if (e.durationMinutes) return sum + e.durationMinutes;
       if (e.startHour != null && e.endHour != null) return sum + (e.endHour - e.startHour) * 60;
       return sum;
     }, 0);
-  }, [todayEntries]);
+  }, [todayVisibleEntries]);
 
   const workNorm = 8 * 60;
   const workedPercent = Math.min(100, Math.round((todayWorkedMinutes / workNorm) * 100));
@@ -249,9 +256,9 @@ export default function Dashboard() {
                   <div className="h-full bg-[#FFCB09] rounded-full transition-all" style={{ width: `${workedPercent}%` }} />
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {todayEntries && todayEntries.length > 0
-                    ? `${todayEntries.length} ${todayEntries.length === 1 ? "intrare" : "intrări"} în Time-Tracking azi`
-                    : "Nicio intrare în Time-Tracking azi"}
+                  {todayVisibleEntries.length > 0
+                    ? `${todayVisibleEntries.length} ${todayVisibleEntries.length === 1 ? "activitate" : "activități"} în Time-Tracking azi`
+                    : "Nicio activitate înregistrată azi"}
                 </p>
               </div>
               {/* iFlow Pontaj */}
