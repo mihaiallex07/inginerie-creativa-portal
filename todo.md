@@ -428,3 +428,11 @@
 - [x] Feature: import bulk salvează direct ca activități (tip: ședință) fără a deschide dialog individual
 - [x] Feature: link "Editare" pe fiecare eveniment pentru import individual cu editare detalii
 - [x] Feature: după import bulk, selecția se resetează și dialogul se închide automat
+
+## Sprint 40d — Fix recurring company events + activityType/projectId
+
+- [x] Fix: expandare evenimente recurente în TimeTracking.tsx (același mecanism ca Dashboard.tsx)
+- [x] Feature: adăugare coloane activityType + projectId în tabelul company_events (migrare schema)
+- [x] Feature: formular creare/editare eveniment firmă include tip activitate și proiect (opțional)
+- [x] Fix: db.ts createCompanyEvent/updateCompanyEvent să accepte activityType și projectId
+- [x] Fix: routers.ts companyEvents.create/update să accepte activityType și projectId

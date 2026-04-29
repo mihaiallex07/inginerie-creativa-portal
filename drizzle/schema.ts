@@ -318,6 +318,8 @@ export const companyEvents = mysqlTable("company_events", {
   targetType: mysqlEnum("targetType", ["all", "department", "users"]).default("all").notNull(),
   targetDepartment: varchar("targetDepartment", { length: 128 }),
   targetUserIds: json("targetUserIds").$type<number[]>().default([]),
+  activityType: mysqlEnum("activityType", ["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]),
+  projectId: int("projectId"),
   createdBy: int("createdBy").notNull(),
   isActive: boolean("isActive").default(true),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

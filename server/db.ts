@@ -1021,6 +1021,8 @@ export async function createCompanyEvent(data: {
   targetType: "all" | "department" | "users";
   targetDepartment?: string;
   targetUserIds?: number[];
+  activityType?: string;
+  projectId?: number;
   createdBy: number;
 }) {
   const db = await getDb();
@@ -1046,6 +1048,8 @@ export async function updateCompanyEvent(id: number, data: Partial<{
   targetType: "all" | "department" | "users";
   targetDepartment: string;
   targetUserIds: number[];
+  activityType: string;
+  projectId: number;
   isActive: boolean;
 }>) {
   const db = await getDb();

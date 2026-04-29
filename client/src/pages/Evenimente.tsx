@@ -7,12 +7,23 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { useState, useMemo } from "react";
-import { CalendarPlus, Pencil, Trash2, Video, Repeat, Clock, ExternalLink, Users, Building2, FolderOpen, Globe } from "lucide-react";
+import { CalendarPlus, Pencil, Trash2, Video, Repeat, Clock, ExternalLink, Users, Building2, FolderOpen, Globe, Tag } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { ro } from "date-fns/locale";
 
 type TargetType = "all" | "department" | "users";
+
+const ACTIVITY_TYPES = [
+  { value: "sedinta", label: "Ședință" },
+  { value: "proiectare", label: "Proiectare" },
+  { value: "consultanta", label: "Consultanță" },
+  { value: "documentare", label: "Documentare" },
+  { value: "deplasare", label: "Deplasare" },
+  { value: "administrativ", label: "Administrativ" },
+  { value: "verificare", label: "Verificare" },
+  { value: "executie", label: "Execuție" },
+];
 
 type EventForm = {
   title: string;
@@ -28,6 +39,8 @@ type EventForm = {
   targetType: TargetType;
   targetDepartment: string;
   targetUserIds: number[];
+  activityType: string;
+  projectId: string;
 };
 
 const EMPTY_FORM: EventForm = {
@@ -44,6 +57,8 @@ const EMPTY_FORM: EventForm = {
   targetType: "all",
   targetDepartment: "",
   targetUserIds: [],
+  activityType: "",
+  projectId: "",
 };
 
 const COLORS = [
@@ -88,6 +103,10 @@ export default function Evenimente() {
 
   // Fetch users for audience targeting
   const { data: usersData } = trpc.people.list.useQuery(undefined, {
+    enabled: isAdmin,
+  });
+
+  const { data: projectsData } = trpc.projects.list.useQuery({ status: "activ" }, {
     enabled: isAdmin,
   });
 
@@ -163,6 +182,8 @@ export default function Evenimente() {
       targetType: (ev.targetType as TargetType) ?? "all",
       targetDepartment: ev.targetDepartment ?? "",
       targetUserIds: Array.isArray(ev.targetUserIds) ? ev.targetUserIds : [],
+      activityType: ev.activityType ?? "",
+      projectId: ev.projectId ? String(ev.projectId) : "",
     });
     setEditingId(ev.id);
     setFormOpen(true);
@@ -178,6 +199,10 @@ export default function Evenimente() {
       targetUserIds: form.targetType === "users" ? form.targetUserIds : undefined,
     };
 
+    const activityFields = {
+      activityType: form.activityType ? form.activityType as any : undefined,
+      projectId: form.projectId ? Number(form.projectId) : undefined,
+    };
     if (editingId) {
       updateMutation.mutate({
         id: editingId,
@@ -191,6 +216,7 @@ export default function Evenimente() {
         recurringUntil: form.isRecurring && form.recurringUntil ? form.recurringUntil : null,
         color: form.color,
         ...audienceFields,
+        ...activityFields,
       });
     } else {
       createMutation.mutate({
@@ -204,6 +230,7 @@ export default function Evenimente() {
         recurringUntil: form.isRecurring && form.recurringUntil ? form.recurringUntil : null,
         color: form.color,
         ...audienceFields,
+        ...activityFields,
       });
     }
   }
@@ -527,6 +554,40 @@ export default function Evenimente() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Activity type + Project */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1">
+                  <Tag className="h-3.5 w-3.5" /> Tip activitate
+                </Label>
+                <select
+                  value={form.activityType}
+                  onChange={e => setForm(f => ({ ...f, activityType: e.target.value }))}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">-- Fără tip --</option>
+                  {ACTIVITY_TYPES.map(t => (
+                    <option key={t.value} value={t.value}>{t.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-semibold flex items-center gap-1.5 mb-1">
+                  <FolderOpen className="h-3.5 w-3.5" /> Proiect (opțional)
+                </Label>
+                <select
+                  value={form.projectId}
+                  onChange={e => setForm(f => ({ ...f, projectId: e.target.value }))}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm"
+                >
+                  <option value="">-- Fără proiect --</option>
+                  {(projectsData ?? []).map((p: any) => (
+                    <option key={p.id} value={String(p.id)}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
             </div>
 
             {/* Color picker */}

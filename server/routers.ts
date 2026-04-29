@@ -1202,6 +1202,8 @@ export const appRouter = router({
         targetType: z.enum(["all", "department", "users"]).default("all"),
         targetDepartment: z.string().optional(),
         targetUserIds: z.array(z.number()).optional(),
+        activityType: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).optional(),
+        projectId: z.number().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
         if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis — doar adminii și coordonatorii pot crea evenimente");
@@ -1228,6 +1230,8 @@ export const appRouter = router({
         targetType: z.enum(["all", "department", "users"]).optional(),
         targetDepartment: z.string().optional(),
         targetUserIds: z.array(z.number()).optional(),
+        activityType: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).optional(),
+        projectId: z.number().optional().nullable(),
         isActive: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {

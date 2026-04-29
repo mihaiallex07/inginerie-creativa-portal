@@ -734,9 +734,22 @@ export default function TimeTracking() {
             {weekDays.map((day, dayIdx) => {
               const dayStr = format(day, "yyyy-MM-dd");
               const dayEntries = weekEntries.filter((e: any) => format(new Date(e.date), "yyyy-MM-dd") === dayStr);
-              const dayEvents = (companyEvents as any[]).filter((ev: any) => {
+              const dayEvents = (companyEvents as any[]).flatMap((ev: any) => {
+                if (ev.isRecurring && ev.recurringRule === "daily") {
+                  // Expand recurring event — check if this day falls within the event's range
+                  const evStart = new Date(ev.startTime);
+                  const evStartDate = format(evStart, "yyyy-MM-dd");
+                  const evEnd = ev.recurringUntil
+                    ? format(new Date(ev.recurringUntil instanceof Date ? ev.recurringUntil : new Date(ev.recurringUntil as string)), "yyyy-MM-dd")
+                    : "9999-12-31";
+                  const dow = getDay(day);
+                  if (dayStr >= evStartDate && dayStr <= evEnd && dow !== 0 && dow !== 6) {
+                    return [{ ...ev, startTime: new Date(dayStr + "T" + format(evStart, "HH:mm:ss")), endTime: new Date(dayStr + "T" + format(new Date(ev.endTime), "HH:mm:ss")) }];
+                  }
+                  return [];
+                }
                 const evDate = format(new Date(ev.startTime), "yyyy-MM-dd");
-                return evDate === dayStr;
+                return evDate === dayStr ? [ev] : [];
               });
 
               return (
