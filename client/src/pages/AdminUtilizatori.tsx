@@ -294,15 +294,6 @@ export default function AdminUtilizatori() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                          onClick={() => openEdit(u)}
-                          title="Editare rapidă"
-                        >
-                          <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
                           className={`h-8 w-8 ${u.isActive ? "text-orange-400 hover:text-orange-600 hover:bg-orange-50" : "text-green-500 hover:text-green-700 hover:bg-green-50"}`}
                           onClick={() => toggleActiveMutation.mutate({ id: u.id, isActive: !u.isActive })}
                           disabled={toggleActiveMutation.isPending}
