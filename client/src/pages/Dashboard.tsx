@@ -59,8 +59,10 @@ export default function Dashboard() {
   const { user } = useAuth();
   const [, setLocation] = useLocation();
 
-  const { data: todayPontaj } = trpc.pontaj.today.useQuery();
   const { data: runningTimer } = trpc.timeTracking.runningTimer.useQuery();
+  // Today's time-tracking hours (from time entries)
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+  const { data: todayEntries } = trpc.timeTracking.myEntries.useQuery({ dateFrom: todayStr, dateTo: todayStr });
   const { data: newsData } = trpc.news.list.useQuery({ limit: 3 });
   const { data: projectsData } = trpc.projects.list.useQuery({ status: "activ" });
   const { data: proposalsData } = trpc.proposals.list.useQuery({ status: "deschisa" });
@@ -195,23 +197,18 @@ export default function Dashboard() {
   const firstName = user?.name?.split(" ")[0] ?? "Coleg";
   const today = format(new Date(), "EEEE, d MMMM yyyy", { locale: ro });
 
-  const isCheckedIn = !!todayPontaj?.checkIn;
-  const isCheckedOut = !!todayPontaj?.checkOut;
-
-  const [now, setNow] = useState(new Date());
-  useState(() => {
-    const interval = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(interval);
-  });
-
-  let workedMinutes = todayPontaj?.totalMinutes ?? 0;
-  if (isCheckedIn && !isCheckedOut && todayPontaj?.checkIn) {
-    const elapsed = Math.floor((now.getTime() - new Date(todayPontaj.checkIn).getTime()) / 60000);
-    workedMinutes = Math.max(0, elapsed - (todayPontaj.breakMinutes ?? 0));
-  }
+  // Calculate today's total from time entries (durationMinutes or startHour/endHour)
+  const todayWorkedMinutes = useMemo(() => {
+    if (!todayEntries) return 0;
+    return todayEntries.reduce((sum: number, e: { durationMinutes?: number | null; startHour?: number | null; endHour?: number | null }) => {
+      if (e.durationMinutes) return sum + e.durationMinutes;
+      if (e.startHour != null && e.endHour != null) return sum + (e.endHour - e.startHour) * 60;
+      return sum;
+    }, 0);
+  }, [todayEntries]);
 
   const workNorm = 8 * 60;
-  const workedPercent = Math.min(100, Math.round((workedMinutes / workNorm) * 100));
+  const workedPercent = Math.min(100, Math.round((todayWorkedMinutes / workNorm) * 100));
 
   // Calendar grid
   const monthStart = startOfMonth(calMonth);
@@ -238,47 +235,48 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Row 1: Pontaj + News */}
+      {/* Row 1: Timp lucrat + iFlow + News */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3 mb-3">
-        {/* Pontaj Card */}
-        <Card
-          className="border-2 border-border overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-          onClick={() => setLocation("/pontaj")}
-        >
+        {/* Timp lucrat + iFlow Card */}
+        <Card className="border-2 border-border overflow-hidden">
           <CardContent className="p-0">
             <div className="flex flex-col sm:flex-row">
-              <div className="flex-1 p-3 border-b sm:border-b-0 sm:border-r border-border">
-                <div className="flex items-center gap-2 mb-1">
-                  <div className={`h-2 w-2 rounded-full ${isCheckedIn && !isCheckedOut ? "bg-green-500 animate-pulse" : isCheckedOut ? "bg-blue-400" : "bg-gray-300"}`} />
-                  <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
-                    {isCheckedOut ? "Zi încheiată" : isCheckedIn ? "Prezent — în curs" : "Neînregistrat azi"}
-                  </span>
-                </div>
-                {isCheckedIn && todayPontaj?.checkIn && (
-                  <p className="text-xs text-muted-foreground">
-                    Intrare: <span className="font-semibold text-foreground">
-                      {format(new Date(todayPontaj.checkIn), "HH:mm")}
-                    </span>
-                    {isCheckedOut && todayPontaj?.checkOut && (
-                      <> → Ieșire: <span className="font-semibold text-foreground">{format(new Date(todayPontaj.checkOut), "HH:mm")}</span></>
-                    )}
-                  </p>
-                )}
-              </div>
+              {/* Timp lucrat azi — din Time-Tracking */}
               <div className="flex-1 p-3 border-b sm:border-b-0 sm:border-r border-border">
                 <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Timp lucrat azi</p>
-                <p className="text-xl font-bold text-foreground tabular-nums">{formatDuration(workedMinutes)}</p>
+                <p className="text-xl font-bold text-foreground tabular-nums">{formatDuration(todayWorkedMinutes)}</p>
                 <div className="mt-1.5 h-1 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-[#FFCB09] rounded-full transition-all" style={{ width: `${workedPercent}%` }} />
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">Normă: 8h 00min</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">
+                  {todayEntries && todayEntries.length > 0
+                    ? `${todayEntries.length} activit${todayEntries.length === 1 ? "ate" : "ăți"} înregistrate`
+                    : "Nicio activitate înregistrată azi"}
+                </p>
+              </div>
+              {/* iFlow Pontaj */}
+              <div className="flex-1 p-3 border-b sm:border-b-0 sm:border-r border-border flex flex-col justify-between">
+                <div>
+                  <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">Pontaj zilnic</p>
+                  <p className="text-xs text-muted-foreground">Înregistrează prezența în iFlow — platforma oficială de pontaj a companiei.</p>
+                </div>
+                <a
+                  href="https://app.hriflow.ro"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-2 inline-flex items-center gap-1.5 bg-[#221F1F] text-[#FFCB09] text-xs font-semibold px-3 py-1.5 rounded-md hover:bg-[#333] transition-colors w-fit"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <TrendingUp className="h-3.5 w-3.5" />
+                  Deschide iFlow
+                </a>
               </div>
               <div className="p-3 flex items-center justify-center">
-                <div className="flex flex-col items-center gap-1 text-center">
+                <div className="flex flex-col items-center gap-1 text-center cursor-pointer" onClick={() => setLocation("/time-tracking")}>
                   <div className="h-8 w-8 rounded-full bg-[#FFCB09]/15 flex items-center justify-center">
-                    <TrendingUp className="h-4 w-4 text-[#FFCB09]" />
+                    <Timer className="h-4 w-4 text-[#FFCB09]" />
                   </div>
-                  <span className="text-[10px] text-muted-foreground">Pontaj</span>
+                  <span className="text-[10px] text-muted-foreground">Time-Tracking</span>
                   <ChevronRight className="h-3 w-3 text-muted-foreground" />
                 </div>
               </div>
@@ -341,7 +339,7 @@ export default function Dashboard() {
                 </p>
               </div>
             </div>
-            <Button size="sm" variant="outline" onClick={() => setLocation("/pontaj")} className="border-[#221F1F] text-[#221F1F] text-[10px] h-7">
+            <Button size="sm" variant="outline" onClick={() => setLocation("/time-tracking")} className="border-[#221F1F] text-[#221F1F] text-[10px] h-7">
               Gestionează
             </Button>
           </CardContent>

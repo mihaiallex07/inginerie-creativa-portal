@@ -9,11 +9,6 @@ vi.mock("./db", () => ({
   getUserByOpenId: vi.fn().mockResolvedValue(undefined),
   getAllUsers: vi.fn().mockResolvedValue([]),
   updateUser: vi.fn().mockResolvedValue(undefined),
-  // Pontaj
-  getTodayPontaj: vi.fn().mockResolvedValue(undefined),
-  upsertPontaj: vi.fn().mockResolvedValue(undefined),
-  getPontajByMonth: vi.fn().mockResolvedValue([]),
-  getAllPontajByMonth: vi.fn().mockResolvedValue([]),
   // Projects
   getProjects: vi.fn().mockResolvedValue([]),
   upsertProject: vi.fn().mockResolvedValue(undefined),
@@ -100,13 +95,9 @@ describe("auth", () => {
   });
 });
 
-// ─── Dashboard tests (via pontaj + news + proposals) ─────────────────────────
+// ─── Dashboard tests (news + proposals) ──────────────────────────────────────
+// NOTE: Pontaj zilnic migrat la iFlow (https://app.hriflow.ro) — nu mai există procedură pontaj.today
 describe("dashboard data", () => {
-  it("today pontaj requires authentication", async () => {
-    const caller = appRouter.createCaller(makeGuestCtx());
-    await expect(caller.pontaj.today()).rejects.toThrow();
-  });
-
   it("news list is accessible for authenticated user", async () => {
     const caller = appRouter.createCaller(makeCtx());
     const result = await caller.news.list({});
@@ -116,31 +107,6 @@ describe("dashboard data", () => {
   it("notifications require authentication", async () => {
     const caller = appRouter.createCaller(makeGuestCtx());
     await expect(caller.notifications.list()).rejects.toThrow();
-  });
-});
-
-// ─── Pontaj tests ─────────────────────────────────────────────────────────────
-describe("pontaj", () => {
-  it("today requires authentication", async () => {
-    const caller = appRouter.createCaller(makeGuestCtx());
-    await expect(caller.pontaj.today()).rejects.toThrow();
-  });
-
-  it("today returns null or undefined when no pontaj exists", async () => {
-    const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.pontaj.today();
-    expect(result == null).toBe(true); // null or undefined both acceptable
-  });
-
-  it("monthReport requires authentication", async () => {
-    const caller = appRouter.createCaller(makeGuestCtx());
-    await expect(caller.pontaj.monthReport({ year: 2025, month: 3 })).rejects.toThrow();
-  });
-
-  it("monthReport returns array", async () => {
-    const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.pontaj.monthReport({ year: 2025, month: 3 });
-    expect(Array.isArray(result)).toBe(true);
   });
 });
 
@@ -203,7 +169,6 @@ describe("news", () => {
 
   it("create succeeds for admin (auth passes)", async () => {
     const caller = appRouter.createCaller(makeCtx("admin"));
-    // With mocked DB, create should succeed
     const result = await caller.news.create({ title: "Test", content: "Content", category: "companie", excerpt: "" });
     expect(result).toBeDefined();
     expect(result.success).toBe(true);
@@ -305,7 +270,6 @@ describe("timeTracking calendar procedures", () => {
 
   it("updateCalendarEntry throws for non-owned entry", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    // getTimeEntriesForUser returns [] so entry won't be found
     await expect(
       caller.timeTracking.updateCalendarEntry({
         id: 999,
@@ -323,7 +287,6 @@ describe("timeTracking calendar procedures", () => {
 
   it("deleteEntry throws for non-owned entry", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    // getTimeEntriesForUser returns [] so entry won't be found
     await expect(caller.timeTracking.deleteEntry({ id: 999 })).rejects.toThrow();
   });
 });
@@ -332,7 +295,6 @@ describe("timeTracking calendar procedures", () => {
 describe("RBAC - role based access control", () => {
   it("admin can access admin routes", async () => {
     const caller = appRouter.createCaller(makeCtx("admin"));
-    // Should not throw auth error
     const result = await caller.auth.me();
     expect(result?.role).toBe("admin");
   });
@@ -352,7 +314,6 @@ describe("RBAC - role based access control", () => {
 
   it("manager can create news (auth passes)", async () => {
     const caller = appRouter.createCaller(makeCtx("admin"));
-    // With mocked DB, should succeed
     const result = await caller.news.create({ title: "T", content: "C", category: "companie", excerpt: "" });
     expect(result).toBeDefined();
     expect(result.success).toBe(true);

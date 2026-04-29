@@ -76,11 +76,9 @@ const navSections: NavSection[] = [
     ],
   },
   {
-    label: "TIMP & PREZENȚĂ",
+    label: "TIMP & PROIECTE",
     items: [
-      { icon: Clock, label: "Pontaj zilnic", path: "/pontaj", badge: "NOU" },
       { icon: Clock, label: "Time-Tracking", path: "/time-tracking" },
-      { icon: FileText, label: "Cereri concediu", path: "/cereri" },
     ],
   },
   {
@@ -113,9 +111,6 @@ const navSections: NavSection[] = [
     label: "ADMINISTRARE",
     roles: ["admin", "coordonator"],
     items: [
-      { icon: BarChart3, label: "Dashboard HR", path: "/dashboard-hr", roles: ["admin"] },
-      { icon: BarChart3, label: "Rapoarte HR", path: "/rapoarte-hr", roles: ["admin", "coordonator"] },
-      { icon: CalendarCheck, label: "Aprobări Concediu", path: "/aprobari-concediu", roles: ["admin"] },
       { icon: Shield, label: "Utilizatori", path: "/admin-utilizatori", roles: ["admin"] },
       { icon: CalendarPlus, label: "Evenimente Firmă", path: "/evenimente", roles: ["admin", "coordonator"] },
     ],

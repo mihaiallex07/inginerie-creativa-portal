@@ -156,206 +156,9 @@ export const appRouter = router({
     }),
   }),
 
-  // ─── PONTAJ ──────────────────────────────────────────────────────────────
-  pontaj: router({
-    today: protectedProcedure.query(async ({ ctx }) => {
-      return getTodayPontaj(ctx.user.id);
-    }),
+  // ─── PONTAJ (REMOVED — migrat la iFlow)
 
-    checkIn: protectedProcedure
-      .input(z.object({ type: z.enum(["bucuresti", "cluj", "miercurea_ciuc", "brasov", "eveniment", "deplasare", "vizita_santier", "telemunca", "concediu", "medical", "liber_legal", "absent", "recuperare"]).optional() }))
-      .mutation(async ({ ctx, input }) => {
-        const existing = await getTodayPontaj(ctx.user.id);
-        if (existing?.checkIn) return { success: false, message: "Deja ai făcut check-in astăzi" };
-        await upsertPontaj({
-          userId: ctx.user.id,
-          date: new Date(),
-          checkIn: new Date(),
-          type: input.type ?? "bucuresti",
-        });
-        return { success: true };
-      }),
-
-    checkOut: protectedProcedure.mutation(async ({ ctx }) => {
-      const existing = await getTodayPontaj(ctx.user.id);
-      if (!existing?.checkIn) return { success: false, message: "Nu ai făcut check-in astăzi" };
-      if (existing.checkOut) return { success: false, message: "Deja ai făcut check-out astăzi" };
-      const now = new Date();
-      const checkInTime = new Date(existing.checkIn);
-      const totalMinutes = Math.floor((now.getTime() - checkInTime.getTime()) / 60000) - (existing.breakMinutes ?? 0);
-      await upsertPontaj({
-        userId: ctx.user.id,
-        date: new Date(),
-        checkIn: existing.checkIn,
-        checkOut: now,
-        totalMinutes: Math.max(0, totalMinutes),
-        type: existing.type,
-        breakMinutes: existing.breakMinutes ?? 0,
-      });
-      return { success: true };
-    }),
-
-    addBreak: protectedProcedure
-      .input(z.object({ minutes: z.number().min(1).max(120) }))
-      .mutation(async ({ ctx, input }) => {
-        const existing = await getTodayPontaj(ctx.user.id);
-        if (!existing) return { success: false };
-        await upsertPontaj({
-          ...existing,
-          date: new Date(),
-          breakMinutes: (existing.breakMinutes ?? 0) + input.minutes,
-        });
-        return { success: true };
-      }),
-
-    monthReport: protectedProcedure
-      .input(z.object({ year: z.number(), month: z.number() }))
-      .query(async ({ ctx, input }) => {
-        return getPontajByMonth(ctx.user.id, input.year, input.month);
-      }),
-
-    allMonthReport: protectedProcedure
-      .input(z.object({ year: z.number(), month: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") {
-          throw new Error("Acces interzis");
-        }
-        return getAllPontajByMonth(input.year, input.month);
-      }),
-
-    // Manual entry with specific date + time (30-min slots)
-    manualEntry: protectedProcedure
-      .input(z.object({
-        date: z.string(), // "YYYY-MM-DD"
-        checkInTime: z.string(), // "HH:MM"
-        checkOutTime: z.string().optional(), // "HH:MM"
-        type: z.enum(["bucuresti", "cluj", "miercurea_ciuc", "brasov", "eveniment", "deplasare", "vizita_santier", "telemunca", "concediu", "medical", "liber_legal", "absent", "recuperare"]),
-        location: z.string().optional(),
-        notes: z.string().optional(),
-        projectId: z.number().optional(),
-        breakMinutes: z.number().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        // Build dates as UTC to avoid server timezone offset (server runs in America/New_York)
-        // input.date = "YYYY-MM-DD", input.checkInTime = "HH:MM" — treat as UTC directly
-        const [inH, inM] = input.checkInTime.split(":").map(Number);
-        const [year, month, day] = input.date.split("-").map(Number);
-        const checkIn = new Date(Date.UTC(year, month - 1, day, inH, inM, 0, 0));
-        const dateObj = new Date(Date.UTC(year, month - 1, day));
-
-        let checkOut: Date | undefined;
-        let totalMinutes = 0;
-        if (input.checkOutTime) {
-          const [outH, outM] = input.checkOutTime.split(":").map(Number);
-          checkOut = new Date(Date.UTC(year, month - 1, day, outH, outM, 0, 0));
-          totalMinutes = Math.max(0, Math.floor((checkOut.getTime() - checkIn.getTime()) / 60000) - (input.breakMinutes ?? 0));
-        }
-
-        await upsertPontaj({
-          userId: ctx.user.id,
-          date: dateObj,
-          checkIn,
-          checkOut,
-          type: input.type,
-          notes: input.notes,
-          breakMinutes: input.breakMinutes ?? 0,
-          totalMinutes,
-        });
-        return { success: true };
-      }),
-
-    updateEntry: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        date: z.string(),
-        checkInTime: z.string(),
-        checkOutTime: z.string().optional(),
-        type: z.enum(["bucuresti", "cluj", "miercurea_ciuc", "brasov", "eveniment", "deplasare", "vizita_santier", "telemunca", "concediu", "medical", "liber_legal", "absent", "recuperare"]),
-        notes: z.string().optional(),
-        projectId: z.number().optional(),
-        breakMinutes: z.number().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const entry = await getPontajById(input.id);
-        if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
-        // Build dates as UTC to avoid server timezone offset
-        const [year, month, day] = input.date.split("-").map(Number);
-        const dateObj = new Date(Date.UTC(year, month - 1, day));
-        const [inH, inM] = input.checkInTime.split(":").map(Number);
-        const checkIn = new Date(Date.UTC(year, month - 1, day, inH, inM, 0, 0));
-        let checkOut: Date | undefined;
-        let totalMinutes = 0;
-        if (input.checkOutTime) {
-          const [outH, outM] = input.checkOutTime.split(":").map(Number);
-          checkOut = new Date(Date.UTC(year, month - 1, day, outH, outM, 0, 0));
-          totalMinutes = Math.max(0, Math.floor((checkOut.getTime() - checkIn.getTime()) / 60000) - (input.breakMinutes ?? 0));
-        }
-        await updatePontajEntry(input.id, ctx.user.id, {
-          date: dateObj,
-          checkIn,
-          checkOut,
-          type: input.type,
-          notes: input.notes,
-          breakMinutes: input.breakMinutes ?? 0,
-          totalMinutes,
-          projectId: input.projectId,
-        });
-        return { success: true };
-      }),
-
-    deleteEntry: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        const entry = await getPontajById(input.id);
-        if (!entry || entry.userId !== ctx.user.id) throw new Error("Intrare negăsită");
-        await deletePontajEntry(input.id, ctx.user.id);
-        return { success: true };
-      }),
-
-    // ── HR Report preview procedures ──────────────────────────────────────
-    getByMonth: protectedProcedure
-      .input(z.object({ year: z.number(), month: z.number(), userId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") throw new Error("Acces interzis");
-        return getPontajLunarAngajat(input.userId, input.year, input.month);
-      }),
-
-    getAllByMonth: protectedProcedure
-      .input(z.object({ year: z.number(), month: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") throw new Error("Acces interzis");
-        return getSumarEchipaLunar(input.year, input.month);
-      }),
-
-    getAbsente: protectedProcedure
-      .input(z.object({ year: z.number(), month: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") throw new Error("Acces interzis");
-        return getAbsenteLunare(input.year, input.month);
-      }),
-
-    getOreSuplimentare: protectedProcedure
-      .input(z.object({ year: z.number(), month: z.number(), norm: z.number().optional() }))
-      .query(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") throw new Error("Acces interzis");
-        return getOreSuplimentare(input.year, input.month, input.norm ?? 480);
-      }),
-
-    getPontajProiect: protectedProcedure
-      .input(z.object({ year: z.number(), month: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") throw new Error("Acces interzis");
-        return getPontajPerProiect(input.year, input.month);
-      }),
-  }),
-
-  // ─── PROJECTS ────────────────────────────────────────────────────────────
+    // ─── PROJECTS ────────────────────────────────────────────────────────────
   projects: router({
     list: protectedProcedure
       .input(z.object({ status: z.string().optional() }))
@@ -940,65 +743,9 @@ export const appRouter = router({
         return { success: true };
       }),
   }),
-  // ─── LEAVE REQUESTS (Cereri Concediu) ───────────────────────────────────────────────
-  leave: router({
-    create: protectedProcedure
-      .input(z.object({
-        type: z.enum(["concediu_odihna", "concediu_medical", "concediu_fara_plata", "liber_legal", "recuperare", "alt"]),
-        startDate: z.string(), // "YYYY-MM-DD"
-        endDate: z.string(),
-        totalDays: z.number().min(1),
-        reason: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        await createLeaveRequest({
-          userId: ctx.user.id,
-          type: input.type,
-          startDate: input.startDate as unknown as Date,
-          endDate: input.endDate as unknown as Date,
-          totalDays: input.totalDays,
-          reason: input.reason,
-        });
-        return { success: true };
-      }),
+  // ─── LEAVE REQUESTS (REMOVED — migrat la iFlow)
 
-    myRequests: protectedProcedure.query(async ({ ctx }) => {
-      return getLeaveRequestsByUser(ctx.user.id);
-    }),
-
-    allRequests: protectedProcedure
-      .input(z.object({ status: z.string().optional() }))
-      .query(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") throw new Error("Acces interzis");
-        return getAllLeaveRequests(input.status);
-      }),
-
-    review: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        status: z.enum(["aprobata", "respinsa"]),
-        reviewNote: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") throw new Error("Acces interzis");
-        await reviewLeaveRequest(input.id, ctx.user.id, input.status, input.reviewNote);
-        return { success: true };
-      }),
-
-    cancel: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        const req = await getLeaveRequestById(input.id);
-        if (!req || req.userId !== ctx.user.id) throw new Error("Cerere negăsită");
-        if (req.status !== "in_asteptare") throw new Error("Cererea nu mai poate fi anulată");
-        await cancelLeaveRequest(input.id, ctx.user.id);
-        return { success: true };
-      }),
-  }),
-
-  // ─── ADMIN USERS ─────────────────────────────────────────────────────────────────
+    // ─── ADMIN USERS ─────────────────────────────────────────────────────────────────
   adminUsers: router({
     list: protectedProcedure.query(async ({ ctx }) => {
       const role = ctx.user.role;
@@ -1063,17 +810,9 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── HR DASHBOARD ─────────────────────────────────────────────────────────────────
-  hrDashboard: router({
-    stats: protectedProcedure
-      .input(z.object({ year: z.number(), month: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") throw new Error("Acces interzis");
-        return getHRDashboardStats(input.year, input.month);
-      }),
-  }),
-  // ─── PROFIL EXTINS ────────────────────────────────────────────────────────────────────────────────────────
+  // ─── HR DASHBOARD (REMOVED — migrat la iFlow)
+
+    // ─── PROFIL EXTINS ────────────────────────────────────────────────────────────────────────────────────────
   profile: router({
     getMyProfile: protectedProcedure.query(async ({ ctx }) => {
       return getFullProfile(ctx.user.id);

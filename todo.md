@@ -453,3 +453,17 @@
 - [x] Fix: câmpurile sensibile (CNP, IBAN) folosesc type="password" → browserul detectează formularul ca login și propune salvarea parolei cu CNP și orașul ca username
 - [x] Fix: înlocuiește type="password" cu text mascat CSS (font de puncte sau caractere •) și autocomplete="new-password" / "off" pe câmpurile sensibile
 - [x] Fix: adaugă autocomplete="off" pe întregul formular de profil
+
+## Sprint 42 — iFlow Migration (remove pontaj/concediu, add iFlow button)
+
+- [x] Delete: client/src/pages/PontajZilnic.tsx (sau echivalentul)
+- [x] Delete: client/src/pages/CereriConcediu.tsx
+- [x] Delete: client/src/pages/RapoarteHR.tsx
+- [x] Delete: client/src/pages/AprobariConcediu.tsx
+- [x] Fix: Remove routes for deleted pages from App.tsx
+- [x] Fix: Remove sidebar items (Pontaj zilnic, Cereri concediu, Rapoarte HR, Aprobări concediu) from DashboardLayout.tsx
+- [x] Fix: Remove backend procedures for leave requests, HR reports, daily pontaj from routers.ts
+- [x] Fix: Remove DB helpers for leave requests from db.ts
+- [x] Feature: Dashboard card "Timp lucrat azi" linked to Time-Tracking hours (today's total from time entries)
+- [x] Feature: Dashboard card includes iFlow button → opens https://app.hriflow.ro in new tab
+- [x] Fix: Remove any concediu/recuperare/medical/deplasare references from other pages
