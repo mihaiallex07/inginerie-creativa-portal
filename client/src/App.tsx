@@ -64,7 +64,12 @@ function App() {
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
         <TooltipProvider>
-          <Toaster richColors position="bottom-right" toastOptions={{ style: { maxWidth: '360px', fontSize: '13px' } }} />
+          <Toaster
+            richColors
+            position="top-right"
+            offset={{ top: 56, right: 16 }}
+            toastOptions={{ style: { maxWidth: '340px', fontSize: '13px' } }}
+          />
           <Router />
           <FloatingTimer />
         </TooltipProvider>
