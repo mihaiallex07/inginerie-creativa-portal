@@ -285,6 +285,8 @@ export default function TimeTracking() {
   const [savedEntryId, setSavedEntryId] = useState<number | null>(null);
   const [invitePanelOpen, setInvitePanelOpen] = useState(false);
   const [inviteSearch, setInviteSearch] = useState("");
+  // pendingInvitees: users selected BEFORE save (new entries)
+  const [pendingInvitees, setPendingInvitees] = useState<Array<{id: number; name: string}>>([]);
   // ── Google Calendar state ──
   const [gcalImportOpen, setGcalImportOpen] = useState(false);
   const [gcalImportDate, setGcalImportDate] = useState(() => format(new Date(), "yyyy-MM-dd"));
@@ -412,7 +414,7 @@ export default function TimeTracking() {
   });
   const { data: entryInvitations = [] } = trpc.invitations.forEntry.useQuery(
     { timeEntryId: savedEntryId! },
-    { enabled: !!savedEntryId && invitePanelOpen }
+    { enabled: !!savedEntryId && dialogOpen }
   );
   const utils = trpc.useUtils();
   const createEvent = trpc.companyEvents.create.useMutation({
@@ -448,7 +450,9 @@ export default function TimeTracking() {
           resizeRef.current.activated = true;
         }
         const gridRect = gridContainerRef.current.getBoundingClientRect();
-        const relY = e.clientY - gridRect.top;
+        const scrollTop = gridContainerRef.current.scrollTop;
+        // MUST add scrollTop for resize too
+        const relY = e.clientY - gridRect.top + scrollTop;
         const totalMinutes = (relY / gridHeight) * TOTAL_HOURS * 60 + HOUR_START * 60;
         const snapped = Math.round(totalMinutes / 15) * 15;
         const newH = Math.floor(snapped / 60);
@@ -529,6 +533,7 @@ export default function TimeTracking() {
         if (dragRef.current.activated && gridContainerRef.current) {
           const { entryId, origDurMins, origDayIdx } = dragRef.current;
           const gridRect = gridContainerRef.current.getBoundingClientRect();
+          const scrollTop = gridContainerRef.current.scrollTop;
           // Subtract the gutter width (w-10 = 40px)
           const gutterW = 40;
           const colAreaLeft = gridRect.left + gutterW;
@@ -536,7 +541,8 @@ export default function TimeTracking() {
           const relX = e.clientX - colAreaLeft;
           let newDayIdx = Math.floor((relX / colAreaWidth) * 7);
           newDayIdx = Math.max(0, Math.min(6, newDayIdx));
-          const relY = e.clientY - gridRect.top;
+          // MUST add scrollTop — without it, dragging after scrolling gives wrong hour
+          const relY = e.clientY - gridRect.top + scrollTop;
           const totalMinutes = (relY / gridHeight) * TOTAL_HOURS * 60 + HOUR_START * 60;
           const snappedStart = Math.round(totalMinutes / 15) * 15;
           const newStartH = Math.floor(snappedStart / 60);
@@ -585,11 +591,13 @@ export default function TimeTracking() {
   const goNext = () => setWeekStart(w => addWeeks(w, 1));
   const handleDateSelect = (d: Date) => { setSelectedDate(d); setWeekStart(startOfWeek(d, { weekStartsOn: 1 })); };
 
-  const openNewEntry = (dayIdx: number, hour: number, min: number) => {
+  const openNewEntry = (dayIdx: number, h: number, m: number) => {
     setEditingEntry(null);
+    setSavedEntryId(null);
+    setPendingInvitees([]);
+    setInviteSearch("");
     setFormDate(format(weekDays[dayIdx], "yyyy-MM-dd"));
-    setFormStart({ h: hour, m: min });
-    setFormEnd({ h: Math.min(hour + 1, HOUR_END), m: min });
+    setFormStart({ h, m }); setFormEnd({ h: Math.min(h + 1, HOUR_END), m });
     setFormTask(""); setFormType("proiectare"); setFormProject(""); setFormDesc("");
     setDialogOpen(true);
   };
@@ -614,18 +622,33 @@ export default function TimeTracking() {
     };
     if (editingEntry) {
       updateEntry.mutate({ id: editingEntry.id, ...payload }, {
-        onSuccess: () => { setSavedEntryId(editingEntry.id); },
+        onSuccess: () => {
+          setSavedEntryId(editingEntry.id);
+          // Send invitations for any newly added pending invitees
+          for (const u of pendingInvitees) {
+            if (!(entryInvitations as any[]).some((inv: any) => inv.inviteeUserId === u.id)) {
+              inviteUser.mutate({ timeEntryId: editingEntry.id, inviteeUserId: u.id });
+            }
+          }
+          setPendingInvitees([]);
+          setDialogOpen(false);
+        },
       });
     } else {
       addEntry.mutate(payload, {
         onSuccess: (result: any) => {
-          if (result?.id) { setSavedEntryId(result.id); }
-          // Keep dialog open so user can invite colleagues
+          if (result?.id) {
+            setSavedEntryId(result.id);
+            // Send invitations atomically with save
+            for (const u of pendingInvitees) {
+              inviteUser.mutate({ timeEntryId: result.id, inviteeUserId: u.id });
+            }
+            setPendingInvitees([]);
+          }
+          setDialogOpen(false);
         },
       });
     }
-    // Don't close dialog — user may want to invite colleagues
-    // Dialog closes when user clicks Anulează or the X button
   };
 
   const handleDelete = () => { if (editingEntry) { deleteEntry.mutate({ id: editingEntry.id }); setDialogOpen(false); } };
@@ -1131,42 +1154,57 @@ export default function TimeTracking() {
                 onChange={e => setInviteSearch(e.target.value)}
                 className="h-7 text-xs mb-2"
               />
-              {/* Already invited */}
-              {savedEntryId && (entryInvitations as any[]).length > 0 && (
+              {/* Already invited (saved entries) or pending (new entries) */}
+              {(savedEntryId ? (entryInvitations as any[]) : pendingInvitees).length > 0 && (
                 <div className="space-y-1 mb-2">
-                  {(entryInvitations as any[]).map((inv: any) => (
-                    <div key={inv.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 py-1">
-                      <div className="h-5 w-5 rounded-full bg-[#FFCB09]/30 flex items-center justify-center text-[9px] font-bold text-[#221F1F]">
-                        {(inv.inviteeName || "?").slice(0, 2).toUpperCase()}
-                      </div>
-                      <span className="text-[11px] flex-1 truncate">{inv.inviteeName}</span>
-                      <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
-                        inv.status === "accepted" ? "bg-green-100 text-green-700" :
-                        inv.status === "declined" ? "bg-red-100 text-red-600" :
-                        "bg-yellow-100 text-yellow-700"
-                      }`}>
-                        {inv.status === "accepted" ? "✓ Acceptat" : inv.status === "declined" ? "✕ Refuzat" : "Aşteptă"}
-                      </span>
-                    </div>
-                  ))}
+                  {savedEntryId
+                    ? (entryInvitations as any[]).map((inv: any) => (
+                        <div key={inv.id} className="flex items-center gap-2 bg-gray-50 rounded-lg px-2 py-1">
+                          <div className="h-5 w-5 rounded-full bg-[#FFCB09]/30 flex items-center justify-center text-[9px] font-bold text-[#221F1F]">
+                            {(inv.inviteeName || "?").slice(0, 2).toUpperCase()}
+                          </div>
+                          <span className="text-[11px] flex-1 truncate">{inv.inviteeName}</span>
+                          <span className={`text-[9px] font-semibold px-1.5 py-0.5 rounded-full ${
+                            inv.status === "accepted" ? "bg-green-100 text-green-700" :
+                            inv.status === "declined" ? "bg-red-100 text-red-600" :
+                            "bg-yellow-100 text-yellow-700"
+                          }`}>
+                            {inv.status === "accepted" ? "✓ Acceptat" : inv.status === "declined" ? "✕ Refuzat" : "Aşteptă"}
+                          </span>
+                        </div>
+                      ))
+                    : pendingInvitees.map((u) => (
+                        <div key={u.id} className="flex items-center gap-2 bg-yellow-50 rounded-lg px-2 py-1">
+                          <div className="h-5 w-5 rounded-full bg-[#FFCB09]/40 flex items-center justify-center text-[9px] font-bold text-[#221F1F]">
+                            {(u.name || "?").slice(0, 2).toUpperCase()}
+                          </div>
+                          <span className="text-[11px] flex-1 truncate">{u.name}</span>
+                          <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700">Va fi invitat</span>
+                          <button className="text-gray-400 hover:text-red-500 ml-1" onClick={() => setPendingInvitees(prev => prev.filter(p => p.id !== u.id))}>✕</button>
+                        </div>
+                      ))
+                  }
                 </div>
               )}
               {/* Users to invite */}
               <div className="max-h-32 overflow-y-auto space-y-1">
                 {(allUsersForInvite as any[])
                   .filter((u: any) => u.id !== user?.id && (inviteSearch === "" || (u.name || "").toLowerCase().includes(inviteSearch.toLowerCase())))
-                  .filter((u: any) => !savedEntryId || !(entryInvitations as any[]).some((inv: any) => inv.inviteeUserId === u.id))
+                  .filter((u: any) => {
+                    if (savedEntryId) return !(entryInvitations as any[]).some((inv: any) => inv.inviteeUserId === u.id);
+                    return !pendingInvitees.some(p => p.id === u.id);
+                  })
                   .map((u: any) => (
                     <div
                       key={u.id}
                       className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1 cursor-pointer hover:bg-yellow-50 transition-colors"
                       onClick={() => {
-                        if (!savedEntryId) {
-                          // Entry not saved yet — save first then invite
-                          toast.info("Salvează activitatea mai întâi, apoi invită colegi.");
-                          return;
+                        if (savedEntryId) {
+                          inviteUser.mutate({ timeEntryId: savedEntryId, inviteeUserId: u.id });
+                        } else {
+                          // Queue for sending after save
+                          setPendingInvitees(prev => [...prev, { id: u.id, name: u.name || "" }]);
                         }
-                        inviteUser.mutate({ timeEntryId: savedEntryId, inviteeUserId: u.id });
                       }}
                     >
                       <div className="h-5 w-5 rounded-full bg-[#FFCB09]/20 flex items-center justify-center text-[9px] font-bold text-[#221F1F]">
