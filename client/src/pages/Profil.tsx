@@ -145,13 +145,15 @@ function FieldRow({
       {hint && <p className="text-xs text-muted-foreground">{hint}</p>}
       <div className="relative">
         <Input
-          type={sensitive && !showSensitive ? "password" : "text"}
+          type="text"
           value={editValue}
           onChange={e => onChange(e.target.value)}
           placeholder={placeholder ?? label}
           maxLength={maxLength}
-          autoComplete={autoComplete ?? "off"}
-          className={`h-9 text-sm ${sensitive ? "pr-9" : ""}`}
+          autoComplete={sensitive ? "new-password" : (autoComplete ?? "off")}
+          data-form-type={sensitive ? "other" : undefined}
+          className={`h-9 text-sm ${sensitive ? "pr-9" : ""} ${sensitive && !showSensitive ? "[font-family:text-security-disc,Verdana,sans-serif] [-webkit-text-security:disc]" : ""}`}
+          style={sensitive && !showSensitive ? { WebkitTextSecurity: "disc" } as React.CSSProperties : undefined}
         />
         {sensitive && onToggleSensitive && (
           <button

@@ -447,3 +447,9 @@
 - [x] Fix: câmpurile CNP/serie CI/număr CI nu au limită de caractere (CNP=13, serie=2 litere, număr CI=6 cifre sau 7 cifre formate noi)
 - [x] Fix: validare dată naștere să fie în trecut (nu permite date viitoare)
 - [x] Fix: câmpurile de adresă nu pot fi completate
+
+## Sprint 41c — Fix browser password manager popup on profile save
+
+- [x] Fix: câmpurile sensibile (CNP, IBAN) folosesc type="password" → browserul detectează formularul ca login și propune salvarea parolei cu CNP și orașul ca username
+- [x] Fix: înlocuiește type="password" cu text mascat CSS (font de puncte sau caractere •) și autocomplete="new-password" / "off" pe câmpurile sensibile
+- [x] Fix: adaugă autocomplete="off" pe întregul formular de profil
