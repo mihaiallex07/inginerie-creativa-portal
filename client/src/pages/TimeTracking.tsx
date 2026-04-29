@@ -345,7 +345,7 @@ export default function TimeTracking() {
     onSuccess: () => { refetchEntries(); toast.success("Activitate adăugată"); },
     onError: (e) => toast.error(e.message),
   });
-  const addManualEntry = trpc.timeTracking.addManual.useMutation({
+  const addManualEntry = trpc.timeTracking.addCalendarEntry.useMutation({
     onError: (e) => toast.error(e.message),
   });
   const updateEntry = trpc.timeTracking.updateCalendarEntry.useMutation({
@@ -819,6 +819,9 @@ export default function TimeTracking() {
                       >
                         <div className="text-[9px] font-semibold truncate leading-tight">{entry.taskName || entry.activityType}</div>
                         {heightPx > 18 && <div className="text-[8px] opacity-80 truncate">{pad2(st.h)}:{pad2(st.m)}–{pad2(en.h)}:{pad2(en.m)}</div>}
+                        {!entry.projectId && heightPx > 24 && (
+                          <div className="text-[7px] opacity-70 italic truncate">Diverse</div>
+                        )}
                         <div
                           data-resize="true"
                           className="absolute bottom-0 left-0 right-0 h-1.5 cursor-s-resize opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1140,11 +1143,14 @@ export default function TimeTracking() {
                   for (const ev of toImport) {
                     const start = new Date(ev.startTime);
                     const end = new Date(ev.endTime);
-                    const durationMinutes = Math.max(1, Math.floor((end.getTime() - start.getTime()) / 60000));
                     try {
                       await addManualEntry.mutateAsync({
+                        // projectId omis intentionat — apare ca "Diverse" pana la alocare manuala
                         date: format(start, "yyyy-MM-dd"),
-                        durationMinutes,
+                        startHour: start.getHours(),
+                        startMin: start.getMinutes(),
+                        endHour: end.getHours(),
+                        endMin: end.getMinutes(),
                         activityType: "sedinta",
                         taskName: ev.title,
                         isBillable: true,
@@ -1155,7 +1161,10 @@ export default function TimeTracking() {
                   setGcalBulkImporting(false);
                   setGcalSelectedIds(new Set());
                   refetchEntries();
-                  toast.success(`${ok} activitate(i) importate cu succes!`);
+                  if (ok > 0) {
+                    toast.success(`${ok} activitate(i) importate!`, { duration: 6000 });
+                    toast.info("⚠️ Activitățile importate nu au proiect alocat. Editează-le în calendar pentru a le atribui un proiect.", { duration: 8000 });
+                  }
                   if (ok === toImport.length) setGcalImportOpen(false);
                 };
 
