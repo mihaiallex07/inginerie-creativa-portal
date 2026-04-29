@@ -250,8 +250,8 @@ export default function Dashboard() {
                 </div>
                 <p className="text-[10px] text-muted-foreground mt-0.5">
                   {todayEntries && todayEntries.length > 0
-                    ? `${todayEntries.length} activit${todayEntries.length === 1 ? "ate" : "ăți"} înregistrate`
-                    : "Nicio activitate înregistrată azi"}
+                    ? `${todayEntries.length} ${todayEntries.length === 1 ? "intrare" : "intrări"} în Time-Tracking azi`
+                    : "Nicio intrare în Time-Tracking azi"}
                 </p>
               </div>
               {/* iFlow Pontaj */}
