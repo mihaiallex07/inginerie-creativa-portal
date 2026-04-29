@@ -63,6 +63,10 @@ export default function Dashboard() {
   // Today's time-tracking hours (from time entries)
   const todayStr = format(new Date(), "yyyy-MM-dd");
   const { data: todayEntries } = trpc.timeTracking.myEntries.useQuery({ dateFrom: todayStr, dateTo: todayStr });
+  // Today's company events (for time insights)
+  const { data: todayCompanyEventsData } = trpc.companyEvents.list.useQuery({ dateFrom: todayStr, dateTo: todayStr });
+  // Today's recurring activities
+  const { data: recurringActivities } = trpc.recurring.list.useQuery();
   const { data: newsData } = trpc.news.list.useQuery({ limit: 3 });
   const { data: projectsData } = trpc.projects.list.useQuery({ status: "activ" });
   const { data: proposalsData } = trpc.proposals.list.useQuery({ status: "deschisa" });
@@ -206,13 +210,55 @@ export default function Dashboard() {
     );
   }, [todayEntries]);
 
+  // Company events for today (include in time insights)
+  const todayCompanyEventMins = useMemo(() => {
+    if (!todayCompanyEventsData) return 0;
+    const todayDow = getDay(new Date());
+    return (todayCompanyEventsData as any[]).reduce((sum: number, ev: any) => {
+      // Skip weekends for daily recurring events
+      if (ev.isRecurring && ev.recurringRule === "daily" && (todayDow === 0 || todayDow === 6)) return sum;
+      const st = new Date(ev.startTime); const en = new Date(ev.endTime);
+      return sum + Math.max(0, (en.getHours() * 60 + en.getMinutes()) - (st.getHours() * 60 + st.getMinutes()));
+    }, 0);
+  }, [todayCompanyEventsData]);
+
+  // Recurring activities for today (only those with countInTime = true)
+  const todayRecurringMins = useMemo(() => {
+    if (!recurringActivities) return 0;
+    const todayDow = getDay(new Date());
+    if (todayDow === 0 || todayDow === 6) return 0; // skip weekends
+    return (recurringActivities as any[]).filter((r: any) => {
+      if (!r.countInTime) return false;
+      const start = r.startDate ? new Date(r.startDate) : null;
+      const end = r.endDate ? new Date(r.endDate) : null;
+      const today = new Date(); today.setHours(0,0,0,0);
+      if (start && start > today) return false;
+      if (end && end < today) return false;
+      return true;
+    }).reduce((sum: number, r: any) => sum + (r.durationMinutes || 0), 0);
+  }, [recurringActivities]);
+
+  const todayRecurringCount = useMemo(() => {
+    if (!recurringActivities) return 0;
+    const todayDow = getDay(new Date());
+    if (todayDow === 0 || todayDow === 6) return 0;
+    return (recurringActivities as any[]).filter((r: any) => {
+      const start = r.startDate ? new Date(r.startDate) : null;
+      const end = r.endDate ? new Date(r.endDate) : null;
+      const today = new Date(); today.setHours(0,0,0,0);
+      if (start && start > today) return false;
+      if (end && end < today) return false;
+      return true;
+    }).length;
+  }, [recurringActivities]);
+
   const todayWorkedMinutes = useMemo(() => {
     return todayVisibleEntries.reduce((sum: number, e: { durationMinutes?: number | null; startHour?: number | null; endHour?: number | null }) => {
       if (e.durationMinutes) return sum + e.durationMinutes;
       if (e.startHour != null && e.endHour != null) return sum + (e.endHour - e.startHour) * 60;
       return sum;
-    }, 0);
-  }, [todayVisibleEntries]);
+    }, 0) + todayCompanyEventMins + todayRecurringMins;
+  }, [todayVisibleEntries, todayCompanyEventMins, todayRecurringMins]);
 
   const workNorm = 8 * 60;
   const workedPercent = Math.min(100, Math.round((todayWorkedMinutes / workNorm) * 100));
@@ -251,13 +297,15 @@ export default function Dashboard() {
               {/* Timp lucrat azi — din Time-Tracking */}
               <div className="flex-1 p-3 border-b sm:border-b-0 sm:border-r border-border">
                 <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-0.5">Timp lucrat azi</p>
-                <p className="text-xl font-bold text-foreground tabular-nums">{formatDuration(todayWorkedMinutes)}</p>
+                <p className="text-xl font-bold text-foreground tabular-nums" style={{ fontSize: "16px" }}>{formatDuration(todayWorkedMinutes)}</p>
                 <div className="mt-1.5 h-1 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-[#FFCB09] rounded-full transition-all" style={{ width: `${workedPercent}%` }} />
                 </div>
-                <p className="text-[10px] text-muted-foreground mt-0.5">
-                  {todayVisibleEntries.length > 0
-                    ? `${todayVisibleEntries.length} ${todayVisibleEntries.length === 1 ? "activitate" : "activități"} în Time-Tracking azi`
+                <p className="text-[14px] text-muted-foreground mt-0.5">
+                  {(todayVisibleEntries.length + (todayCompanyEventsData?.length ?? 0) + todayRecurringCount) > 0
+                    ? `${todayVisibleEntries.length + (todayCompanyEventsData?.length ?? 0) + todayRecurringCount} ${
+                        (todayVisibleEntries.length + (todayCompanyEventsData?.length ?? 0) + todayRecurringCount) === 1 ? "activitate" : "activități"
+                      } în Time-Tracking azi`
                     : "Nicio activitate înregistrată azi"}
                 </p>
               </div>
@@ -265,7 +313,7 @@ export default function Dashboard() {
               <div className="flex-1 p-3 border-b sm:border-b-0 sm:border-r border-border flex flex-col justify-between">
                 <div>
                   <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide mb-1">Pontaj zilnic</p>
-                  <p className="text-xs text-muted-foreground">Înregistrează prezența în iFlow — platforma oficială de pontaj a companiei.</p>
+                  <p className="text-muted-foreground" style={{ fontSize: "14px" }}>Înregistrează prezența în iFlow — platforma oficială de pontaj a companiei.</p>
                 </div>
                 <a
                   href="https://app.hriflow.ro"
@@ -283,7 +331,7 @@ export default function Dashboard() {
                   <div className="h-8 w-8 rounded-full bg-[#FFCB09]/15 flex items-center justify-center">
                     <Timer className="h-4 w-4 text-[#FFCB09]" />
                   </div>
-                  <span className="text-[10px] text-muted-foreground">Time-Tracking</span>
+                  <span className="text-muted-foreground" style={{ color: "#080831", fontSize: "14px" }}>Time-Tracking</span>
                   <ChevronRight className="h-3 w-3 text-muted-foreground" />
                 </div>
               </div>
