@@ -220,11 +220,18 @@ export async function getRunningTimer(userId: number) {
   return result[0] ?? null;
 }
 
-export async function checkTimeEntryExists(userId: number, date: string, taskName: string): Promise<boolean> {
+export async function checkTimeEntryExists(
+  userId: number,
+  date: string,
+  taskName: string,
+  startHour: number,
+  startMin: number
+): Promise<boolean> {
   const db = await getDb();
   if (!db) return false;
+  // Match on date + taskName + startHour + startMin so two events with the same
+  // title but different start times (e.g. two #Daily15 meetings) are treated as distinct.
   // Only check entries with startHour set (visible in the weekly grid).
-  // Old bulk-import entries without startHour are invisible and should not block re-import.
   const result = await db
     .select({ id: timeEntries.id })
     .from(timeEntries)
@@ -233,7 +240,9 @@ export async function checkTimeEntryExists(userId: number, date: string, taskNam
         eq(timeEntries.userId, userId),
         sql`DATE(${timeEntries.date}) = ${date}`,
         eq(timeEntries.taskName, taskName),
-        isNotNull(timeEntries.startHour)
+        isNotNull(timeEntries.startHour),
+        sql`${timeEntries.startHour} = ${startHour}`,
+        sql`${timeEntries.startMin} = ${startMin}`
       )
     )
     .limit(1);

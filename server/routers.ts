@@ -427,9 +427,16 @@ export const appRouter = router({
         isBillable: z.boolean().optional(),
       }))
       .mutation(async ({ ctx, input }) => {
-        // Deduplication: skip if entry with same date + taskName already exists for this user
+        // Deduplication: skip if entry with same date + taskName + startHour + startMin already exists.
+        // Including start time ensures two events with the same title at different hours are both imported.
         if (input.taskName) {
-          const exists = await checkTimeEntryExists(ctx.user.id, input.date, input.taskName);
+          const exists = await checkTimeEntryExists(
+            ctx.user.id,
+            input.date,
+            input.taskName,
+            input.startHour,
+            input.startMin
+          );
           if (exists) return { success: true, id: null, skipped: true };
         }
         // Store hours as plain integers — NO Date/timezone conversion

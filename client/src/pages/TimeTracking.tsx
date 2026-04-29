@@ -1179,14 +1179,15 @@ export default function TimeTracking() {
                   setGcalBulkImporting(false);
                   setGcalSelectedIds(new Set());
                   refetchEntries();
+                  const plural = (n: number) => n === 1 ? 'activitate' : 'activități';
                   if (ok > 0 && skipped === 0) {
-                    toast.success(`${ok} activitate(i) importate cu succes!`, { duration: 6000 });
+                    toast.success(`${ok} ${plural(ok)} importate cu succes!`, { duration: 6000 });
                     toast.info("⚠️ Activitățile importate nu au proiect alocat. Editează-le în calendar pentru a le atribui un proiect.", { duration: 8000 });
                   } else if (ok > 0 && skipped > 0) {
-                    toast.success(`${ok} activitate(i) importate, ${skipped} deja existau (șărite).`, { duration: 7000 });
+                    toast.success(`${ok} ${plural(ok)} importate, ${skipped} deja existau în Time-Tracking.`, { duration: 7000 });
                     toast.info("⚠️ Activitățile noi nu au proiect alocat. Editează-le în calendar pentru a le atribui un proiect.", { duration: 8000 });
                   } else if (ok === 0 && skipped > 0) {
-                    toast.info(`Toate cele ${skipped} activitate(i) selectate există deja în Time-Tracking. Nimic nou de importat.`, { duration: 7000 });
+                    toast.info(`Toate cele ${skipped} ${plural(skipped)} selectate există deja în Time-Tracking. Nimic nou de importat.`, { duration: 7000 });
                   }
                   if (skipped < toImport.length) setGcalImportOpen(false);
                 };
