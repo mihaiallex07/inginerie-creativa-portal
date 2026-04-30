@@ -35,6 +35,8 @@ import {
   ChevronDown,
   ChevronUp,
   Save,
+  Loader2,
+  Bell,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -102,6 +104,21 @@ export default function AdminDocumente() {
     onSuccess: () => {
       utils.documents.listMappings.invalidate();
       toast.success("Mapare stearsa");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const checkDriveChanges = trpc.documents.checkDriveChanges.useMutation({
+    onSuccess: (data) => {
+      const parts = [];
+      if (data.totalNew > 0) parts.push(`${data.totalNew} noi`);
+      if (data.totalModified > 0) parts.push(`${data.totalModified} modificate`);
+      if (data.totalDeleted > 0) parts.push(`${data.totalDeleted} sterse`);
+      if (parts.length === 0) {
+        toast.success("Nicio modificare detectata in Drive.");
+      } else {
+        toast.success(`Modificari detectate: ${parts.join(", ")}. Notificari trimise.`);
+      }
     },
     onError: (err) => toast.error(err.message),
   });
@@ -206,6 +223,20 @@ export default function AdminDocumente() {
             <Settings className="w-4 h-4" />
             Setari
             {settingsOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => checkDriveChanges.mutate()}
+            disabled={checkDriveChanges.isPending}
+            className="border-white/20 hover:text-white gap-2"
+            style={{ color: "#000000" }}
+          >
+            {checkDriveChanges.isPending ? (
+              <><Loader2 className="w-4 h-4 animate-spin" />Verificare...</>
+            ) : (
+              <><Bell className="w-4 h-4" />Verifica modificari</>
+            )}
           </Button>
           <Button
             onClick={() => setDialogOpen(true)}

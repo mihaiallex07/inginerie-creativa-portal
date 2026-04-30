@@ -1,80 +1,9 @@
 import { trpc } from "@/lib/trpc";
-import { Badge } from "@/components/ui/badge";
+import DriveDocViewer from "@/components/DriveDocViewer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  FileText,
-  FolderOpen,
-  ExternalLink,
-  Lock,
-  AlertCircle,
-  FileIcon,
-} from "lucide-react";
-
-function formatFileSize(bytes: string | null): string {
-  if (!bytes) return "";
-  const b = parseInt(bytes, 10);
-  if (b < 1024) return `${b} B`;
-  if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
-  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
-}
-
-function formatDate(iso: string | null): string {
-  if (!iso) return "";
-  return new Date(iso).toLocaleDateString("ro-RO", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
-}
-
-function getMimeEmoji(mimeType: string): string {
-  if (mimeType === "application/pdf") return "📄";
-  if (mimeType.startsWith("image/")) return "🖼️";
-  if (mimeType.includes("word") || mimeType.includes("document")) return "📝";
-  if (mimeType.includes("sheet") || mimeType.includes("excel")) return "📊";
-  if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return "📑";
-  return "📁";
-}
-
-interface DriveFile {
-  id: string;
-  name: string;
-  mimeType: string;
-  modifiedTime: string | null;
-  size: string | null;
-  previewUrl: string;
-}
-
-function FileCard({ file }: { file: DriveFile }) {
-  // Use the secure proxy URL instead of direct Drive link
-  const proxyUrl = `/api/drive/file/${file.id}`;
-
-  return (
-    <a
-      href={proxyUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex items-center gap-3 p-3 rounded-lg border border-white/10 hover:border-[#FFCB09]/50 hover:bg-[#FFCB09]/5 transition-all cursor-pointer"
-    >
-      <div className="text-2xl flex-shrink-0">{getMimeEmoji(file.mimeType)}</div>
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-white truncate group-hover:text-[#FFCB09] transition-colors">
-          {file.name}
-        </p>
-        <div className="flex items-center gap-2 mt-0.5">
-          {file.modifiedTime && (
-            <span className="text-xs text-gray-500">{formatDate(file.modifiedTime)}</span>
-          )}
-          {file.size && (
-            <span className="text-xs text-gray-600">{formatFileSize(file.size)}</span>
-          )}
-        </div>
-      </div>
-      <ExternalLink className="w-4 h-4 text-gray-600 group-hover:text-[#FFCB09] flex-shrink-0 transition-colors" />
-    </a>
-  );
-}
+import { FileText, FolderOpen, FileIcon, Lock, AlertCircle } from "lucide-react";
 
 function FileSkeleton() {
   return (
@@ -91,9 +20,24 @@ function FileSkeleton() {
 export default function Documente() {
   const { data: myFilesData, isLoading: loadingMy } = trpc.documents.listMyFiles.useQuery();
 
+  // If user has a mapped folder, use the shared DriveDocViewer
+  if (!loadingMy && myFilesData?.hasDriveFolder && myFilesData.files.length >= 0) {
+    return (
+      <DriveDocViewer
+        files={myFilesData.files}
+        isLoading={false}
+        title="Documentele mele"
+        subtitle={`Contract, fisa post, evaluari si alte documente personale${myFilesData.folderName ? ` — ${myFilesData.folderName}` : ""}`}
+        icon={FileText}
+        proxyPrefix="/api/drive/file/"
+        emptyHint="Contacteaza administratorul pentru a adauga documente in folderul tau."
+      />
+    );
+  }
+
+  // Loading or no folder mapped — show custom state
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-[#FFCB09]/10">
           <FileText className="w-6 h-6 text-[#FFCB09]" />
@@ -106,7 +50,6 @@ export default function Documente() {
         </div>
       </div>
 
-      {/* Personal documents */}
       <Card className="bg-[#2A2727] border-white/10">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base text-white">
@@ -124,7 +67,7 @@ export default function Documente() {
               <FileSkeleton />
               <FileSkeleton />
             </div>
-          ) : !myFilesData?.hasDriveFolder ? (
+          ) : (
             <div className="flex flex-col items-center gap-3 py-8 text-center">
               <div className="p-3 rounded-full bg-white/5">
                 <FolderOpen className="w-8 h-8 text-gray-600" />
@@ -138,33 +81,10 @@ export default function Documente() {
                 </p>
               </div>
             </div>
-          ) : myFilesData.files.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <div className="p-3 rounded-full bg-white/5">
-                <FileIcon className="w-8 h-8 text-gray-600" />
-              </div>
-              <p className="text-sm text-gray-400">
-                Niciun document in folderul{" "}
-                <span className="text-white font-medium">{myFilesData.folderName}</span>
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {myFilesData.folderName && (
-                <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
-                  <FolderOpen className="w-3 h-3" />
-                  {myFilesData.folderName}
-                </p>
-              )}
-              {myFilesData.files.map((file) => (
-                <FileCard key={file.id} file={file} />
-              ))}
-            </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Info note */}
       <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
         <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-400">

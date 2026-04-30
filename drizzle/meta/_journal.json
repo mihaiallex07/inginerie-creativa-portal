@@ -71,6 +71,13 @@
       "when": 1777541062486,
       "tag": "0009_many_wiccan",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1777550427015,
+      "tag": "0010_optimal_scream",
+      "breakpoints": true
     }
   ]
 }

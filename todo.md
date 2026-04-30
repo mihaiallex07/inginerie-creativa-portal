@@ -565,3 +565,14 @@
 - [x] PDF viewer: layout 2 panouri (listă stânga + viewer dreapta), navigare între documente, buton X și buton tab nou
 - [x] Bug fix: Select.Item cu value="" în Procese.tsx — înlocuit cu value="all"
 - [x] 46/46 teste trec
+
+## Sprint 50 — PDF viewer shared component, notificări Drive, căutare documente
+- [x] Componentă reutilizabilă DriveDocViewer.tsx cu: PDF viewer inline, căutare după nume, navigare între documente
+- [x] Aplicat DriveDocViewer în: RegulamentIntern.tsx, ViziuneValori.tsx, ProceseProceduri.tsx, BibliotecaTehnica.tsx, Documente.tsx
+- [x] Tabel DB drive_file_snapshots (fileId, fileName, folderId, folderType, ownerUserId, subfolderName, modifiedTime, size, deletedAt) — migrare SQL aplicată
+- [x] Funcții DB: getDriveSnapshots, getDriveSnapshotsByOwner, upsertDriveSnapshot, markDriveSnapshotDeleted, getAllActiveDriveSnapshots
+- [x] tRPC: documents.checkDriveChanges — scanează toate folderele Drive, compară cu snapshot-ul, trimite notificări
+- [x] Notificări în-app: angajații primesc notificare când apare un fișier nou/modificat/șters în folderul lor personal
+- [x] Notificări companie: toți angajații primesc notificare la fișiere noi/modificate/șterse în Regulament intern, Viziune & Valori, Procese & Proceduri, Bibliotecă tehnică
+- [x] AdminDocumente: buton "Verifică modificări" — declanșează checkDriveChanges manual
+- [x] 46/46 teste trec

@@ -23,6 +23,8 @@ import {
   recurringExceptions,
   activityInvitations,
   employeeDriveFolders,
+  driveFileSnapshots,
+  DriveFileSnapshot,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1647,4 +1649,66 @@ export async function deleteEmployeeDriveFolder(userId: number) {
   const db = await getDb();
   if (!db) return;
   await db.delete(employeeDriveFolders).where(eq(employeeDriveFolders.userId, userId));
+}
+
+// ─── DRIVE FILE SNAPSHOTS ────────────────────────────────────────────────────
+export async function getDriveSnapshots(folderId: string): Promise<DriveFileSnapshot[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(driveFileSnapshots)
+    .where(and(eq(driveFileSnapshots.folderId, folderId), isNull(driveFileSnapshots.deletedAt)));
+}
+
+export async function getDriveSnapshotsByOwner(ownerUserId: number): Promise<DriveFileSnapshot[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select()
+    .from(driveFileSnapshots)
+    .where(and(eq(driveFileSnapshots.ownerUserId, ownerUserId), isNull(driveFileSnapshots.deletedAt)));
+}
+
+export async function upsertDriveSnapshot(data: {
+  fileId: string;
+  fileName: string;
+  folderId: string;
+  folderType: string;
+  ownerUserId?: number | null;
+  subfolderName?: string | null;
+  modifiedTime?: string | null;
+  size?: string | null;
+  mimeType?: string | null;
+}): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db
+    .select()
+    .from(driveFileSnapshots)
+    .where(eq(driveFileSnapshots.fileId, data.fileId))
+    .limit(1);
+  if (existing.length > 0) {
+    await db
+      .update(driveFileSnapshots)
+      .set({ ...data, deletedAt: null, updatedAt: new Date() })
+      .where(eq(driveFileSnapshots.fileId, data.fileId));
+  } else {
+    await db.insert(driveFileSnapshots).values(data);
+  }
+}
+
+export async function markDriveSnapshotDeleted(fileId: string): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(driveFileSnapshots)
+    .set({ deletedAt: new Date(), updatedAt: new Date() })
+    .where(eq(driveFileSnapshots.fileId, fileId));
+}
+
+export async function getAllActiveDriveSnapshots(): Promise<DriveFileSnapshot[]> {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(driveFileSnapshots).where(isNull(driveFileSnapshots.deletedAt));
 }

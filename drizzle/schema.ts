@@ -466,3 +466,27 @@ export const employeeDriveFolders = mysqlTable("employee_drive_folders", {
 });
 export type EmployeeDriveFolder = typeof employeeDriveFolders.$inferSelect;
 export type InsertEmployeeDriveFolder = typeof employeeDriveFolders.$inferInsert;
+
+// ─── DRIVE FILE SNAPSHOTS ────────────────────────────────────────────────────
+// Stores the last known state of files in Drive folders for change detection.
+// Used to detect new, modified, or deleted files and trigger notifications.
+export const driveFileSnapshots = mysqlTable("drive_file_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  fileId: varchar("fileId", { length: 256 }).notNull(),
+  fileName: varchar("fileName", { length: 512 }).notNull(),
+  folderId: varchar("folderId", { length: 256 }).notNull(),
+  // "personal" = employee folder, "company" = company subfolder
+  folderType: varchar("folderType", { length: 32 }).notNull().default("company"),
+  // For personal folders: the userId of the employee owner
+  ownerUserId: int("ownerUserId"),
+  // For company folders: the subfolder name (e.g. "Regulament intern")
+  subfolderName: varchar("subfolderName", { length: 256 }),
+  modifiedTime: varchar("modifiedTime", { length: 64 }),
+  size: varchar("size", { length: 32 }),
+  mimeType: varchar("mimeType", { length: 128 }),
+  deletedAt: timestamp("deletedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DriveFileSnapshot = typeof driveFileSnapshots.$inferSelect;
+export type InsertDriveFileSnapshot = typeof driveFileSnapshots.$inferInsert;

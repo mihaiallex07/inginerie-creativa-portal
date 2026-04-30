@@ -114,6 +114,10 @@ import {
   setEmployeeDriveFolder,
   getAllEmployeeDriveFolders,
   deleteEmployeeDriveFolder,
+  getDriveSnapshots,
+  upsertDriveSnapshot,
+  markDriveSnapshotDeleted,
+  getAllActiveDriveSnapshots,
 } from "./db";
 import {
   listFilesInFolder,
@@ -431,6 +435,94 @@ const documentsRouter = router({
     const rootFolderId = (await getAppSetting("drive_hub_ic_root_folder_id")) ?? HUB_IC_ROOT_FOLDER_ID;
     const folder = await findFolderByName(rootFolderId, "Angaja\u021bi");
     return { folderId: folder?.id ?? null, rootFolderId };
+  }),
+
+  // ─ Drive change detection & notifications ──────────────────────────────
+  // Admin/scheduled: scan all Drive folders, compare with snapshots, send notifications
+  checkDriveChanges: protectedProcedure.mutation(async ({ ctx }) => {
+    if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") {
+      throw new Error("Acces interzis");
+    }
+    const rootFolderId = (await getAppSetting("drive_hub_ic_root_folder_id")) ?? HUB_IC_ROOT_FOLDER_ID;
+    const COMPANY_SUBFOLDERS = ["Regulament intern", "Viziune & Valori", "Procese & Proceduri", "Biblioteca tehnica"];
+    let totalNew = 0, totalModified = 0, totalDeleted = 0;
+
+    // 1. Check company subfolders
+    for (const subfolderName of COMPANY_SUBFOLDERS) {
+      const subfolder = await findFolderByName(rootFolderId, subfolderName);
+      if (!subfolder) continue;
+      const currentFiles = await listFilesInFolder(subfolder.id);
+      const snapshots = await getDriveSnapshots(subfolder.id);
+      const snapshotMap = new Map(snapshots.map((s) => [s.fileId, s]));
+      const currentIds = new Set(currentFiles.map((f) => f.id));
+
+      // Detect new and modified
+      for (const file of currentFiles) {
+        const snap = snapshotMap.get(file.id);
+        if (!snap) {
+          // New file
+          totalNew++;
+          await upsertDriveSnapshot({ fileId: file.id, fileName: file.name, folderId: subfolder.id, folderType: "company", subfolderName, modifiedTime: file.modifiedTime, size: file.size, mimeType: file.mimeType });
+          // Notify all active users
+          const allUsers = await getAllUsers();
+          for (const user of allUsers) {
+            await createNotification({ userId: user.id, type: "info", title: `Document nou in ${subfolderName}`, message: `A fost adaugat documentul "${file.name}" in ${subfolderName}.`, link: "/documente" });
+          }
+        } else if (snap.modifiedTime && file.modifiedTime && snap.modifiedTime !== file.modifiedTime) {
+          // Modified
+          totalModified++;
+          await upsertDriveSnapshot({ fileId: file.id, fileName: file.name, folderId: subfolder.id, folderType: "company", subfolderName, modifiedTime: file.modifiedTime, size: file.size, mimeType: file.mimeType });
+          const allUsers = await getAllUsers();
+          for (const user of allUsers) {
+            await createNotification({ userId: user.id, type: "info", title: `Document actualizat in ${subfolderName}`, message: `Documentul "${file.name}" din ${subfolderName} a fost actualizat.`, link: "/documente" });
+          }
+        }
+      }
+
+      // Detect deleted
+      for (const snap of snapshots) {
+        if (!currentIds.has(snap.fileId)) {
+          totalDeleted++;
+          await markDriveSnapshotDeleted(snap.fileId);
+          const allUsers = await getAllUsers();
+          for (const user of allUsers) {
+            await createNotification({ userId: user.id, type: "warning", title: `Document sters din ${subfolderName}`, message: `Documentul "${snap.fileName}" a fost eliminat din ${subfolderName}.`, link: "/documente" });
+          }
+        }
+      }
+    }
+
+    // 2. Check personal employee folders
+    const allMappings = await getAllEmployeeDriveFolders();
+    for (const mapping of allMappings) {
+      const currentFiles = await listFilesInFolder(mapping.folderId);
+      const snapshots = await getDriveSnapshots(mapping.folderId);
+      const snapshotMap = new Map(snapshots.map((s) => [s.fileId, s]));
+      const currentIds = new Set(currentFiles.map((f) => f.id));
+
+      for (const file of currentFiles) {
+        const snap = snapshotMap.get(file.id);
+        if (!snap) {
+          totalNew++;
+          await upsertDriveSnapshot({ fileId: file.id, fileName: file.name, folderId: mapping.folderId, folderType: "personal", ownerUserId: mapping.userId, modifiedTime: file.modifiedTime, size: file.size, mimeType: file.mimeType });
+          await createNotification({ userId: mapping.userId, type: "info", title: "Document personal nou", message: `A fost adaugat documentul "${file.name}" in dosarul tau personal.`, link: "/documente" });
+        } else if (snap.modifiedTime && file.modifiedTime && snap.modifiedTime !== file.modifiedTime) {
+          totalModified++;
+          await upsertDriveSnapshot({ fileId: file.id, fileName: file.name, folderId: mapping.folderId, folderType: "personal", ownerUserId: mapping.userId, modifiedTime: file.modifiedTime, size: file.size, mimeType: file.mimeType });
+          await createNotification({ userId: mapping.userId, type: "info", title: "Document personal actualizat", message: `Documentul "${file.name}" din dosarul tau personal a fost actualizat.`, link: "/documente" });
+        }
+      }
+
+      for (const snap of snapshots) {
+        if (!currentIds.has(snap.fileId)) {
+          totalDeleted++;
+          await markDriveSnapshotDeleted(snap.fileId);
+          await createNotification({ userId: mapping.userId, type: "warning", title: "Document personal sters", message: `Documentul "${snap.fileName}" a fost eliminat din dosarul tau personal.`, link: "/documente" });
+        }
+      }
+    }
+
+    return { success: true, totalNew, totalModified, totalDeleted };
   }),
 });
 
