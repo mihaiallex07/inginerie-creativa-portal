@@ -518,3 +518,10 @@
 - [x] Pagina AdminDocumente.tsx pentru mapare angajat → folder Drive
 - [x] Route /admin-documente adăugat în App.tsx
 - [x] Teste Vitest pentru procedurile documents (45/45 passing)
+
+## Sprint 45 — Drive UX improvements
+- [x] AdminDocumente: angajații deja mapați nu mai apar în dropdown-ul de mapare nouă (prevenire suprascriere)
+- [x] Backend: procedură tRPC documents.listSubfolderFiles(subfolderName) — listează fișierele dintr-un subfolder specific al HUB IC
+- [x] Documente.tsx: secțiunea "Documentele mele" arată DOAR fișierele din folderul personal
+- [x] Documente.tsx: secțiune "Regulament intern" listează fișierele din folderul HUB IC/Regulament intern
+- [x] Documente.tsx: secțiune "Viziune & Valori" listează fișierele din folderul HUB IC/Viziune & Valori

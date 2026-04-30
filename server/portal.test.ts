@@ -350,6 +350,9 @@ vi.mock("./googleDrive", () => ({
   listSubfolders: vi.fn().mockResolvedValue([
     { id: "folder1", name: "Mihai Porumboiu" },
     { id: "folder2", name: "Ion Ionescu" },
+    { id: "folder3", name: "Regulament intern" },
+    { id: "folder4", name: "Viziune & Valori" },
+    { id: "folder5", name: "Angajati" },
   ]),
   testDriveConnection: vi.fn().mockResolvedValue(true),
 }));
@@ -368,15 +371,22 @@ describe("documents (Google Drive)", () => {
     expect(Array.isArray(result.files)).toBe(true);
   });
 
-  it("listCompanyDocs requires authentication", async () => {
+  it("listSubfolderFiles requires authentication", async () => {
     const caller = appRouter.createCaller(makeGuestCtx());
-    await expect(caller.documents.listCompanyDocs()).rejects.toThrow();
+    await expect(caller.documents.listSubfolderFiles({ subfolderName: "Regulament intern" })).rejects.toThrow();
   });
 
-  it("listCompanyDocs returns files array", async () => {
+  it("listSubfolderFiles returns files array for known subfolder", async () => {
     const caller = appRouter.createCaller(makeCtx());
-    const result = await caller.documents.listCompanyDocs();
+    const result = await caller.documents.listSubfolderFiles({ subfolderName: "Regulament intern" });
     expect(Array.isArray(result.files)).toBe(true);
+  });
+
+  it("listSubfolderFiles returns empty for unknown subfolder", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.documents.listSubfolderFiles({ subfolderName: "NonExistent" });
+    expect(result.files).toHaveLength(0);
+    expect(result.folderId).toBeNull();
   });
 
   it("listAngajatiSubfolders requires admin role", async () => {

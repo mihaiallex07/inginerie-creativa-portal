@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,10 +7,11 @@ import {
   FileText,
   FolderOpen,
   ExternalLink,
-  Building2,
   Lock,
   AlertCircle,
   FileIcon,
+  BookOpen,
+  Lightbulb,
 } from "lucide-react";
 
 function formatFileSize(bytes: string | null): string {
@@ -86,9 +88,27 @@ function FileSkeleton() {
   );
 }
 
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center gap-3 py-8 text-center">
+      <div className="p-3 rounded-full bg-white/5">
+        <FileIcon className="w-8 h-8 text-gray-600" />
+      </div>
+      <p className="text-sm text-gray-400">{message}</p>
+    </div>
+  );
+}
+
 export default function Documente() {
+  // Stabilize inputs to avoid infinite re-renders
+  const regulamentInput = useMemo(() => ({ subfolderName: "Regulament intern" }), []);
+  const viziuneInput = useMemo(() => ({ subfolderName: "Viziune & Valori" }), []);
+
   const { data: myFilesData, isLoading: loadingMy } = trpc.documents.listMyFiles.useQuery();
-  const { data: companyDocsData, isLoading: loadingCompany } = trpc.documents.listCompanyDocs.useQuery();
+  const { data: regulamentData, isLoading: loadingRegulament } =
+    trpc.documents.listSubfolderFiles.useQuery(regulamentInput);
+  const { data: viziuneData, isLoading: loadingViziune } =
+    trpc.documents.listSubfolderFiles.useQuery(viziuneInput);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -98,19 +118,19 @@ export default function Documente() {
           <FileText className="w-6 h-6 text-[#FFCB09]" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Documentele mele</h1>
+          <h1 className="text-2xl font-bold text-white">Documente</h1>
           <p className="text-sm text-gray-400">
-            Documente personale și documente ale companiei
+            Documente personale și resurse ale companiei
           </p>
         </div>
       </div>
 
-      {/* Personal documents */}
+      {/* ── Personal documents ── */}
       <Card className="bg-[#2A2727] border-white/10">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base text-white">
             <Lock className="w-4 h-4 text-[#FFCB09]" />
-            Documente personale
+            Documentele mele
             <Badge variant="outline" className="ml-auto text-xs border-[#FFCB09]/30 text-[#FFCB09]">
               Confidențial
             </Badge>
@@ -141,15 +161,9 @@ export default function Documente() {
               </div>
             </div>
           ) : myFilesData.files.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <div className="p-3 rounded-full bg-white/5">
-                <FileIcon className="w-8 h-8 text-gray-600" />
-              </div>
-              <p className="text-sm text-gray-400">
-                Niciun document în folderul{" "}
-                <span className="text-white font-medium">{myFilesData.folderName}</span>
-              </p>
-            </div>
+            <EmptyState
+              message={`Niciun document în folderul ${myFilesData.folderName ?? ""}`}
+            />
           ) : (
             <div className="space-y-2">
               {myFilesData.folderName && (
@@ -166,35 +180,57 @@ export default function Documente() {
         </CardContent>
       </Card>
 
-      {/* Company documents */}
+      {/* ── Regulament intern ── */}
       <Card className="bg-[#2A2727] border-white/10">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base text-white">
-            <Building2 className="w-4 h-4 text-[#FFCB09]" />
-            Documente companie
+            <BookOpen className="w-4 h-4 text-[#FFCB09]" />
+            Regulament intern
           </CardTitle>
           <p className="text-xs text-gray-500">
-            Regulament intern, Viziune &amp; Valori și alte documente generale
+            Regulamentul de ordine interioară și politicile companiei
           </p>
         </CardHeader>
         <CardContent>
-          {loadingCompany ? (
+          {loadingRegulament ? (
             <div className="space-y-2">
               <FileSkeleton />
               <FileSkeleton />
             </div>
-          ) : !companyDocsData?.files.length ? (
-            <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <div className="p-3 rounded-full bg-white/5">
-                <AlertCircle className="w-8 h-8 text-gray-600" />
-              </div>
-              <p className="text-sm text-gray-400">
-                Nu există documente de companie disponibile momentan.
-              </p>
-            </div>
+          ) : !regulamentData?.files.length ? (
+            <EmptyState message="Nu exista documente in folderul Regulament intern din Drive." />
           ) : (
             <div className="space-y-2">
-              {companyDocsData.files.map((file) => (
+              {regulamentData.files.map((file) => (
+                <FileCard key={file.id} file={file} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* ── Viziune & Valori ── */}
+      <Card className="bg-[#2A2727] border-white/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base text-white">
+            <Lightbulb className="w-4 h-4 text-[#FFCB09]" />
+            Viziune &amp; Valori
+          </CardTitle>
+          <p className="text-xs text-gray-500">
+            Misiunea, viziunea și valorile Inginerie Creativă
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loadingViziune ? (
+            <div className="space-y-2">
+              <FileSkeleton />
+              <FileSkeleton />
+            </div>
+          ) : !viziuneData?.files.length ? (
+            <EmptyState message="Nu exista documente in folderul Viziune si Valori din Drive." />
+          ) : (
+            <div className="space-y-2">
+              {viziuneData.files.map((file) => (
                 <FileCard key={file.id} file={file} />
               ))}
             </div>

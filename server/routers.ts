@@ -320,12 +320,16 @@ const documentsRouter = router({
     return { files, folderName: mapping.folderName, hasDriveFolder: true };
   }),
 
-  // Get company-wide documents from HUB IC root (Regulament intern, Viziune & Valori, etc.)
-  listCompanyDocs: protectedProcedure.query(async () => {
-    // List files directly in the HUB IC root folder (not in subfolders)
-    const files = await listFilesInFolder(HUB_IC_ROOT_FOLDER_ID);
-    return { files };
-  }),
+  // Get files from a named subfolder of HUB IC root (e.g. "Regulament intern", "Viziune & Valori")
+  listSubfolderFiles: protectedProcedure
+    .input(z.object({ subfolderName: z.string() }))
+    .query(async ({ input }) => {
+      const subfolders = await listSubfolders(HUB_IC_ROOT_FOLDER_ID);
+      const target = subfolders.find(f => f.name === input.subfolderName);
+      if (!target) return { files: [], folderId: null };
+      const files = await listFilesInFolder(target.id);
+      return { files, folderId: target.id };
+    }),
 
   // Admin: list all Drive subfolders inside "Angajați" folder for mapping
   listAngajatiSubfolders: protectedProcedure.query(async ({ ctx }) => {
