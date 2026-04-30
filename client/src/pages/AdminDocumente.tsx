@@ -163,8 +163,8 @@ export default function AdminDocumente() {
           </div>
           <div>
             <h1 className="text-2xl font-bold text-white">Documente Drive - Admin</h1>
-            <p className="text-sm text-gray-400">
-              Mapeaza foldere Google Drive la angajati
+            <p className="text-sm text-gray-400" style={{color: "#270027"}}>
+              Mapeaza folder-ul destinat fiecarui angajat.
             </p>
           </div>
         </div>
@@ -176,7 +176,7 @@ export default function AdminDocumente() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button variant="outline" size="sm" className="border-white/20 text-gray-300 hover:text-white gap-2">
+              <Button variant="outline" size="sm" className="border-white/20 hover:text-white gap-2" style={{color: "#000000"}}>
                 <ExternalLink className="w-4 h-4" />
                 HUB IC
               </Button>
@@ -189,7 +189,7 @@ export default function AdminDocumente() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <Button variant="outline" size="sm" className="border-white/20 text-gray-300 hover:text-white gap-2">
+              <Button variant="outline" size="sm" className="border-white/20 hover:text-white gap-2" style={{color: "#000000"}}>
                 <ExternalLink className="w-4 h-4" />
                 Angajati
               </Button>
@@ -200,7 +200,8 @@ export default function AdminDocumente() {
             variant="outline"
             size="sm"
             onClick={() => setSettingsOpen((v) => !v)}
-            className="border-white/20 text-gray-300 hover:text-white gap-2"
+            className="border-white/20 hover:text-white gap-2"
+            style={{color: "#000000"}}
           >
             <Settings className="w-4 h-4" />
             Setari
