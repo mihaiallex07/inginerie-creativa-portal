@@ -1,130 +1,215 @@
 import { trpc } from "@/lib/trpc";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { ro } from "date-fns/locale";
-import { FileText, Download, Eye, Lock, Shield, Upload } from "lucide-react";
-import { toast } from "sonner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  FileText,
+  FolderOpen,
+  ExternalLink,
+  Building2,
+  Lock,
+  AlertCircle,
+  FileIcon,
+} from "lucide-react";
 
-const DOC_TYPES: Record<string, { label: string; color: string }> = {
-  contract: { label: "Contract", color: "bg-blue-100 text-blue-800" },
-  fisa_post: { label: "Fișa postului", color: "bg-purple-100 text-purple-800" },
-  evaluare: { label: "Evaluare", color: "bg-green-100 text-green-800" },
-  certificat: { label: "Certificat", color: "bg-amber-100 text-amber-800" },
-  salariu: { label: "Salariu", color: "bg-red-100 text-red-800" },
-  concediu: { label: "Concediu", color: "bg-teal-100 text-teal-800" },
-  medical: { label: "Medical", color: "bg-pink-100 text-pink-800" },
-  alt: { label: "Alt document", color: "bg-gray-100 text-gray-700" },
-};
+function formatFileSize(bytes: string | null): string {
+  if (!bytes) return "";
+  const b = parseInt(bytes, 10);
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
+  return `${(b / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleDateString("ro-RO", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function getMimeEmoji(mimeType: string): string {
+  if (mimeType === "application/pdf") return "📄";
+  if (mimeType.startsWith("image/")) return "🖼️";
+  if (mimeType.includes("word") || mimeType.includes("document")) return "📝";
+  if (mimeType.includes("sheet") || mimeType.includes("excel")) return "📊";
+  if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return "📑";
+  return "📁";
+}
+
+interface DriveFile {
+  id: string;
+  name: string;
+  mimeType: string;
+  modifiedTime: string | null;
+  size: string | null;
+  previewUrl: string;
+}
+
+function FileCard({ file }: { file: DriveFile }) {
+  return (
+    <a
+      href={file.previewUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex items-center gap-3 p-3 rounded-lg border border-white/10 hover:border-[#FFCB09]/50 hover:bg-[#FFCB09]/5 transition-all cursor-pointer"
+    >
+      <div className="text-2xl flex-shrink-0">{getMimeEmoji(file.mimeType)}</div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-white truncate group-hover:text-[#FFCB09] transition-colors">
+          {file.name}
+        </p>
+        <div className="flex items-center gap-2 mt-0.5">
+          {file.modifiedTime && (
+            <span className="text-xs text-gray-500">{formatDate(file.modifiedTime)}</span>
+          )}
+          {file.size && (
+            <span className="text-xs text-gray-600">{formatFileSize(file.size)}</span>
+          )}
+        </div>
+      </div>
+      <ExternalLink className="w-4 h-4 text-gray-600 group-hover:text-[#FFCB09] flex-shrink-0 transition-colors" />
+    </a>
+  );
+}
+
+function FileSkeleton() {
+  return (
+    <div className="flex items-center gap-3 p-3 rounded-lg border border-white/10">
+      <Skeleton className="w-8 h-8 rounded" />
+      <div className="flex-1">
+        <Skeleton className="h-4 w-3/4 mb-1" />
+        <Skeleton className="h-3 w-1/3" />
+      </div>
+    </div>
+  );
+}
 
 export default function Documente() {
-  const utils = trpc.useUtils();
-  const { data: documents, isLoading } = trpc.documents.myDocuments.useQuery();
-  const logAccess = trpc.documents.logAccess.useMutation();
-
-  const handleView = (doc: any) => {
-    logAccess.mutate({ documentId: doc.id, action: "view" });
-    if (doc.fileUrl) window.open(doc.fileUrl, "_blank");
-    else toast.info("Documentul nu are un fișier atașat");
-  };
-
-  const handleDownload = (doc: any) => {
-    logAccess.mutate({ documentId: doc.id, action: "download" });
-    if (doc.fileUrl) {
-      const a = document.createElement("a");
-      a.href = doc.fileUrl;
-      a.download = doc.title;
-      a.click();
-    }
-  };
-
-  // Group by type
-  const grouped = documents?.reduce((acc, doc) => {
-    const key = doc.type;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(doc);
-    return acc;
-  }, {} as Record<string, typeof documents>) ?? {};
+  const { data: myFilesData, isLoading: loadingMy } = trpc.documents.listMyFiles.useQuery();
+  const { data: companyDocsData, isLoading: loadingCompany } = trpc.documents.listCompanyDocs.useQuery();
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-xl font-bold text-foreground">Documentele mele</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">Documente personale și confidențiale</p>
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-[#FFCB09]/10">
+          <FileText className="w-6 h-6 text-[#FFCB09]" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold text-white">Documentele mele</h1>
+          <p className="text-sm text-gray-400">
+            Documente personale și documente ale companiei
+          </p>
+        </div>
       </div>
 
-      {/* Security notice */}
-      <Card className="border-[#FFCB09] bg-yellow-50">
-        <CardContent className="p-4 flex items-center gap-3">
-          <Shield className="h-5 w-5 text-[#FFCB09] shrink-0" />
-          <div>
-            <p className="text-sm font-semibold text-[#221F1F]">Spațiu confidențial</p>
-            <p className="text-xs text-muted-foreground">
-              Documentele sunt vizibile doar pentru tine și HR autorizat. Fiecare acces este înregistrat în jurnalul de audit.
-            </p>
-          </div>
+      {/* Personal documents */}
+      <Card className="bg-[#2A2727] border-white/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base text-white">
+            <Lock className="w-4 h-4 text-[#FFCB09]" />
+            Documente personale
+            <Badge variant="outline" className="ml-auto text-xs border-[#FFCB09]/30 text-[#FFCB09]">
+              Confidențial
+            </Badge>
+          </CardTitle>
+          <p className="text-xs text-gray-500">
+            Contract, fișă post, evaluări și alte documente personale
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loadingMy ? (
+            <div className="space-y-2">
+              <FileSkeleton />
+              <FileSkeleton />
+              <FileSkeleton />
+            </div>
+          ) : !myFilesData?.hasDriveFolder ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="p-3 rounded-full bg-white/5">
+                <FolderOpen className="w-8 h-8 text-gray-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-400 font-medium">
+                  Nu există un folder Drive asociat contului tău
+                </p>
+                <p className="text-xs text-gray-600 mt-1">
+                  Contactează administratorul pentru a configura accesul la documente.
+                </p>
+              </div>
+            </div>
+          ) : myFilesData.files.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="p-3 rounded-full bg-white/5">
+                <FileIcon className="w-8 h-8 text-gray-600" />
+              </div>
+              <p className="text-sm text-gray-400">
+                Niciun document în folderul{" "}
+                <span className="text-white font-medium">{myFilesData.folderName}</span>
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {myFilesData.folderName && (
+                <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                  <FolderOpen className="w-3 h-3" />
+                  {myFilesData.folderName}
+                </p>
+              )}
+              {myFilesData.files.map((file) => (
+                <FileCard key={file.id} file={file} />
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 
-      {isLoading ? (
-        <div className="space-y-3">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-16 bg-muted rounded-lg animate-pulse" />
-          ))}
-        </div>
-      ) : documents && documents.length > 0 ? (
-        Object.entries(grouped).map(([type, docs]) => {
-          const typeInfo = DOC_TYPES[type] ?? { label: type, color: "bg-gray-100 text-gray-700" };
-          return (
-            <div key={type}>
-              <div className="flex items-center gap-2 mb-2">
-                <span className={`text-xs px-2 py-0.5 rounded font-semibold ${typeInfo.color}`}>{typeInfo.label}</span>
-                <span className="text-xs text-muted-foreground">({docs.length})</span>
-              </div>
-              <div className="space-y-2">
-                {docs.map((doc) => (
-                  <Card key={doc.id} className="border-border hover:shadow-sm transition-shadow">
-                    <CardContent className="p-4 flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0">
-                        <FileText className="h-4 w-4 text-muted-foreground" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-foreground truncate">{doc.title}</p>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          {doc.description && (
-                            <p className="text-xs text-muted-foreground truncate">{doc.description}</p>
-                          )}
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(doc.createdAt), "d MMM yyyy", { locale: ro })}
-                          </span>
-                          {doc.year && (
-                            <span className="text-xs text-muted-foreground">{doc.year}</span>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 shrink-0">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleView(doc)} title="Vizualizează">
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => handleDownload(doc)} title="Descarcă">
-                          <Download className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+      {/* Company documents */}
+      <Card className="bg-[#2A2727] border-white/10">
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base text-white">
+            <Building2 className="w-4 h-4 text-[#FFCB09]" />
+            Documente companie
+          </CardTitle>
+          <p className="text-xs text-gray-500">
+            Regulament intern, Viziune &amp; Valori și alte documente generale
+          </p>
+        </CardHeader>
+        <CardContent>
+          {loadingCompany ? (
+            <div className="space-y-2">
+              <FileSkeleton />
+              <FileSkeleton />
             </div>
-          );
-        })
-      ) : (
-        <div className="text-center py-12 text-muted-foreground">
-          <Lock className="h-10 w-10 mx-auto mb-3 opacity-40" />
-          <p className="text-sm font-medium">Nu ai documente încărcate</p>
-          <p className="text-xs mt-1">Contactează HR pentru a solicita documente</p>
-        </div>
-      )}
+          ) : !companyDocsData?.files.length ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="p-3 rounded-full bg-white/5">
+                <AlertCircle className="w-8 h-8 text-gray-600" />
+              </div>
+              <p className="text-sm text-gray-400">
+                Nu există documente de companie disponibile momentan.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {companyDocsData.files.map((file) => (
+                <FileCard key={file.id} file={file} />
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Info note */}
+      <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
+        <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-gray-400">
+          Documentele se deschid în browser prin Google Drive Viewer. Nu se descarcă automat.
+          Dacă un document nu se deschide, verifică că ești autentificat în Google cu contul de firmă.
+        </p>
+      </div>
     </div>
   );
 }

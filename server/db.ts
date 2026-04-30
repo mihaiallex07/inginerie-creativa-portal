@@ -22,6 +22,7 @@ import {
   recurringActivities,
   recurringExceptions,
   activityInvitations,
+  employeeDriveFolders,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1600,4 +1601,50 @@ export async function respondToInvitation(id: number, inviteeUserId: number, acc
     .set({ status: "accepted", respondedAt: new Date(), inviteeEntryId: newEntryId })
     .where(eq(activityInvitations.id, id));
   return { accepted: true, newEntryId };
+}
+
+// ─── EMPLOYEE DRIVE FOLDERS ──────────────────────────────────────────────────
+export async function getEmployeeDriveFolder(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const result = await db
+    .select()
+    .from(employeeDriveFolders)
+    .where(eq(employeeDriveFolders.userId, userId))
+    .limit(1);
+  return result[0] ?? null;
+}
+
+export async function setEmployeeDriveFolder(
+  userId: number,
+  folderId: string,
+  folderName: string
+) {
+  const db = await getDb();
+  if (!db) return;
+  const existing = await db
+    .select()
+    .from(employeeDriveFolders)
+    .where(eq(employeeDriveFolders.userId, userId))
+    .limit(1);
+  if (existing.length > 0) {
+    await db
+      .update(employeeDriveFolders)
+      .set({ folderId, folderName })
+      .where(eq(employeeDriveFolders.userId, userId));
+  } else {
+    await db.insert(employeeDriveFolders).values({ userId, folderId, folderName });
+  }
+}
+
+export async function getAllEmployeeDriveFolders() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(employeeDriveFolders);
+}
+
+export async function deleteEmployeeDriveFolder(userId: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.delete(employeeDriveFolders).where(eq(employeeDriveFolders.userId, userId));
 }

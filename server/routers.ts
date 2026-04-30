@@ -110,7 +110,17 @@ import {
   getPendingInvitationsForUser,
   getInvitationsForEntry,
   respondToInvitation,
+  getEmployeeDriveFolder,
+  setEmployeeDriveFolder,
+  getAllEmployeeDriveFolders,
+  deleteEmployeeDriveFolder,
 } from "./db";
+import {
+  listFilesInFolder,
+  listSubfolders,
+  HUB_IC_ROOT_FOLDER_ID,
+  testDriveConnection,
+} from "./googleDrive";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
 const peopleRouter = router({
@@ -257,12 +267,131 @@ const invitationsRouter = router({
     }),
 });
 
+// ─── DOCUMENTS (GOOGLE DRIVE + LEGACY S3) ───────────────────────────────────────────────
+const documentsRouter = router({
+  // ─ Legacy S3 documents ────────────────────────────────────────────────
+  myDocuments: protectedProcedure.query(async ({ ctx }) => {
+    return getDocumentsForUser(ctx.user.id);
+  }),
+
+  userDocuments: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const role = ctx.user.role;
+      if (role !== "admin") throw new Error("Acces interzis");
+      return getDocumentsForUser(input.userId);
+    }),
+
+  upload: protectedProcedure
+    .input(z.object({
+      userId: z.number(),
+      type: z.enum(["contract", "fisa_post", "evaluare", "certificat", "salariu", "concediu", "medical", "alt"]),
+      title: z.string().min(1),
+      description: z.string().optional(),
+      fileUrl: z.string(),
+      fileKey: z.string(),
+      mimeType: z.string().optional(),
+      fileSize: z.number().optional(),
+      year: z.number().optional(),
+      month: z.number().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const role = ctx.user.role;
+      if (role !== "admin" && input.userId !== ctx.user.id) {
+        throw new Error("Acces interzis");
+      }
+      const id = await createDocument({ ...input, uploadedBy: ctx.user.id });
+      await logDocumentAccess(id!, ctx.user.id, "upload", ctx.req.ip);
+      return { success: true, id };
+    }),
+
+  logAccess: protectedProcedure
+    .input(z.object({ documentId: z.number(), action: z.enum(["view", "download"]) }))
+    .mutation(async ({ ctx, input }) => {
+      await logDocumentAccess(input.documentId, ctx.user.id, input.action, ctx.req.ip);
+      return { success: true };
+    }),
+
+  // ─ Google Drive documents ───────────────────────────────────────────────
+  listMyFiles: protectedProcedure.query(async ({ ctx }) => {
+    const mapping = await getEmployeeDriveFolder(ctx.user.id);
+    if (!mapping) return { files: [], folderName: null, hasDriveFolder: false };
+    const files = await listFilesInFolder(mapping.folderId);
+    return { files, folderName: mapping.folderName, hasDriveFolder: true };
+  }),
+
+  // Get company-wide documents from HUB IC root (Regulament intern, Viziune & Valori, etc.)
+  listCompanyDocs: protectedProcedure.query(async () => {
+    // List files directly in the HUB IC root folder (not in subfolders)
+    const files = await listFilesInFolder(HUB_IC_ROOT_FOLDER_ID);
+    return { files };
+  }),
+
+  // Admin: list all Drive subfolders inside "Angajați" folder for mapping
+  listAngajatiSubfolders: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") {
+      throw new Error("Acces interzis");
+    }
+    // Find "Angajați" subfolder in root
+    const subfolders = await listSubfolders(HUB_IC_ROOT_FOLDER_ID);
+    const angajatiFolder = subfolders.find(f => f.name === "Angajați");
+    if (!angajatiFolder) return { subfolders: [], angajatiFolderId: null };
+    const employeeFolders = await listSubfolders(angajatiFolder.id);
+    return { subfolders: employeeFolders, angajatiFolderId: angajatiFolder.id };
+  }),
+
+  // Admin: get all current folder mappings
+  listMappings: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") {
+      throw new Error("Acces interzis");
+    }
+    const mappings = await getAllEmployeeDriveFolders();
+    const allUsers = await getAllUsers();
+    return mappings.map(m => ({
+      ...m,
+      userName: allUsers.find(u => u.id === m.userId)?.name ?? "Utilizator necunoscut",
+    }));
+  }),
+
+  // Admin: set folder mapping for an employee
+  setMapping: protectedProcedure
+    .input(z.object({
+      userId: z.number(),
+      folderId: z.string(),
+      folderName: z.string(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") {
+        throw new Error("Acces interzis");
+      }
+      await setEmployeeDriveFolder(input.userId, input.folderId, input.folderName);
+      return { success: true };
+    }),
+
+  // Admin: remove folder mapping
+  removeMapping: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") {
+        throw new Error("Acces interzis");
+      }
+      await deleteEmployeeDriveFolder(input.userId);
+      return { success: true };
+    }),
+
+  // Test Drive connectivity
+  testConnection: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+    const ok = await testDriveConnection();
+    return { connected: ok };
+  }),
+});
+
 export const appRouter = router({
   system: systemRouter,
   settings: settingsRouter,
   recurring: recurringRouter,
   invitations: invitationsRouter,
-
   auth: router({
     me: publicProcedure.query((opts) => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -711,50 +840,7 @@ export const appRouter = router({
       }),
   }),
 
-  // ─── DOCUMENTS ───────────────────────────────────────────────────────────
-  documents: router({
-    myDocuments: protectedProcedure.query(async ({ ctx }) => {
-      return getDocumentsForUser(ctx.user.id);
-    }),
-
-    userDocuments: protectedProcedure
-      .input(z.object({ userId: z.number() }))
-      .query(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin") throw new Error("Acces interzis");
-        return getDocumentsForUser(input.userId);
-      }),
-
-    upload: protectedProcedure
-      .input(z.object({
-        userId: z.number(),
-        type: z.enum(["contract", "fisa_post", "evaluare", "certificat", "salariu", "concediu", "medical", "alt"]),
-        title: z.string().min(1),
-        description: z.string().optional(),
-        fileUrl: z.string(),
-        fileKey: z.string(),
-        mimeType: z.string().optional(),
-        fileSize: z.number().optional(),
-        year: z.number().optional(),
-        month: z.number().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin" && input.userId !== ctx.user.id) {
-          throw new Error("Acces interzis");
-        }
-        const id = await createDocument({ ...input, uploadedBy: ctx.user.id });
-        await logDocumentAccess(id!, ctx.user.id, "upload", ctx.req.ip);
-        return { success: true, id };
-      }),
-
-    logAccess: protectedProcedure
-      .input(z.object({ documentId: z.number(), action: z.enum(["view", "download"]) }))
-      .mutation(async ({ ctx, input }) => {
-        await logDocumentAccess(input.documentId, ctx.user.id, input.action, ctx.req.ip);
-        return { success: true };
-      }),
-  }),
+  documents: documentsRouter,
 
   // ─── PROCESSES ───────────────────────────────────────────────────────────
   processes: router({

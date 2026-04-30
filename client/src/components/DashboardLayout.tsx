@@ -114,6 +114,7 @@ const navSections: NavSection[] = [
     items: [
       { icon: Shield, label: "Utilizatori", path: "/admin-utilizatori", roles: ["admin"] },
       { icon: CalendarPlus, label: "Evenimente Firmă", path: "/evenimente", roles: ["admin", "coordonator"] },
+      { icon: FolderOpen, label: "Documente Drive", path: "/admin-documente", roles: ["admin"] },
     ],
   },
 ];

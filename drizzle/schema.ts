@@ -452,3 +452,17 @@ export const activityInvitations = mysqlTable("activity_invitations", {
 });
 export type ActivityInvitation = typeof activityInvitations.$inferSelect;
 export type InsertActivityInvitation = typeof activityInvitations.$inferInsert;
+
+// ─── EMPLOYEE DRIVE FOLDERS ──────────────────────────────────────────────────
+// Maps each employee (userId) to their Google Drive folder ID
+// Admin sets this mapping; employees can only see their own folder
+export const employeeDriveFolders = mysqlTable("employee_drive_folders", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  folderId: varchar("folderId", { length: 256 }).notNull(),
+  folderName: varchar("folderName", { length: 256 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EmployeeDriveFolder = typeof employeeDriveFolders.$inferSelect;
+export type InsertEmployeeDriveFolder = typeof employeeDriveFolders.$inferInsert;

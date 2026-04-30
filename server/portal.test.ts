@@ -44,6 +44,18 @@ vi.mock("./db", () => ({
   getUnreadNotificationCount: vi.fn().mockResolvedValue(0),
   markNotificationsRead: vi.fn().mockResolvedValue(undefined),
   createNotification: vi.fn().mockResolvedValue(undefined),
+  // Employee Drive Folders
+  getEmployeeDriveFolder: vi.fn().mockResolvedValue({
+    id: 1,
+    userId: 1,
+    folderId: "folder1",
+    folderName: "Mihai Porumboiu",
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  }),
+  setEmployeeDriveFolder: vi.fn().mockResolvedValue(undefined),
+  getAllEmployeeDriveFolders: vi.fn().mockResolvedValue([]),
+  deleteEmployeeDriveFolder: vi.fn().mockResolvedValue(undefined),
 }));
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -318,5 +330,96 @@ describe("RBAC - role based access control", () => {
     const result = await caller.news.create({ title: "T", content: "C", category: "companie", excerpt: "" });
     expect(result).toBeDefined();
     expect(result.success).toBe(true);
+  });
+});
+
+// ─── Documents (Google Drive) tests ──────────────────────────────────────────
+// Mock googleDrive module
+vi.mock("./googleDrive", () => ({
+  HUB_IC_ROOT_FOLDER_ID: "mock-root-folder-id",
+  listFilesInFolder: vi.fn().mockResolvedValue([
+    {
+      id: "file1",
+      name: "Contract.pdf",
+      mimeType: "application/pdf",
+      modifiedTime: "2025-01-01T00:00:00Z",
+      size: "102400",
+      previewUrl: "https://drive.google.com/file/d/file1/preview",
+    },
+  ]),
+  listSubfolders: vi.fn().mockResolvedValue([
+    { id: "folder1", name: "Mihai Porumboiu" },
+    { id: "folder2", name: "Ion Ionescu" },
+  ]),
+  testDriveConnection: vi.fn().mockResolvedValue(true),
+}));
+
+describe("documents (Google Drive)", () => {
+  it("listMyFiles requires authentication", async () => {
+    const caller = appRouter.createCaller(makeGuestCtx());
+    await expect(caller.documents.listMyFiles()).rejects.toThrow();
+  });
+
+  it("listMyFiles returns hasDriveFolder=true when mapping exists", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.documents.listMyFiles();
+    expect(result.hasDriveFolder).toBe(true);
+    expect(result.folderName).toBe("Mihai Porumboiu");
+    expect(Array.isArray(result.files)).toBe(true);
+  });
+
+  it("listCompanyDocs requires authentication", async () => {
+    const caller = appRouter.createCaller(makeGuestCtx());
+    await expect(caller.documents.listCompanyDocs()).rejects.toThrow();
+  });
+
+  it("listCompanyDocs returns files array", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.documents.listCompanyDocs();
+    expect(Array.isArray(result.files)).toBe(true);
+  });
+
+  it("listAngajatiSubfolders requires admin role", async () => {
+    const caller = appRouter.createCaller(makeCtx("angajat"));
+    await expect(caller.documents.listAngajatiSubfolders()).rejects.toThrow();
+  });
+
+  it("listAngajatiSubfolders returns subfolders for admin", async () => {
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    const result = await caller.documents.listAngajatiSubfolders();
+    expect(Array.isArray(result.subfolders)).toBe(true);
+  });
+
+  it("setMapping requires admin role", async () => {
+    const caller = appRouter.createCaller(makeCtx("angajat"));
+    await expect(
+      caller.documents.setMapping({ userId: 2, folderId: "folder1", folderName: "Test" })
+    ).rejects.toThrow();
+  });
+
+  it("setMapping succeeds for admin", async () => {
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    const result = await caller.documents.setMapping({
+      userId: 2,
+      folderId: "folder1",
+      folderName: "Test User",
+    });
+    expect(result.success).toBe(true);
+  });
+
+  it("removeMapping requires admin role", async () => {
+    const caller = appRouter.createCaller(makeCtx("angajat"));
+    await expect(caller.documents.removeMapping({ userId: 2 })).rejects.toThrow();
+  });
+
+  it("testConnection requires admin role", async () => {
+    const caller = appRouter.createCaller(makeCtx("angajat"));
+    await expect(caller.documents.testConnection()).rejects.toThrow();
+  });
+
+  it("testConnection returns connected=true for admin", async () => {
+    const caller = appRouter.createCaller(makeCtx("admin"));
+    const result = await caller.documents.testConnection();
+    expect(result.connected).toBe(true);
   });
 });

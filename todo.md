@@ -505,3 +505,16 @@
 - [ ] Frontend: invite UI in add/edit activity dialog (search users, add invitees)
 - [ ] Frontend: pending invitations in bell dropdown with Accept/Decline buttons
 - [ ] Frontend: host sees accepted/declined status on activity block
+
+## Sprint 44 — Google Drive Documents Integration
+- [x] Stocare GOOGLE_SERVICE_ACCOUNT_JSON ca secret în env
+- [x] Instalare pachet googleapis
+- [x] Creare server/googleDrive.ts cu funcții: listFilesInFolder, listSubfolders, testDriveConnection
+- [x] Schema DB: tabel employee_drive_folders (userId, folderId, folderName) — migrare SQL aplicată
+- [x] Proceduri tRPC: documents.listMyFiles, documents.listCompanyDocs, documents.listAngajatiSubfolders, documents.listMappings, documents.setMapping, documents.removeMapping, documents.testConnection
+- [x] Pagina Documente.tsx: documente personale + documente companie (Google Drive Viewer)
+- [x] PDF-urile se deschid în browser via Google Drive Viewer (fără descărcare)
+- [x] Link "Documente Drive" în sidebar DashboardLayout (secțiunea ADMINISTRARE)
+- [x] Pagina AdminDocumente.tsx pentru mapare angajat → folder Drive
+- [x] Route /admin-documente adăugat în App.tsx
+- [x] Teste Vitest pentru procedurile documents (45/45 passing)
