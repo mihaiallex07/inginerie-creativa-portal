@@ -583,3 +583,7 @@
 - [x] Task programat la fiecare oră care apelează endpoint-ul (cron: 0 0 * * * *)
 - [x] Buton "Verifică modificări" rămâne pentru verificare manuală imediată
 - [x] 46/46 teste trec
+
+## Sprint 52 — Bug fixes /admin-utilizatori
+- [x] Bug fix: DELETE pontaj WHERE user_id = ? — coloana se numea userId (camelCase), nu user_id; corectat în toate DELETE-urile din deleteUserCompletely
+- [x] Bug fix: `<p>` nested în AlertDialogDescription (care e tot `<p>`) — înlocuit cu `<div>` + `asChild`

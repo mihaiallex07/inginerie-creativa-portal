@@ -379,10 +379,12 @@ export default function AdminUtilizatori() {
               <Trash2 className="h-5 w-5" />
               Șterge utilizator complet
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>Ești sigur că vrei să ștergi definitiv contul lui <strong>{deleteTarget?.name ?? deleteTarget?.email}</strong>?</p>
-              <p className="text-red-600 font-medium">Această acțiune este ireversibilă — se vor șterge și toate înregistrările de pontaj, cererile de concediu și orice altă dată asociată acestui cont.</p>
-              <p className="text-muted-foreground text-xs">Dacă vrei să păstrezi istoricul, folosește butonul de dezactivare (portocaliu) în loc de ștergere.</p>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div>Ești sigur că vrei să ștergi definitiv contul lui <strong className="text-foreground">{deleteTarget?.name ?? deleteTarget?.email}</strong>?</div>
+                <div className="text-red-600 font-medium">Această acțiune este ireversibilă — se vor șterge și toate înregistrările de pontaj, cererile de concediu și orice altă dată asociată acestui cont.</div>
+                <div className="text-xs">Dacă vrei să păstrezi istoricul, folosește butonul de dezactivare (portocaliu) în loc de ștergere.</div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
