@@ -80,6 +80,8 @@ const navSections: NavSection[] = [
     label: "TIMP & PROIECTE",
     items: [
       { icon: Clock, label: "Time-Tracking", path: "/time-tracking" },
+      { icon: CalendarDays, label: "Process Overview", path: "/process-overview" },
+      { icon: FileText, label: "Formulare & Cereri", path: "/formulare" },
     ],
   },
   {
@@ -88,16 +90,9 @@ const navSections: NavSection[] = [
       { icon: Building2, label: "Viziune & Valori", path: "/viziune" },
       { icon: BookOpen, label: "Regulament intern", path: "/regulament" },
       { icon: Users, label: "Organigramă", path: "/organigrama" },
-    ],
-  },
-  {
-    label: "LUCRU",
-    items: [
       { icon: FolderOpen, label: "Procese & Proceduri", path: "/procese" },
       { icon: BookOpen, label: "Bibliotecă tehnică", path: "/biblioteca" },
-      { icon: FolderOpen, label: "Proiecte (Drive)", path: "/proiecte" },
-      { icon: CalendarDays, label: "Process Overview", path: "/process-overview" },
-      { icon: FileText, label: "Formulare & Cereri", path: "/formulare" },
+      { icon: FolderOpen, label: "Proiecte", path: "/proiecte" },
     ],
   },
   {

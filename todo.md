@@ -525,3 +525,11 @@
 - [x] Documente.tsx: secțiunea "Documentele mele" arată DOAR fișierele din folderul personal
 - [x] Documente.tsx: secțiune "Regulament intern" listează fișierele din folderul HUB IC/Regulament intern
 - [x] Documente.tsx: secțiune "Viziune & Valori" listează fișierele din folderul HUB IC/Viziune & Valori
+
+## Sprint 46 — Restructurare sidebar navigație
+- [x] DashboardLayout: secțiunea COMPANIE conține: Regulament intern, Viziune & Valori, Organigramă, Procese & Proceduri, Bibliotecă tehnică, Proiecte
+- [x] DashboardLayout: secțiunea TIMP & PROIECTE conține: Time-Tracking, Process Overview, Formulare & Cereri
+- [x] DashboardLayout: secțiunea LUCRU eliminată (conținutul mutat în COMPANIE și TIMP & PROIECTE)
+- [x] Creare pagini standalone: RegulamentIntern.tsx și ViziuneValori.tsx (listează fișierele din Drive)
+- [x] Documente.tsx: eliminat secțiunile Regulament intern și Viziune & Valori (rămâne doar "Documentele mele")
+- [x] App.tsx: adăugate rute /regulament și /viziune cu paginile reale

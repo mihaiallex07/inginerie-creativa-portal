@@ -26,6 +26,8 @@ import Evenimente from "./pages/Evenimente";
 import FloatingTimer from "./components/FloatingTimer";
 import Notificari from "./pages/Notificari";
 import AdminDocumente from "./pages/AdminDocumente";
+import RegulamentIntern from "./pages/RegulamentIntern";
+import ViziuneValori from "./pages/ViziuneValori";
 
 function Router() {
   return (
@@ -47,8 +49,8 @@ function Router() {
         <Route path="/profil" component={Profil} />
         <Route path="/organigrama" component={Organigrama} />
         <Route path="/coleg/:id" component={ProfilColeg} />
-        <Route path="/viziune" component={() => <PlaceholderPage title="Viziune & Valori" />} />
-        <Route path="/regulament" component={() => <PlaceholderPage title="Regulament Intern" />} />
+        <Route path="/viziune" component={ViziuneValori} />
+        <Route path="/regulament" component={RegulamentIntern} />
         <Route path="/biblioteca" component={() => <PlaceholderPage title="Bibliotecă Tehnică" />} />
         <Route path="/formulare" component={() => <PlaceholderPage title="Formulare & Cereri" />} />
         <Route path="/admin-utilizatori" component={AdminUtilizatori} />

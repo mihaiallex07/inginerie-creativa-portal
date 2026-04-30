@@ -1,15 +1,8 @@
+import { useMemo } from "react";
 import { trpc } from "@/lib/trpc";
-import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  FileText,
-  FolderOpen,
-  ExternalLink,
-  Lock,
-  AlertCircle,
-  FileIcon,
-} from "lucide-react";
+import { Lightbulb, ExternalLink, AlertCircle, FileIcon } from "lucide-react";
 
 function formatFileSize(bytes: string | null): string {
   if (!bytes) return "";
@@ -85,75 +78,54 @@ function FileSkeleton() {
   );
 }
 
-export default function Documente() {
-  const { data: myFilesData, isLoading: loadingMy } = trpc.documents.listMyFiles.useQuery();
+export default function ViziuneValori() {
+  const input = useMemo(() => ({ subfolderName: "Viziune & Valori" }), []);
+  const { data, isLoading } = trpc.documents.listSubfolderFiles.useQuery(input);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-[#FFCB09]/10">
-          <FileText className="w-6 h-6 text-[#FFCB09]" />
+          <Lightbulb className="w-6 h-6 text-[#FFCB09]" />
         </div>
         <div>
-          <h1 className="text-2xl font-bold text-white">Documentele mele</h1>
+          <h1 className="text-2xl font-bold text-white">Viziune &amp; Valori</h1>
           <p className="text-sm text-gray-400">
-            Contract, fisa post, evaluari si alte documente personale
+            Misiunea, viziunea si valorile Inginerie Creativa
           </p>
         </div>
       </div>
 
-      {/* Personal documents */}
       <Card className="bg-[#2A2727] border-white/10">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base text-white">
-            <Lock className="w-4 h-4 text-[#FFCB09]" />
-            Documente personale
-            <Badge variant="outline" className="ml-auto text-xs border-[#FFCB09]/30 text-[#FFCB09]">
-              Confidential
-            </Badge>
+            <Lightbulb className="w-4 h-4 text-[#FFCB09]" />
+            Documente
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {loadingMy ? (
+          {isLoading ? (
             <div className="space-y-2">
               <FileSkeleton />
               <FileSkeleton />
               <FileSkeleton />
             </div>
-          ) : !myFilesData?.hasDriveFolder ? (
-            <div className="flex flex-col items-center gap-3 py-8 text-center">
-              <div className="p-3 rounded-full bg-white/5">
-                <FolderOpen className="w-8 h-8 text-gray-600" />
-              </div>
-              <div>
-                <p className="text-sm text-gray-400 font-medium">
-                  Nu exista un folder Drive asociat contului tau
-                </p>
-                <p className="text-xs text-gray-600 mt-1">
-                  Contacteaza administratorul pentru a configura accesul la documente.
-                </p>
-              </div>
-            </div>
-          ) : myFilesData.files.length === 0 ? (
+          ) : !data?.files.length ? (
             <div className="flex flex-col items-center gap-3 py-8 text-center">
               <div className="p-3 rounded-full bg-white/5">
                 <FileIcon className="w-8 h-8 text-gray-600" />
               </div>
               <p className="text-sm text-gray-400">
-                Niciun document in folderul{" "}
-                <span className="text-white font-medium">{myFilesData.folderName}</span>
+                Nu exista documente in folderul Viziune si Valori din Drive.
+              </p>
+              <p className="text-xs text-gray-600">
+                Adauga fisiere in folderul HUB IC / Viziune si Valori din Google Drive.
               </p>
             </div>
           ) : (
             <div className="space-y-2">
-              {myFilesData.folderName && (
-                <p className="text-xs text-gray-500 mb-3 flex items-center gap-1">
-                  <FolderOpen className="w-3 h-3" />
-                  {myFilesData.folderName}
-                </p>
-              )}
-              {myFilesData.files.map((file) => (
+              {data.files.map((file) => (
                 <FileCard key={file.id} file={file} />
               ))}
             </div>
@@ -161,12 +133,11 @@ export default function Documente() {
         </CardContent>
       </Card>
 
-      {/* Info note */}
       <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
         <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-400">
-          Documentele se deschid in browser prin Google Drive Viewer. Nu se descarca automat.
-          Daca un document nu se deschide, verifica ca esti autentificat in Google cu contul de firma.
+          Documentele se deschid in browser prin Google Drive Viewer.
+          Fisierele sunt gestionate direct din Google Drive de catre administrator.
         </p>
       </div>
     </div>
