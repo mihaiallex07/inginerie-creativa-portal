@@ -533,3 +533,11 @@
 - [x] Creare pagini standalone: RegulamentIntern.tsx și ViziuneValori.tsx (listează fișierele din Drive)
 - [x] Documente.tsx: eliminat secțiunile Regulament intern și Viziune & Valori (rămâne doar "Documentele mele")
 - [x] App.tsx: adăugate rute /regulament și /viziune cu paginile reale
+
+## Sprint 47 — Proxy securizat Google Drive (acces documente personale)
+- [x] Endpoint Express /api/drive/file/:fileId — verifică sesiunea + ownership în DB, stream fișier din Drive
+- [x] Endpoint Express /api/drive/public/:fileId — pentru fișiere publice (Regulament intern, Viziune & Valori) fără verificare ownership
+- [x] googleDrive.ts: funcție downloadFileStream(fileId), getFileMetadata, isFileInFolder
+- [x] Documente.tsx: URL-urile fișierelor personale folosesc /api/drive/file/:fileId (proxy securizat)
+- [x] RegulamentIntern.tsx și ViziuneValori.tsx: URL-urile folosesc /api/drive/public/:fileId
+- [x] 46/46 teste trec

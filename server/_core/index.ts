@@ -10,6 +10,7 @@ import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerReportRoutes } from "../reportRoutes";
 import { registerGoogleCalendarRoutes } from "../googleCalendarRoutes";
+import { registerDriveProxyRoutes } from "../driveProxyRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -45,6 +46,8 @@ async function startServer() {
   registerGoogleCalendarRoutes(app);
   // HR report download endpoints
   registerReportRoutes(app);
+  // Google Drive secure file proxy
+  registerDriveProxyRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",

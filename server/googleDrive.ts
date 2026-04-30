@@ -101,6 +101,79 @@ export async function getAngajatiFolder(): Promise<DriveFolder | null> {
 }
 
 /**
+ * Download a file from Drive as a readable stream (for server-side proxy)
+ */
+export async function downloadFileStream(fileId: string): Promise<{
+  stream: NodeJS.ReadableStream;
+  mimeType: string;
+  name: string;
+  size: string | null;
+}> {
+  const drive = getDriveClient();
+
+  // Get file metadata first
+  const meta = await drive.files.get({
+    fileId,
+    fields: "id, name, mimeType, size",
+  });
+
+  const mimeType = meta.data.mimeType ?? "application/octet-stream";
+  const name = meta.data.name ?? "document";
+  const size = meta.data.size ?? null;
+
+  // For Google Docs/Sheets/Slides, export as PDF
+  if (mimeType.startsWith("application/vnd.google-apps.")) {
+    const exportRes = await drive.files.export(
+      { fileId, mimeType: "application/pdf" },
+      { responseType: "stream" }
+    );
+    return { stream: exportRes.data as NodeJS.ReadableStream, mimeType: "application/pdf", name: name + ".pdf", size: null };
+  }
+
+  // For regular files, download directly
+  const dlRes = await drive.files.get(
+    { fileId, alt: "media" },
+    { responseType: "stream" }
+  );
+  return { stream: dlRes.data as NodeJS.ReadableStream, mimeType, name, size };
+}
+
+/**
+ * Get file metadata (to verify file exists and belongs to a folder)
+ */
+export async function getFileMetadata(fileId: string): Promise<{
+  id: string;
+  name: string;
+  mimeType: string;
+  parents: string[];
+} | null> {
+  try {
+    const drive = getDriveClient();
+    const res = await drive.files.get({
+      fileId,
+      fields: "id, name, mimeType, parents",
+    });
+    return {
+      id: res.data.id!,
+      name: res.data.name!,
+      mimeType: res.data.mimeType!,
+      parents: res.data.parents ?? [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Check if a file is inside a given folder (direct parent check)
+ */
+export async function isFileInFolder(fileId: string, folderId: string): Promise<boolean> {
+  const meta = await getFileMetadata(fileId);
+  if (!meta) return false;
+  return meta.parents.includes(folderId);
+}
+
+/**
  * Test Drive connectivity — returns true if root folder is accessible
  */
 export async function testDriveConnection(): Promise<boolean> {

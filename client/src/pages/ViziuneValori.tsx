@@ -22,12 +22,12 @@ function formatDate(iso: string | null): string {
 }
 
 function getMimeEmoji(mimeType: string): string {
-  if (mimeType === "application/pdf") return "📄";
-  if (mimeType.startsWith("image/")) return "🖼️";
-  if (mimeType.includes("word") || mimeType.includes("document")) return "📝";
-  if (mimeType.includes("sheet") || mimeType.includes("excel")) return "📊";
-  if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return "📑";
-  return "📁";
+  if (mimeType === "application/pdf") return "\uD83D\uDCC4";
+  if (mimeType.startsWith("image/")) return "\uD83D\uDDBC\uFE0F";
+  if (mimeType.includes("word") || mimeType.includes("document")) return "\uD83D\uDCDD";
+  if (mimeType.includes("sheet") || mimeType.includes("excel")) return "\uD83D\uDCCA";
+  if (mimeType.includes("presentation") || mimeType.includes("powerpoint")) return "\uD83D\uDCD1";
+  return "\uD83D\uDCC1";
 }
 
 interface DriveFile {
@@ -40,9 +40,10 @@ interface DriveFile {
 }
 
 function FileCard({ file }: { file: DriveFile }) {
+  const proxyUrl = `/api/drive/public/${file.id}`;
   return (
     <a
-      href={file.previewUrl}
+      href={proxyUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="group flex items-center gap-3 p-3 rounded-lg border border-white/10 hover:border-[#FFCB09]/50 hover:bg-[#FFCB09]/5 transition-all cursor-pointer"
@@ -84,7 +85,6 @@ export default function ViziuneValori() {
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="p-2 rounded-lg bg-[#FFCB09]/10">
           <Lightbulb className="w-6 h-6 text-[#FFCB09]" />
@@ -136,8 +136,8 @@ export default function ViziuneValori() {
       <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
         <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-400">
-          Documentele se deschid in browser prin Google Drive Viewer.
-          Fisierele sunt gestionate direct din Google Drive de catre administrator.
+          Documentele se deschid direct in browser, securizat prin portalul HUB.
+          Fisierele sunt gestionate de administrator din Google Drive.
         </p>
       </div>
     </div>

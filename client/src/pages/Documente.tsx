@@ -47,9 +47,12 @@ interface DriveFile {
 }
 
 function FileCard({ file }: { file: DriveFile }) {
+  // Use the secure proxy URL instead of direct Drive link
+  const proxyUrl = `/api/drive/file/${file.id}`;
+
   return (
     <a
-      href={file.previewUrl}
+      href={proxyUrl}
       target="_blank"
       rel="noopener noreferrer"
       className="group flex items-center gap-3 p-3 rounded-lg border border-white/10 hover:border-[#FFCB09]/50 hover:bg-[#FFCB09]/5 transition-all cursor-pointer"
@@ -165,8 +168,8 @@ export default function Documente() {
       <div className="flex items-start gap-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/20">
         <AlertCircle className="w-4 h-4 text-blue-400 flex-shrink-0 mt-0.5" />
         <p className="text-xs text-gray-400">
-          Documentele se deschid in browser prin Google Drive Viewer. Nu se descarca automat.
-          Daca un document nu se deschide, verifica ca esti autentificat in Google cu contul de firma.
+          Documentele se deschid direct in browser, securizat prin portalul HUB.
+          Nu este necesar accesul la Google Drive. Fiecare angajat vede doar propriile documente.
         </p>
       </div>
     </div>
