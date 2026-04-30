@@ -580,6 +580,6 @@
 ## Sprint 51 — Task programat automat verificare Drive (orar)
 - [x] Endpoint Express POST /api/scheduled/drive-check (autentificat cu session cookie, orice rol)
 - [x] registerScheduledDriveRoutes înregistrat în server/_core/index.ts
-- [ ] Task programat la fiecare oră care apelează endpoint-ul (după publish)
+- [x] Task programat la fiecare oră care apelează endpoint-ul (cron: 0 0 * * * *)
 - [x] Buton "Verifică modificări" rămâne pentru verificare manuală imediată
 - [x] 46/46 teste trec

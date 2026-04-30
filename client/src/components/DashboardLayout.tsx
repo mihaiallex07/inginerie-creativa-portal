@@ -81,6 +81,7 @@ const navSections: NavSection[] = [
     items: [
       { icon: Clock, label: "Time-Tracking", path: "/time-tracking" },
       { icon: CalendarDays, label: "Process Overview", path: "/process-overview" },
+      { icon: FolderOpen, label: "Proiecte", path: "/proiecte" },
       { icon: FileText, label: "Formulare & Cereri", path: "/formulare" },
     ],
   },
@@ -89,10 +90,9 @@ const navSections: NavSection[] = [
     items: [
       { icon: Building2, label: "Viziune & Valori", path: "/viziune" },
       { icon: BookOpen, label: "Regulament intern", path: "/regulament" },
-      { icon: Users, label: "Organigramă", path: "/organigrama" },
       { icon: FolderOpen, label: "Procese & Proceduri", path: "/procese-proceduri" },
       { icon: BookOpen, label: "Bibliotecă tehnică", path: "/biblioteca" },
-      { icon: FolderOpen, label: "Proiecte", path: "/proiecte" },
+      { icon: Users, label: "Organigramă", path: "/organigrama" },
     ],
   },
   {
