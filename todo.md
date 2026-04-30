@@ -541,3 +541,17 @@
 - [x] Documente.tsx: URL-urile fișierelor personale folosesc /api/drive/file/:fileId (proxy securizat)
 - [x] RegulamentIntern.tsx și ViziuneValori.tsx: URL-urile folosesc /api/drive/public/:fileId
 - [x] 46/46 teste trec
+
+## Sprint 48 — Admin Documente Drive UX improvements
+- [x] DB: refolosit tabelul existent app_settings (key/value) pentru stocarea HUB_IC_ROOT_FOLDER_ID configurabil
+- [x] tRPC: documents.getDriveSettings — returnează rootFolderId curent din DB (fallback la env)
+- [x] tRPC: documents.updateDriveSettings — admin poate schimba rootFolderId
+- [x] tRPC: documents.getEmployeeFileCount(userId) — returnează numărul de fișiere din folderul mapat
+- [x] tRPC: documents.getAngajatiFolder — returnează ID-ul folderului Angajați
+- [x] AdminDocumente: panou Setări pliabil — afișează ID curent + câmp pentru schimbare + buton salvare
+- [x] AdminDocumente: buton "Angajati" deschide folderul Angajați în Drive
+- [x] AdminDocumente: buton "HUB IC" deschide folderul rădăcină în Drive
+- [x] AdminDocumente: badge Online/Offline stare conexiune Drive
+- [x] AdminDocumente: în mapările active, click pe folder deschide folderul angajatului în Drive
+- [x] AdminDocumente: număr fișiere afișat per angajat în lista de mapări active
+- [x] 46/46 teste trec

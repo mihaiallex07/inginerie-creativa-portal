@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -28,8 +29,29 @@ import {
   CheckCircle2,
   XCircle,
   Shield,
+  Settings,
+  ExternalLink,
+  FileText,
+  ChevronDown,
+  ChevronUp,
+  Save,
 } from "lucide-react";
 import { toast } from "sonner";
+
+function driveLink(folderId: string) {
+  return `https://drive.google.com/drive/folders/${folderId}`;
+}
+
+function EmployeeFileCount({ userId, folderId }: { userId: number; folderId: string }) {
+  const { data, isLoading } = trpc.documents.getEmployeeFileCount.useQuery({ userId });
+  if (isLoading) return <Skeleton className="h-4 w-12 inline-block" />;
+  return (
+    <span className="text-xs text-gray-500 flex items-center gap-1">
+      <FileText className="w-3 h-3" />
+      {data?.count ?? 0} {data?.count === 1 ? "fisier" : "fisiere"}
+    </span>
+  );
+}
 
 export default function AdminDocumente() {
   const { user } = useAuth();
@@ -40,12 +62,24 @@ export default function AdminDocumente() {
   const [selectedFolderId, setSelectedFolderId] = useState<string>("");
   const [selectedFolderName, setSelectedFolderName] = useState<string>("");
 
+  // Settings panel state
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [newRootFolderId, setNewRootFolderId] = useState("");
+
   // Queries
   const { data: mappings, isLoading: loadingMappings } = trpc.documents.listMappings.useQuery();
   const { data: subfoldersData, isLoading: loadingFolders } = trpc.documents.listAngajatiSubfolders.useQuery();
   const { data: connectionData, isLoading: loadingConnection } = trpc.documents.testConnection.useQuery(
     undefined,
     { enabled: user?.role === "admin" }
+  );
+  const { data: driveSettings, isLoading: loadingSettings } = trpc.documents.getDriveSettings.useQuery(
+    undefined,
+    { enabled: user?.role === "admin" }
+  );
+  const { data: angajatiFolder } = trpc.documents.getAngajatiFolder.useQuery(
+    undefined,
+    { enabled: user?.role === "admin" || user?.role === "coordonator" }
   );
 
   // Get all users for the dropdown
@@ -55,7 +89,7 @@ export default function AdminDocumente() {
   const setMapping = trpc.documents.setMapping.useMutation({
     onSuccess: () => {
       utils.documents.listMappings.invalidate();
-      toast.success("Mapare salvată cu succes");
+      toast.success("Mapare salvata cu succes");
       setDialogOpen(false);
       setSelectedUserId("");
       setSelectedFolderId("");
@@ -67,7 +101,21 @@ export default function AdminDocumente() {
   const removeMapping = trpc.documents.removeMapping.useMutation({
     onSuccess: () => {
       utils.documents.listMappings.invalidate();
-      toast.success("Mapare ștearsă");
+      toast.success("Mapare stearsa");
+    },
+    onError: (err) => toast.error(err.message),
+  });
+
+  const updateDriveSettings = trpc.documents.updateDriveSettings.useMutation({
+    onSuccess: () => {
+      utils.documents.getDriveSettings.invalidate();
+      utils.documents.testConnection.invalidate();
+      utils.documents.listMappings.invalidate();
+      utils.documents.listAngajatiSubfolders.invalidate();
+      utils.documents.getAngajatiFolder.invalidate();
+      toast.success("Setari Drive actualizate. Reconectare...");
+      setSettingsOpen(false);
+      setNewRootFolderId("");
     },
     onError: (err) => toast.error(err.message),
   });
@@ -77,7 +125,7 @@ export default function AdminDocumente() {
       <div className="p-6 flex items-center justify-center">
         <div className="text-center">
           <Shield className="w-12 h-12 text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-400">Acces restricționat — doar administratori</p>
+          <p className="text-gray-400">Acces restrictionat - doar administratori</p>
         </div>
       </div>
     );
@@ -85,7 +133,7 @@ export default function AdminDocumente() {
 
   const handleSaveMapping = () => {
     if (!selectedUserId || !selectedFolderId) {
-      toast.error("Selectează un angajat și un folder");
+      toast.error("Selecteaza un angajat si un folder");
       return;
     }
     setMapping.mutate({
@@ -95,31 +143,143 @@ export default function AdminDocumente() {
     });
   };
 
+  const handleSaveSettings = () => {
+    if (!newRootFolderId.trim() || newRootFolderId.trim().length < 10) {
+      toast.error("ID folder invalid (minim 10 caractere)");
+      return;
+    }
+    updateDriveSettings.mutate({ rootFolderId: newRootFolderId.trim() });
+  };
+
   const mappedUserIds = new Set(mappings?.map((m) => m.userId) ?? []);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <div className="flex items-center gap-3">
           <div className="p-2 rounded-lg bg-[#FFCB09]/10">
             <FolderOpen className="w-6 h-6 text-[#FFCB09]" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-white">Documente Drive — Admin</h1>
+            <h1 className="text-2xl font-bold text-white">Documente Drive - Admin</h1>
             <p className="text-sm text-gray-400">
-              Mapează foldere Google Drive la angajați
+              Mapeaza foldere Google Drive la angajati
             </p>
           </div>
         </div>
-        <Button
-          onClick={() => setDialogOpen(true)}
-          className="bg-[#FFCB09] text-black hover:bg-[#FFCB09]/90 gap-2"
-        >
-          <Plus className="w-4 h-4" />
-          Adaugă mapare
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* Open HUB IC root in Drive */}
+          {driveSettings?.rootFolderId && (
+            <a
+              href={driveLink(driveSettings.rootFolderId)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="sm" className="border-white/20 text-gray-300 hover:text-white gap-2">
+                <ExternalLink className="w-4 h-4" />
+                HUB IC
+              </Button>
+            </a>
+          )}
+          {/* Open Angajati folder in Drive */}
+          {angajatiFolder?.folderId && (
+            <a
+              href={driveLink(angajatiFolder.folderId)}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button variant="outline" size="sm" className="border-white/20 text-gray-300 hover:text-white gap-2">
+                <ExternalLink className="w-4 h-4" />
+                Angajati
+              </Button>
+            </a>
+          )}
+          {/* Settings toggle */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setSettingsOpen((v) => !v)}
+            className="border-white/20 text-gray-300 hover:text-white gap-2"
+          >
+            <Settings className="w-4 h-4" />
+            Setari
+            {settingsOpen ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+          </Button>
+          <Button
+            onClick={() => setDialogOpen(true)}
+            className="bg-[#FFCB09] text-black hover:bg-[#FFCB09]/90 gap-2"
+          >
+            <Plus className="w-4 h-4" />
+            Adauga mapare
+          </Button>
+        </div>
       </div>
+
+      {/* Settings panel (collapsible) */}
+      {settingsOpen && (
+        <Card className="bg-[#1E1B1B] border-[#FFCB09]/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base text-white flex items-center gap-2">
+              <Settings className="w-4 h-4 text-[#FFCB09]" />
+              Setari Google Drive
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm text-gray-400">
+                ID folder radacina HUB IC (Google Drive)
+              </label>
+              {loadingSettings ? (
+                <Skeleton className="h-10 w-full" />
+              ) : (
+                <div className="flex items-center gap-2 p-2 rounded bg-white/5 border border-white/10">
+                  <FolderOpen className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                  <code className="text-xs text-gray-300 flex-1 break-all">
+                    {driveSettings?.rootFolderId}
+                  </code>
+                  {driveSettings?.isCustom && (
+                    <Badge variant="outline" className="text-xs border-[#FFCB09]/30 text-[#FFCB09] flex-shrink-0">
+                      Personalizat
+                    </Badge>
+                  )}
+                </div>
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm text-gray-400">
+                Schimba folder radacina HUB IC
+              </label>
+              <p className="text-xs text-gray-600">
+                Gasesti ID-ul in URL-ul folderului din Google Drive:
+                drive.google.com/drive/folders/<span className="text-[#FFCB09]">ID_FOLDER</span>
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  value={newRootFolderId}
+                  onChange={(e) => setNewRootFolderId(e.target.value)}
+                  placeholder="Ex: 1OL49nEvwiwRwPmrTWJUqJpAoUhB3dwRZ"
+                  className="bg-[#221F1F] border-white/20 text-white placeholder:text-gray-600 flex-1"
+                />
+                <Button
+                  onClick={handleSaveSettings}
+                  disabled={updateDriveSettings.isPending || !newRootFolderId.trim()}
+                  className="bg-[#FFCB09] text-black hover:bg-[#FFCB09]/90 gap-2 flex-shrink-0"
+                >
+                  {updateDriveSettings.isPending ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <>
+                      <Save className="w-4 h-4" />
+                      Salveaza
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Drive connection status */}
       <Card className="bg-[#2A2727] border-white/10">
@@ -129,22 +289,28 @@ export default function AdminDocumente() {
           ) : connectionData?.connected ? (
             <>
               <CheckCircle2 className="w-5 h-5 text-green-400 flex-shrink-0" />
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-medium text-white">Google Drive conectat</p>
                 <p className="text-xs text-gray-500">
-                  Service Account: hub-ic-drive@portal-inginerie-creativa.iam.gserviceaccount.com
+                  Service Account activ - acces la folderul HUB IC confirmat
                 </p>
               </div>
+              <Badge className="bg-green-500/10 text-green-400 border-green-500/20 text-xs">
+                Online
+              </Badge>
             </>
           ) : (
             <>
               <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <div>
-                <p className="text-sm font-medium text-red-400">Google Drive — eroare conexiune</p>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-400">Google Drive - eroare conexiune</p>
                 <p className="text-xs text-gray-500">
-                  Verifică că Service Account-ul are acces la folderul HUB IC.
+                  Verifica ca Service Account-ul are acces la folderul HUB IC.
                 </p>
               </div>
+              <Badge className="bg-red-500/10 text-red-400 border-red-500/20 text-xs">
+                Offline
+              </Badge>
             </>
           )}
         </CardContent>
@@ -155,7 +321,7 @@ export default function AdminDocumente() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base text-white flex items-center gap-2">
             <FolderOpen className="w-4 h-4 text-[#FFCB09]" />
-            Foldere disponibile în Drive (Angajați)
+            Foldere disponibile in Drive (Angajati)
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -166,20 +332,28 @@ export default function AdminDocumente() {
             </div>
           ) : !subfoldersData?.subfolders.length ? (
             <p className="text-sm text-gray-500">
-              Nu s-au găsit subfoldere în folderul „Angajați" din Drive.
-              Asigură-te că există folderul „Angajați" în HUB IC și că Service Account-ul are acces.
+              Nu s-au gasit subfoldere in folderul Angajati din Drive.
+              Asigura-te ca exista folderul Angajati in HUB IC si ca Service Account-ul are acces.
             </p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {subfoldersData.subfolders.map((folder) => (
-                <Badge
+                <a
                   key={folder.id}
-                  variant="outline"
-                  className="border-white/20 text-gray-300 gap-1"
+                  href={driveLink(folder.id)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Deschide in Google Drive"
                 >
-                  <FolderOpen className="w-3 h-3" />
-                  {folder.name}
-                </Badge>
+                  <Badge
+                    variant="outline"
+                    className="border-white/20 text-gray-300 gap-1 hover:border-[#FFCB09]/50 hover:text-[#FFCB09] cursor-pointer transition-colors"
+                  >
+                    <FolderOpen className="w-3 h-3" />
+                    {folder.name}
+                    <ExternalLink className="w-2.5 h-2.5 opacity-50" />
+                  </Badge>
+                </a>
               ))}
             </div>
           )}
@@ -191,7 +365,7 @@ export default function AdminDocumente() {
         <CardHeader className="pb-3">
           <CardTitle className="text-base text-white flex items-center gap-2">
             <UserCheck className="w-4 h-4 text-[#FFCB09]" />
-            Mapări active ({mappings?.length ?? 0})
+            Mapari active ({mappings?.length ?? 0})
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -202,7 +376,7 @@ export default function AdminDocumente() {
             </div>
           ) : !mappings?.length ? (
             <p className="text-sm text-gray-500 py-4 text-center">
-              Nu există mapări configurate. Adaugă prima mapare folosind butonul de mai sus.
+              Nu exista mapari configurate. Adauga prima mapare folosind butonul de mai sus.
             </p>
           ) : (
             <div className="space-y-2">
@@ -213,10 +387,22 @@ export default function AdminDocumente() {
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white">{m.userName}</p>
-                    <p className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
-                      <FolderOpen className="w-3 h-3" />
-                      {m.folderName}
-                    </p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      {/* Clickable folder link */}
+                      <a
+                        href={driveLink(m.folderId)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-xs text-gray-500 flex items-center gap-1 hover:text-[#FFCB09] transition-colors group"
+                        title="Deschide folderul in Google Drive"
+                      >
+                        <FolderOpen className="w-3 h-3" />
+                        {m.folderName}
+                        <ExternalLink className="w-2.5 h-2.5 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      </a>
+                      {/* File count */}
+                      <EmployeeFileCount userId={m.userId} folderId={m.folderId} />
+                    </div>
                   </div>
                   <Button
                     variant="ghost"
@@ -238,7 +424,7 @@ export default function AdminDocumente() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="bg-[#2A2727] border-white/10 text-white">
           <DialogHeader>
-            <DialogTitle className="text-white">Adaugă mapare folder Drive</DialogTitle>
+            <DialogTitle className="text-white">Adauga mapare folder Drive</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
@@ -247,7 +433,7 @@ export default function AdminDocumente() {
               <label className="text-sm text-gray-400">Angajat</label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
                 <SelectTrigger className="bg-[#221F1F] border-white/20 text-white">
-                  <SelectValue placeholder="Selectează angajat..." />
+                  <SelectValue placeholder="Selecteaza angajat..." />
                 </SelectTrigger>
                 <SelectContent className="bg-[#2A2727] border-white/20">
                   {allUsers
@@ -268,7 +454,7 @@ export default function AdminDocumente() {
                 <Skeleton className="h-10 w-full" />
               ) : !subfoldersData?.subfolders.length ? (
                 <p className="text-xs text-red-400">
-                  Nu s-au găsit subfoldere în Drive. Creează folderele în Google Drive mai întâi.
+                  Nu s-au gasit subfoldere in Drive. Creeaza folderele in Google Drive mai intai.
                 </p>
               ) : (
                 <Select
@@ -280,7 +466,7 @@ export default function AdminDocumente() {
                   }}
                 >
                   <SelectTrigger className="bg-[#221F1F] border-white/20 text-white">
-                    <SelectValue placeholder="Selectează folder..." />
+                    <SelectValue placeholder="Selecteaza folder..." />
                   </SelectTrigger>
                   <SelectContent className="bg-[#2A2727] border-white/20">
                     {subfoldersData.subfolders.map((folder) => (
@@ -303,7 +489,7 @@ export default function AdminDocumente() {
               onClick={() => setDialogOpen(false)}
               className="border-white/20 text-white hover:bg-white/10"
             >
-              Anulează
+              Anuleaza
             </Button>
             <Button
               onClick={handleSaveMapping}
@@ -313,7 +499,7 @@ export default function AdminDocumente() {
               {setMapping.isPending ? (
                 <RefreshCw className="w-4 h-4 animate-spin" />
               ) : (
-                "Salvează"
+                "Salveaza"
               )}
             </Button>
           </DialogFooter>

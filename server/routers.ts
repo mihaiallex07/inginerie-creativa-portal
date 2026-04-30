@@ -120,6 +120,7 @@ import {
   listSubfolders,
   HUB_IC_ROOT_FOLDER_ID,
   testDriveConnection,
+  findFolderByName,
 } from "./googleDrive";
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
@@ -388,6 +389,48 @@ const documentsRouter = router({
     if (ctx.user.role !== "admin") throw new Error("Acces interzis");
     const ok = await testDriveConnection();
     return { connected: ok };
+  }),
+
+  // Admin: get Drive settings (root folder ID)
+  getDriveSettings: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+    const rootFolderId = await getAppSetting("drive_hub_ic_root_folder_id");
+    return {
+      rootFolderId: rootFolderId ?? HUB_IC_ROOT_FOLDER_ID,
+      isCustom: !!rootFolderId,
+    };
+  }),
+
+  // Admin: update HUB IC root folder ID
+  updateDriveSettings: protectedProcedure
+    .input(z.object({ rootFolderId: z.string().min(10) }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") throw new Error("Acces interzis");
+      await setAppSetting("drive_hub_ic_root_folder_id", input.rootFolderId, ctx.user.id);
+      return { success: true };
+    }),
+
+  // Admin: get file count for a specific employee's mapped folder
+  getEmployeeFileCount: protectedProcedure
+    .input(z.object({ userId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") {
+        throw new Error("Acces interzis");
+      }
+      const mapping = await getEmployeeDriveFolder(input.userId);
+      if (!mapping) return { count: 0, folderId: null };
+      const files = await listFilesInFolder(mapping.folderId);
+      return { count: files.length, folderId: mapping.folderId };
+    }),
+
+  // Get the Angajati subfolder info (ID for Drive link)
+  getAngajatiFolder: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") {
+      throw new Error("Acces interzis");
+    }
+    const rootFolderId = (await getAppSetting("drive_hub_ic_root_folder_id")) ?? HUB_IC_ROOT_FOLDER_ID;
+    const folder = await findFolderByName(rootFolderId, "Angaja\u021bi");
+    return { folderId: folder?.id ?? null, rootFolderId };
   }),
 });
 
