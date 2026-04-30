@@ -576,3 +576,10 @@
 - [x] Notificări companie: toți angajații primesc notificare la fișiere noi/modificate/șterse în Regulament intern, Viziune & Valori, Procese & Proceduri, Bibliotecă tehnică
 - [x] AdminDocumente: buton "Verifică modificări" — declanșează checkDriveChanges manual
 - [x] 46/46 teste trec
+
+## Sprint 51 — Task programat automat verificare Drive (orar)
+- [x] Endpoint Express POST /api/scheduled/drive-check (autentificat cu session cookie, orice rol)
+- [x] registerScheduledDriveRoutes înregistrat în server/_core/index.ts
+- [ ] Task programat la fiecare oră care apelează endpoint-ul (după publish)
+- [x] Buton "Verifică modificări" rămâne pentru verificare manuală imediată
+- [x] 46/46 teste trec

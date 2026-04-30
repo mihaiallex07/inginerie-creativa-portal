@@ -11,6 +11,7 @@ import { registerOAuthRoutes } from "./oauth";
 import { registerReportRoutes } from "../reportRoutes";
 import { registerGoogleCalendarRoutes } from "../googleCalendarRoutes";
 import { registerDriveProxyRoutes } from "../driveProxyRoutes";
+import { registerScheduledDriveRoutes } from "../scheduledDriveRoutes";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
@@ -48,6 +49,8 @@ async function startServer() {
   registerReportRoutes(app);
   // Google Drive secure file proxy
   registerDriveProxyRoutes(app);
+  // Scheduled Drive change detection endpoint
+  registerScheduledDriveRoutes(app);
   // tRPC API
   app.use(
     "/api/trpc",
