@@ -555,3 +555,13 @@
 - [x] AdminDocumente: în mapările active, click pe folder deschide folderul angajatului în Drive
 - [x] AdminDocumente: număr fișiere afișat per angajat în lista de mapări active
 - [x] 46/46 teste trec
+
+## Sprint 49 — PDF viewer inline + pagini Procese & Proceduri, Bibliotecă tehnică
+- [x] Creare ProceseProceduri.tsx — conectat automat la subfolder "Procese & Proceduri" din Drive
+- [x] Creare BibliotecaTehnica.tsx — conectat automat la subfolder "Biblioteca tehnica" din Drive
+- [x] App.tsx: rute /procese-proceduri și /biblioteca
+- [x] DashboardLayout: link-urile "Procese & Proceduri" (/procese-proceduri) și "Bibliotecă tehnică" (/biblioteca) activate
+- [x] RegulamentIntern.tsx: PDF viewer inline — click pe document deschide panel în aceeași pagină
+- [x] PDF viewer: layout 2 panouri (listă stânga + viewer dreapta), navigare între documente, buton X și buton tab nou
+- [x] Bug fix: Select.Item cu value="" în Procese.tsx — înlocuit cu value="all"
+- [x] 46/46 teste trec

@@ -10,7 +10,7 @@ import { useLocation } from "wouter";
 import { BookOpen, Search, CheckCircle2, Clock } from "lucide-react";
 
 const DEPARTMENTS = [
-  { value: "", label: "Toate departamentele" },
+  { value: "all", label: "Toate departamentele" },
   { value: "arhitectura", label: "Arhitectură" },
   { value: "structura", label: "Structură" },
   { value: "instalatii", label: "Instalații" },
@@ -23,10 +23,10 @@ const DEPARTMENTS = [
 export default function Procese() {
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
-  const [department, setDepartment] = useState("");
+  const [department, setDepartment] = useState("all");
 
   const { data: processes, isLoading } = trpc.processes.list.useQuery({
-    department: department || undefined,
+    department: department === "all" ? undefined : department,
   });
 
   const filtered = processes?.filter(({ process: p }) =>
@@ -50,7 +50,7 @@ export default function Procese() {
             <SelectValue placeholder="Departament" />
           </SelectTrigger>
           <SelectContent>
-            {DEPARTMENTS.map(d => <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>)}
+            {DEPARTMENTS.map(d => <SelectItem key={d.value || "all"} value={d.value}>{d.label}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>

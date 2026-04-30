@@ -28,6 +28,8 @@ import Notificari from "./pages/Notificari";
 import AdminDocumente from "./pages/AdminDocumente";
 import RegulamentIntern from "./pages/RegulamentIntern";
 import ViziuneValori from "./pages/ViziuneValori";
+import ProceseProceduri from "./pages/ProceseProceduri";
+import BibliotecaTehnica from "./pages/BibliotecaTehnica";
 
 function Router() {
   return (
@@ -51,7 +53,8 @@ function Router() {
         <Route path="/coleg/:id" component={ProfilColeg} />
         <Route path="/viziune" component={ViziuneValori} />
         <Route path="/regulament" component={RegulamentIntern} />
-        <Route path="/biblioteca" component={() => <PlaceholderPage title="Bibliotecă Tehnică" />} />
+        <Route path="/biblioteca" component={BibliotecaTehnica} />
+        <Route path="/procese-proceduri" component={ProceseProceduri} />
         <Route path="/formulare" component={() => <PlaceholderPage title="Formulare & Cereri" />} />
         <Route path="/admin-utilizatori" component={AdminUtilizatori} />
         <Route path="/admin-documente" component={AdminDocumente} />

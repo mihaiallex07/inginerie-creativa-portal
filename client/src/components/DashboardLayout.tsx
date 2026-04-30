@@ -90,7 +90,7 @@ const navSections: NavSection[] = [
       { icon: Building2, label: "Viziune & Valori", path: "/viziune" },
       { icon: BookOpen, label: "Regulament intern", path: "/regulament" },
       { icon: Users, label: "Organigramă", path: "/organigrama" },
-      { icon: FolderOpen, label: "Procese & Proceduri", path: "/procese" },
+      { icon: FolderOpen, label: "Procese & Proceduri", path: "/procese-proceduri" },
       { icon: BookOpen, label: "Bibliotecă tehnică", path: "/biblioteca" },
       { icon: FolderOpen, label: "Proiecte", path: "/proiecte" },
     ],
