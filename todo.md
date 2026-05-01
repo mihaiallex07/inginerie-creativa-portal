@@ -684,3 +684,9 @@
 - [x] Feature: Time-Tracking dialog — 2 dropdown-uri: Proiect + Task (doar task-urile la care esti înrolat)
 - [x] Feature: sincronizare bidirectionala TT ↔ task sessions (minutesWorked actualizat la stop)
 - [x] Feature: Process Overview redesenat complet ca Gantt chart (bare proiecte + task-uri, avatare angajati, zoom, azi)
+
+## Sprint 58 — Time-Tracking dialog simplificat
+
+- [x] Fix: eliminare câmp "Tip activitate" din dialogul de adăugare activitate TT
+- [x] Fix: task-urile din dropdown afișează doar cele la care utilizatorul este înrolat (task_assignees sau assignedUserId)
+- [x] Fix: proiect dropdown are opțiunea "Diverse" pentru activități fără proiect specific

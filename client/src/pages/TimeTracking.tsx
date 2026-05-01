@@ -1182,36 +1182,24 @@ export default function TimeTracking() {
               }} />
               <TimePicker label="Ora final" value={formEnd} onChange={setFormEnd} minTime={formStart} />
             </div>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <Label className="text-xs">Tip activitate</Label>
-                <Select value={formType} onValueChange={setFormType}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {ACTIVITY_TYPES.map(t => <SelectItem key={t} value={t} className="text-xs capitalize">{t}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="flex-1">
-                <Label className="text-xs">Proiect (opțional)</Label>
-                <Select value={formProject} onValueChange={v => { setFormProject(v); setFormProjectTaskId(""); }}>
-                  <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fără proiect" /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" className="text-xs">Fără proiect</SelectItem>
-                    {Array.from(new Map((enrolledTasks as any[]).map((t: any) => [t.projectId, { id: t.projectId, name: t.projectName }])).values()).map((p: any) => (
-                      <SelectItem key={p.id} value={String(p.id)} className="text-xs">{p.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            <div>
+              <Label className="text-xs">Proiect</Label>
+              <Select value={formProject} onValueChange={v => { setFormProject(v); setFormProjectTaskId(""); }}>
+                <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selectează proiect" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" className="text-xs italic text-gray-400">Diverse (fără proiect specific)</SelectItem>
+                  {Array.from(new Map((enrolledTasks as any[]).map((t: any) => [t.projectId, { id: t.projectId, name: t.projectName }])).values()).map((p: any) => (
+                    <SelectItem key={p.id} value={String(p.id)} className="text-xs">{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            {/* Task picker — shown only when a project is selected */}
+            {/* Task picker — shown only when a real project is selected */}
             {formProject && formProject !== "none" && (() => {
               const tasksForProject = (enrolledTasks as any[]).filter((t: any) => String(t.projectId) === formProject);
-              if (tasksForProject.length === 0) return null;
               return (
                 <div>
-                  <Label className="text-xs">Task (opțional)</Label>
+                  <Label className="text-xs">Task</Label>
                   <Select value={formProjectTaskId} onValueChange={v => {
                     setFormProjectTaskId(v);
                     const t = tasksForProject.find((t: any) => String(t.taskId) === v);
@@ -1219,7 +1207,7 @@ export default function TimeTracking() {
                   }}>
                     <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selectează task" /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none" className="text-xs">Fără task specific</SelectItem>
+                      <SelectItem value="none" className="text-xs italic text-gray-400">Fără task specific</SelectItem>
                       {tasksForProject.map((t: any) => (
                         <SelectItem key={t.taskId} value={String(t.taskId)} className="text-xs">
                           <span className="text-gray-400 mr-1">{t.phaseCode}</span>{t.taskName}
