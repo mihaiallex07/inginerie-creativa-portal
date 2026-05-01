@@ -662,3 +662,15 @@
 - [x] Frontend Proiecte: Modal creare proiect cu bifă etape prestabilite + abreviere + emoji
 - [x] Dashboard: Notificări budget (25/50/75/90%) doar pentru task-urile la care ești responsabil
 - [x] Frontend Proiecte: Card proiect redesenat — bloc emoji 56×56 cu fundal colorat, cod+abreviere sub emoji, perioadă proiect (dd.MM.yyyy) sub client, badge status mutat sus
+
+## Sprint 56 — Bug fixes sistem proiecte
+
+- [x] Fix: emoji și abreviere nu se salvează/afișează pe cardul proiectului (listProjects nu returnează aceste câmpuri)
+- [x] Fix: editare emoji/abreviere în pagina proiect (Settings tab sau Prezentare generală)
+- [x] Fix: header proiect (ProiectDetaliu) — pătrat galben cu emoji + nr proiect + abreviere
+- [x] Fix: editare rol membru echipă fără ștergere/readăugare (buton inline edit rol)
+- [x] Fix: roluri echipă redenumite la coordonator și membru (în loc de coordinator/member)
+- [x] Fix: butoane Pause/Stop task nu funcționează (bug: .sessionId → .id)
+- [x] Feature: "Task activ" în header DashboardLayout (lângă clopoțel), vizibil pe toate paginile
+- [x] Fix: starea expand/collapse etape se resetează la schimbarea tab-ului (state mutat în ProiectDetaliu)
+- [x] Fix: notificările de buget (≥25%) nu apar în header (fix myBudgetAlerts + checkBudgetAlerts)

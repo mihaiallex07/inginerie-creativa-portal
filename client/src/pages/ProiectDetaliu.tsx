@@ -95,7 +95,7 @@ function TaskRow({
   const remainMin = Math.max(0, budgetMin - workedMin);
   const pct = budgetMin > 0 ? (workedMin / budgetMin) * 100 : 0;
   const isActive = activeSessionTaskId === task.id;
-  const isPaused = (activeSession as any)?.status === "paused" && activeSessionTaskId === task.id;
+  const isPaused = (activeSession as any)?.status === "in_pauza" && activeSessionTaskId === task.id;
 
   const { data: assignees = [] } = trpc.projects.taskAssignees.useQuery(
     { taskId: task.id },
@@ -225,11 +225,11 @@ function TaskRow({
           {isActive && !isPaused && (
             <>
               <Button size="icon" variant="ghost" className="h-6 w-6 text-amber-600 hover:bg-amber-50" title="Pauză"
-                onClick={() => (activeSession as any)?.sessionId && pauseSession.mutate({ sessionId: (activeSession as any).sessionId })}>
+                onClick={() => (activeSession as any)?.id && pauseSession.mutate({ sessionId: (activeSession as any).id })}>
                 <Pause className="h-3 w-3" />
               </Button>
               <Button size="icon" variant="ghost" className="h-6 w-6 text-red-600 hover:bg-red-50" title="Stop"
-                onClick={() => (activeSession as any)?.sessionId && stopSession.mutate({ sessionId: (activeSession as any).sessionId })}>
+                onClick={() => (activeSession as any)?.id && stopSession.mutate({ sessionId: (activeSession as any).id })}>
                 <Square className="h-3 w-3" />
               </Button>
             </>
@@ -237,11 +237,11 @@ function TaskRow({
           {isPaused && (
             <>
               <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50" title="Reia"
-                onClick={() => (activeSession as any)?.sessionId && resumeSession.mutate({ sessionId: (activeSession as any).sessionId })}>
+                onClick={() => (activeSession as any)?.id && resumeSession.mutate({ sessionId: (activeSession as any).id })}>
                 <Play className="h-3 w-3" />
               </Button>
               <Button size="icon" variant="ghost" className="h-6 w-6 text-red-600 hover:bg-red-50" title="Stop"
-                onClick={() => (activeSession as any)?.sessionId && stopSession.mutate({ sessionId: (activeSession as any).sessionId })}>
+                onClick={() => (activeSession as any)?.id && stopSession.mutate({ sessionId: (activeSession as any).id })}>
                 <Square className="h-3 w-3" />
               </Button>
             </>
@@ -279,13 +279,13 @@ function TaskRow({
 }
 
 function PhaseRow({
-  phase, canManage, projectMembers, projectId, onRefresh, activeSessionTaskId, activeSession
+  phase, canManage, projectMembers, projectId, onRefresh, activeSessionTaskId, activeSession, expanded, onToggleExpand
 }: {
   phase: any; canManage: boolean; projectMembers: any[];
   projectId: number; onRefresh: () => void; activeSessionTaskId?: number; activeSession?: any;
+  expanded: boolean; onToggleExpand: () => void;
 }) {
   const utils = trpc.useUtils();
-  const [expanded, setExpanded] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [nameVal, setNameVal] = useState(phase.name);
   const [showAddTask, setShowAddTask] = useState(false);
@@ -314,12 +314,12 @@ function PhaseRow({
     <>
       <tr className="border-b border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors">
         <td className="py-2.5 pl-2 pr-2 w-8">
-          <button onClick={() => setExpanded(e => !e)} className="flex items-center justify-center w-5 h-5 rounded hover:bg-gray-200">
+          <button onClick={onToggleExpand} className="flex items-center justify-center w-5 h-5 rounded hover:bg-gray-200">
             {expanded ? <ChevronDown className="h-4 w-4 text-gray-500" /> : <ChevronRight className="h-4 w-4 text-gray-500" />}
           </button>
         </td>
         {/* Click on name to expand/collapse */}
-        <td className="py-2.5 pr-4 cursor-pointer" onClick={() => !editingName && setExpanded(e => !e)}>
+        <td className="py-2.5 pr-4 cursor-pointer" onClick={() => !editingName && onToggleExpand()}>
           <div className="flex items-center gap-2" onClick={e => editingName && e.stopPropagation()}>
             <div className="w-4 h-4 rounded shrink-0" style={{ backgroundColor: phase.color || "#FFCB09" }} />
             {editingName && canManage ? (
@@ -438,13 +438,15 @@ export default function ProiectDetaliu() {
 
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({
-    name: "", code: "", clientName: "", status: "activ" as any,
+    name: "", code: "", abbreviation: "", emoji: "", clientName: "", status: "activ" as any,
     color: "#FFCB09", startDate: "", endDate: "", description: "", managerId: null as number | null
   });
   useEffect(() => {
     if (project) setEditForm({
       name: project.name || "",
       code: (project as any).code || "",
+      abbreviation: (project as any).abbreviation || "",
+      emoji: (project as any).emoji || "",
       clientName: (project as any).clientName || "",
       status: project.status || "activ",
       color: (project as any).color || "#FFCB09",
@@ -466,6 +468,11 @@ export default function ProiectDetaliu() {
   const [showAddMember, setShowAddMember] = useState(false);
   const [memberUserId, setMemberUserId] = useState<string>("");
   const [memberRole, setMemberRole] = useState("membru");
+  const [editingMemberRole, setEditingMemberRole] = useState<{ userId: number; currentRole: string } | null>(null);
+  // Lifted expand state for phases - persists across tab switches
+  const [expandedPhases, setExpandedPhases] = useState<Record<number, boolean>>({});
+  const togglePhaseExpanded = (phaseId: number) => setExpandedPhases(prev => ({ ...prev, [phaseId]: !(prev[phaseId] ?? true) }));
+  const isPhaseExpanded = (phaseId: number) => expandedPhases[phaseId] ?? true;
 
   // People list for manager selection (admin only)
   const { data: allUsers = [] } = trpc.people.list.useQuery(undefined, { enabled: canManage });
@@ -493,11 +500,17 @@ export default function ProiectDetaliu() {
     onSuccess: () => { utils.projects.get.invalidate({ id: projectId }); toast.success("Membru eliminat"); },
     onError: (e) => toast.error(e.message),
   });
+  const updateMemberRole = trpc.projects.updateMemberRole.useMutation({
+    onSuccess: () => { utils.projects.get.invalidate({ id: projectId }); setEditingMemberRole(null); toast.success("Rol actualizat"); },
+    onError: (e) => toast.error(e.message),
+  });
   const pauseSession = trpc.projects.pauseSession.useMutation({
     onSuccess: () => utils.projects.activeSession.invalidate(),
+    onError: (e) => toast.error(e.message),
   });
   const stopSession = trpc.projects.stopSession.useMutation({
     onSuccess: () => { utils.projects.activeSession.invalidate(); utils.projects.get.invalidate({ id: projectId }); },
+    onError: (e) => toast.error(e.message),
   });
   const deleteProject = trpc.projects.delete.useMutation({
     onSuccess: () => { toast.success("Proiect șters"); setLocation("/proiecte"); },
@@ -546,37 +559,27 @@ export default function ProiectDetaliu() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Active session banner (fixed bottom-right) */}
-      {activeSession && (
-        <div className="fixed bottom-4 right-4 z-50 bg-[#221F1F] text-white rounded-xl shadow-2xl px-5 py-3 flex items-center gap-4 border border-[#FFCB09]/30">
-          <Timer className="h-5 w-5 text-[#FFCB09]" />
-          <div>
-            <p className="text-xs text-gray-400">Sesiune activă</p>
-            <p className="font-mono text-lg font-bold text-[#FFCB09]">{hh}:{mm2}:{ss}</p>
-            {(activeSession as any).taskName && (
-              <p className="text-xs text-gray-300 truncate max-w-[180px]">{(activeSession as any).taskName}</p>
-            )}
-          </div>
-          <div className="flex gap-2">
-            <Button size="sm" variant="outline" className="border-gray-600 text-white hover:bg-gray-700 h-8 px-3"
-              onClick={() => (activeSession as any)?.sessionId && pauseSession.mutate({ sessionId: (activeSession as any).sessionId })}>
-              <Pause className="h-3.5 w-3.5" />
-            </Button>
-            <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white h-8 px-3"
-              onClick={() => (activeSession as any)?.sessionId && stopSession.mutate({ sessionId: (activeSession as any).sessionId })}>
-              <Square className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
-      )}
+      {/* Active session banner removed from here — now in DashboardLayout header */}
 
       {/* Header */}
       <div className="px-6 pt-5 pb-3 border-b border-gray-200 bg-white">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-lg flex items-center justify-center text-2xl font-bold text-[#221F1F]"
+            <div className="w-14 h-14 rounded-lg flex flex-col items-center justify-center text-[#221F1F] shrink-0"
               style={{ backgroundColor: (project as any).color || "#FFCB09" }}>
-              {(project as any).emoji || ((project as any).code?.slice(0, 2) || project.name?.slice(0, 2) || "P").toUpperCase()}
+              {(project as any).emoji ? (
+                <>
+                  <span className="text-2xl leading-none">{(project as any).emoji}</span>
+                  <span className="text-[9px] font-bold leading-tight mt-0.5 truncate max-w-[48px] text-center">
+                    {(project as any).code || ""}{(project as any).abbreviation ? ` · ${(project as any).abbreviation}` : ""}
+                  </span>
+                </>
+              ) : (
+                <>
+                  <span className="text-lg font-bold leading-none">{(project as any).code || project.name?.slice(0, 3).toUpperCase() || "P"}</span>
+                  {(project as any).abbreviation && <span className="text-[9px] font-bold leading-tight mt-0.5 truncate max-w-[48px] text-center">{(project as any).abbreviation}</span>}
+                </>
+              )}
             </div>
             <div>
               <div className="flex items-center gap-3 flex-wrap">
@@ -761,7 +764,8 @@ export default function ProiectDetaliu() {
                     phases.map((phase: any) => (
                       <PhaseRow key={phase.id} phase={phase} canManage={canManage}
                         projectMembers={members} projectId={projectId}
-                        onRefresh={() => refetch()} activeSessionTaskId={activeSessionTaskId} activeSession={activeSession} />
+                        onRefresh={() => refetch()} activeSessionTaskId={activeSessionTaskId} activeSession={activeSession}
+                        expanded={isPhaseExpanded(phase.id)} onToggleExpand={() => togglePhaseExpanded(phase.id)} />
                     ))
                   )}
                 </tbody>
@@ -789,7 +793,32 @@ export default function ProiectDetaliu() {
                     <div className="font-medium text-sm text-gray-800">{m.name}</div>
                     <div className="text-xs text-gray-400">{m.department} • {m.jobTitle}</div>
                   </div>
-                  <Badge variant="outline" className="text-xs capitalize">{m.projectRole}</Badge>
+                  {canManage && editingMemberRole?.userId === m.userId ? (
+                    <div className="flex items-center gap-1">
+                      <Select value={editingMemberRole.currentRole}
+                        onValueChange={v => setEditingMemberRole(r => r ? { ...r, currentRole: v } : null)}>
+                        <SelectTrigger className="h-7 text-xs w-32"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="coordonator">Coordonator</SelectItem>
+                          <SelectItem value="membru">Membru</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600"
+                        onClick={() => updateMemberRole.mutate({ projectId, userId: m.userId, projectRole: editingMemberRole.currentRole as any })}>
+                        <Check className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="h-7 w-7 text-gray-400"
+                        onClick={() => setEditingMemberRole(null)}>
+                        <X className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  ) : (
+                    <Badge variant="outline" className="text-xs capitalize cursor-pointer hover:bg-gray-50"
+                      onClick={() => canManage && setEditingMemberRole({ userId: m.userId, currentRole: m.projectRole })}
+                      title={canManage ? "Click pentru a edita rolul" : ""}>
+                      {m.projectRole === "coordonator" ? "Coordonator" : "Membru"}
+                    </Badge>
+                  )}
                   {canManage && (
                     <Button size="icon" variant="ghost" className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50"
                       onClick={() => removeMember.mutate({ projectId, userId: m.userId })}>
@@ -824,6 +853,22 @@ export default function ProiectDetaliu() {
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs">Cod intern</Label><Input value={editForm.code} onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))} className="mt-1" /></div>
               <div><Label className="text-xs">Client</Label><Input value={editForm.clientName} onChange={e => setEditForm(f => ({ ...f, clientName: e.target.value }))} className="mt-1" /></div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div><Label className="text-xs">Abreviere (ex: VT)</Label><Input value={editForm.abbreviation} onChange={e => setEditForm(f => ({ ...f, abbreviation: e.target.value }))} className="mt-1" placeholder="ex: VT" /></div>
+              <div>
+                <Label className="text-xs">Emoji proiect</Label>
+                <div className="mt-1 flex flex-wrap gap-1 border rounded-md p-2 max-h-28 overflow-y-auto">
+                  {["🏗️","🏢","🏠","🏡","🏘️","🏰","🏛️","🏟️","🏪","🏬","🏭","🌆","🌇","🌃","🌉","🌁","🗺️","🗼","🗽","⛩️","🏗️","🔧","🔨","⚙️","🔩","🛠️","📐","📏","🖥️","💡","🌿","🌱","🌳","🌲","🌊","⛰️","🏔️","🌄","🌅","🎯","📊","📈","💼","🎨","✏️","📝","🔬","🧪","🚀","⭐","💫","🔥","💧","🌍"].map(em => (
+                    <button key={em} type="button"
+                      className={`text-xl w-9 h-9 flex items-center justify-center rounded transition-colors ${editForm.emoji === em ? 'bg-[#FFCB09] ring-2 ring-[#FFCB09]' : 'hover:bg-gray-100'}`}
+                      onClick={() => setEditForm(f => ({ ...f, emoji: f.emoji === em ? "" : em }))}>
+                      {em}
+                    </button>
+                  ))}
+                </div>
+                {editForm.emoji && <button type="button" className="text-xs text-gray-400 hover:text-gray-600 mt-1" onClick={() => setEditForm(f => ({ ...f, emoji: "" }))}>✕ Elimină emoji</button>}
+              </div>
             </div>
             <div>
               <Label className="text-xs">Manager proiect</Label>
@@ -861,7 +906,7 @@ export default function ProiectDetaliu() {
               <ColorPalette value={editForm.color} onChange={color => setEditForm(f => ({ ...f, color }))} className="mt-2" />
             </div>
             <Button className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-              onClick={() => updateProject.mutate({ id: projectId, ...editForm })}
+              onClick={() => updateProject.mutate({ id: projectId, ...editForm, abbreviation: editForm.abbreviation || null, emoji: editForm.emoji || null })}
               disabled={updateProject.isPending || !editForm.name}>
               Salvează modificările
             </Button>
@@ -1024,12 +1069,11 @@ export default function ProiectDetaliu() {
                 <SelectContent>
                   <SelectItem value="coordonator">Coordonator</SelectItem>
                   <SelectItem value="membru">Membru</SelectItem>
-                  <SelectItem value="consultant">Consultant</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <Button className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-              onClick={() => memberUserId && addMember.mutate({ projectId, userId: parseInt(memberUserId), projectRole: memberRole as "coordonator" | "membru" | "consultant" })}
+              onClick={() => memberUserId && addMember.mutate({ projectId, userId: parseInt(memberUserId), projectRole: memberRole as "coordonator" | "membru" })}
               disabled={addMember.isPending || !memberUserId}>
               Adaugă în echipă
             </Button>

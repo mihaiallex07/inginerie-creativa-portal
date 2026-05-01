@@ -1676,6 +1676,7 @@ export async function listProjects(opts?: { status?: string; userId?: number; is
   if (opts?.isAdmin) {
     const rows = await db.execute(
       sql`SELECT p.id, ANY_VALUE(p.name) AS name, ANY_VALUE(p.code) AS code,
+          ANY_VALUE(p.abbreviation) AS abbreviation, ANY_VALUE(p.emoji) AS emoji,
           ANY_VALUE(p.description) AS description, ANY_VALUE(p.clientName) AS clientName,
           ANY_VALUE(p.status) AS status, ANY_VALUE(p.managerId) AS managerId,
           ANY_VALUE(p.driveId) AS driveId, ANY_VALUE(p.color) AS color,
@@ -1697,6 +1698,7 @@ export async function listProjects(opts?: { status?: string; userId?: number; is
   } else {
     const rows = await db.execute(
       sql`SELECT p.id, ANY_VALUE(p.name) AS name, ANY_VALUE(p.code) AS code,
+          ANY_VALUE(p.abbreviation) AS abbreviation, ANY_VALUE(p.emoji) AS emoji,
           ANY_VALUE(p.description) AS description, ANY_VALUE(p.clientName) AS clientName,
           ANY_VALUE(p.status) AS status, ANY_VALUE(p.managerId) AS managerId,
           ANY_VALUE(p.driveId) AS driveId, ANY_VALUE(p.color) AS color,
@@ -1726,6 +1728,8 @@ export async function getProjectById(id: number) {
 export async function createProject(data: {
   name: string;
   code?: string | null;
+  abbreviation?: string | null;
+  emoji?: string | null;
   clientName?: string | null;
   status?: "activ" | "suspendat" | "finalizat" | "intern";
   isGeneral?: boolean;
@@ -1741,6 +1745,8 @@ export async function createProject(data: {
   const result = await db.insert(projects).values({
     name: data.name,
     code: data.code ?? null,
+    abbreviation: data.abbreviation ?? null,
+    emoji: data.emoji ?? null,
     clientName: data.clientName ?? null,
     status: data.status ?? "activ",
     isGeneral: data.isGeneral ?? false,
@@ -2129,11 +2135,15 @@ async function checkBudgetAlerts(taskId: number, projectId: number, minutesWorke
     sql`SELECT pm.userId FROM project_members pm WHERE pm.projectId = ${projectId} AND pm.projectRole = 'coordonator' UNION SELECT u.id FROM users u WHERE u.role = 'admin'`
   );
   const coordIds: number[] = ((coordinators as any)[0] ?? []).map((r: any) => r.userId);
+  const taskAssigneesRows = await db.execute(
+    sql`SELECT userId FROM task_assignees WHERE taskId = ${taskId}`
+  );
+  const taskAssigneeIds: number[] = ((taskAssigneesRows as any)[0] ?? []).map((r: any) => r.userId);
   const sendAlert = async (threshold: number, alertField: string) => {
     if (pct >= threshold && !(task as any)[alertField]) {
       await db.update(projectTasks).set({ [alertField]: true } as any).where(eq(projectTasks.id, taskId));
-      const assigneeIds = task.assignedUserId ? [task.assignedUserId] : [];
-      const allRecipients = Array.from(new Set([...coordIds, ...assigneeIds]));
+      const legacyAssigneeIds = task.assignedUserId ? [task.assignedUserId] : [];
+      const allRecipients = Array.from(new Set([...coordIds, ...taskAssigneeIds, ...legacyAssigneeIds]));
       const [phase] = await db.select().from(projectPhases).where(eq(projectPhases.id, task.phaseId)).limit(1);
       const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
       const title = `⚠️ Budget ${threshold}% — ${task.name}`;

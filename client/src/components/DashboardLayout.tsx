@@ -41,8 +41,12 @@ import {
   LogOut,
   Newspaper,
   PanelLeft,
+  Pause,
+  Play,
   Settings,
   Shield,
+  Square,
+  Timer,
   User,
   Users,
 } from "lucide-react";
@@ -207,6 +211,31 @@ function DashboardLayoutContent({
   // Budget alerts for tasks where user is responsible
   const { data: budgetAlerts = [] } = trpc.projects.myBudgetAlerts.useQuery(undefined, { refetchInterval: 60000 });
   const budgetAlertCount = (budgetAlerts as any[]).length;
+  // Active task session
+  const { data: activeSession } = trpc.projects.activeSession.useQuery(undefined, { refetchInterval: 10000 });
+  const utils = trpc.useUtils();
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!activeSession) { setElapsed(0); return; }
+    const startMs = new Date((activeSession as any).startedAt).getTime();
+    const update = () => setElapsed(Math.floor((Date.now() - startMs) / 1000));
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, [activeSession]);
+  const pauseSessionGlobal = trpc.projects.pauseSession.useMutation({
+    onSuccess: () => utils.projects.activeSession.invalidate(),
+  });
+  const resumeSessionGlobal = trpc.projects.resumeSession.useMutation({
+    onSuccess: () => utils.projects.activeSession.invalidate(),
+  });
+  const stopSessionGlobal = trpc.projects.stopSession.useMutation({
+    onSuccess: () => utils.projects.activeSession.invalidate(),
+  });
+  const hh = String(Math.floor(elapsed / 3600)).padStart(2, "0");
+  const mm2 = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
+  const ss = String(elapsed % 60).padStart(2, "0");
+  const isSessionPaused = (activeSession as any)?.status === "in_pauza";
 
   useEffect(() => {
     if (isCollapsed) setIsResizing(false);
@@ -383,6 +412,40 @@ function DashboardLayoutContent({
               <img src={LOGO_ICON} alt="IC" className="h-7 w-7 object-contain" />
             </div>
             <div className="flex items-center gap-1">
+              {/* Active task indicator (mobile) */}
+              {activeSession && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-[#221F1F] text-white text-xs font-medium hover:bg-gray-800 transition-colors">
+                      <Timer className="h-3.5 w-3.5 text-[#FFCB09]" />
+                      <span className="font-mono text-[#FFCB09]">{hh}:{mm2}:{ss}</span>
+                      {isSessionPaused && <span className="text-amber-400 text-[10px]">⏸</span>}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-3" align="end">
+                    <p className="text-xs font-semibold text-foreground mb-1">Task activ</p>
+                    <p className="text-xs text-gray-600 truncate mb-1">{(activeSession as any).taskName}</p>
+                    <p className="text-[10px] text-gray-400 truncate mb-3">{(activeSession as any).projectName} › {(activeSession as any).phaseName}</p>
+                    <div className="flex gap-2">
+                      {isSessionPaused ? (
+                        <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8"
+                          onClick={() => resumeSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                          <Play className="h-3.5 w-3.5 mr-1" />Reia
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" className="flex-1 h-8"
+                          onClick={() => pauseSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                          <Pause className="h-3.5 w-3.5 mr-1" />Pauză
+                        </Button>
+                      )}
+                      <Button size="sm" className="flex-1 bg-red-600 hover:bg-red-700 text-white h-8"
+                        onClick={() => stopSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                        <Square className="h-3.5 w-3.5 mr-1" />Stop
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
               {budgetAlertCount > 0 && (
                 <Popover>
                   <PopoverTrigger asChild>
@@ -435,7 +498,42 @@ function DashboardLayoutContent({
         {/* Desktop topbar */}
         {!isMobile && (
           <div className="flex border-b h-12 items-center justify-end bg-background/95 px-4 backdrop-blur sticky top-0 z-40 gap-2">
-{budgetAlertCount > 0 && (
+            {/* Active task indicator (desktop) */}
+            {activeSession && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#221F1F] text-white text-xs font-medium hover:bg-gray-800 transition-colors">
+                    <Timer className="h-3.5 w-3.5 text-[#FFCB09]" />
+                    <span className="font-mono text-[#FFCB09] text-xs">{hh}:{mm2}:{ss}</span>
+                    <span className="text-gray-300 text-[10px] truncate max-w-[120px]">{(activeSession as any).taskName}</span>
+                    {isSessionPaused && <span className="text-amber-400 text-[10px]">⏸</span>}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-72 p-3" align="end">
+                  <p className="text-xs font-semibold text-foreground mb-1">Task activ</p>
+                  <p className="text-xs text-gray-600 truncate mb-1">{(activeSession as any).taskName}</p>
+                  <p className="text-[10px] text-gray-400 truncate mb-3">{(activeSession as any).projectName} › {(activeSession as any).phaseName}</p>
+                  <div className="flex gap-2">
+                    {isSessionPaused ? (
+                      <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8"
+                        onClick={() => resumeSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                        <Play className="h-3.5 w-3.5 mr-1" />Reia
+                      </Button>
+                    ) : (
+                      <Button size="sm" variant="outline" className="flex-1 h-8"
+                        onClick={() => pauseSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                        <Pause className="h-3.5 w-3.5 mr-1" />Pauză
+                      </Button>
+                    )}
+                    <Button size="sm" className="flex-1 bg-red-600 hover:bg-red-700 text-white h-8"
+                      onClick={() => stopSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                      <Square className="h-3.5 w-3.5 mr-1" />Stop
+                    </Button>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            )}
+            {budgetAlertCount > 0 && (
               <Popover>
                 <PopoverTrigger asChild>
                   <button className="relative h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors" title="Alerte buget">

@@ -501,18 +501,20 @@ export const projectsRouter = router({
     const db = await getDb();
     if (!db) return [];
     const rows = await db.execute(
-      sql`SELECT pt.id, pt.name, pt.budgetHours, pt.minutesWorked,
+      sql`SELECT DISTINCT pt.id, pt.name, pt.budgetHours, pt.minutesWorked,
               pp.name as phaseName, pp.code as phaseCode,
               p.id as projectId, p.name as projectName,
               CASE
                 WHEN pt.budgetHours > 0 THEN ROUND((pt.minutesWorked / (CAST(pt.budgetHours AS DECIMAL) * 60)) * 100)
                 ELSE 0
               END as pct
-       FROM task_assignees ta
-       JOIN project_tasks pt ON pt.id = ta.taskId
+       FROM project_tasks pt
        JOIN project_phases pp ON pp.id = pt.phaseId
        JOIN projects p ON p.id = pt.projectId
-       WHERE ta.userId = ${ctx.user.id}
+       WHERE (
+         pt.id IN (SELECT taskId FROM task_assignees WHERE userId = ${ctx.user.id})
+         OR pt.assignedUserId = ${ctx.user.id}
+       )
          AND pt.status != 'finalizata'
          AND pt.budgetHours > 0
          AND pt.minutesWorked > 0
