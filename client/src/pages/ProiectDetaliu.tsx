@@ -435,9 +435,13 @@ export default function ProiectDetaliu() {
       setElapsed(totalAccumulatedSeconds);
       return;
     }
-    const resumeBase = s.resumedAt
-      ? new Date(s.resumedAt).getTime()
-      : new Date(s.startedAt).getTime();
+    const toUtcMs = (d: string | Date) => {
+      if (!d) return Date.now();
+      const str = String(d);
+      const normalized = /[Zz]|[+-]\d{2}:?\d{2}$/.test(str) ? str : str + 'Z';
+      return new Date(normalized).getTime();
+    };
+    const resumeBase = s.resumedAt ? toUtcMs(s.resumedAt) : toUtcMs(s.startedAt);
     const update = () => setElapsed(totalAccumulatedSeconds + Math.floor((Date.now() - resumeBase) / 1000));
     update();
     const t = setInterval(update, 1000);

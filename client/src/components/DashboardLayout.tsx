@@ -225,9 +225,15 @@ function DashboardLayoutContent({
       return;
     }
     // If active: elapsed = accumulated + time since last resume (or start if never paused)
-    const resumeBase = s.resumedAt
-      ? new Date(s.resumedAt).getTime()
-      : new Date(s.startedAt).getTime();
+    // Ensure dates are parsed as UTC (add Z suffix if missing to prevent +3h local timezone offset)
+    const toUtcMs = (d: string | Date) => {
+      if (!d) return Date.now();
+      const s = String(d);
+      // If it already has timezone info (Z or +/-), parse as-is; otherwise treat as UTC
+      const normalized = /[Zz]|[+-]\d{2}:?\d{2}$/.test(s) ? s : s + 'Z';
+      return new Date(normalized).getTime();
+    };
+    const resumeBase = s.resumedAt ? toUtcMs(s.resumedAt) : toUtcMs(s.startedAt);
     const update = () => setElapsed(totalAccumulatedSeconds + Math.floor((Date.now() - resumeBase) / 1000));
     update();
     const t = setInterval(update, 1000);

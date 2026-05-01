@@ -698,3 +698,9 @@
 - [x] Frontend: bare Gantt = proiectele fiecărui angajat (startDate→endDate), cu cod + abreviere proiect
 - [x] Frontend: click pe bară → popup cu task-urile active ale angajatului în proiectul respectiv
 - [x] Frontend: zoom in/out (8/12/16/24/32/48 px/zi), linie "Azi", navigație în fereastră de 90 zile
+
+## Sprint 60 — Fix Gantt + Fix Timer
+
+- [x] Fix: Process Overview Gantt — un angajat apare cu toate proiectele la care este înrolat (bare stivuite vertical, înlățimea rândului se adaptează la numărul de proiecte)
+- [x] Fix: Timer task activ pornește cu +3h offset — datele UTC din DB erau interpretate ca oră locală (fix: adaugă 'Z' la string dacă lipsește)
+- [x] Fix: Timer task activ se resetează la 0 când dai pauză — aceeași cauză UTC, fix aplicat în DashboardLayout și ProiectDetaliu
