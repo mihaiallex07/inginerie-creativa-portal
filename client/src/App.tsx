@@ -23,7 +23,6 @@ import TimeTracking from "./pages/TimeTracking";
 import ProiectDetaliu from "./pages/ProiectDetaliu";
 import ProcessOverview from "./pages/ProcessOverview";
 import Evenimente from "./pages/Evenimente";
-import FloatingTimer from "./components/FloatingTimer";
 import Notificari from "./pages/Notificari";
 import AdminDocumente from "./pages/AdminDocumente";
 import RegulamentIntern from "./pages/RegulamentIntern";
@@ -79,7 +78,6 @@ function App() {
             toastOptions={{ style: { maxWidth: '340px', fontSize: '13px' } }}
           />
           <Router />
-          <FloatingTimer />
         </TooltipProvider>
       </ThemeProvider>
     </ErrorBoundary>

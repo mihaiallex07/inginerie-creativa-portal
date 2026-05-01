@@ -717,3 +717,8 @@
 ## Sprint 63 — Fix task dropdown TT
 
 - [x] Fix: myEnrolledTasks returna toate task-urile din proiectele la care ești membru (nu doar cele la care ești direct responsabil) — eliminat condiția `project_members` din query
+
+## Sprint 64 — Elimină FloatingTimer, header task activ mereu vizibil
+
+- [x] Fix: elimină butonul flotant "Timer" din colțul dreapta jos (FloatingTimer eliminat din App.tsx)
+- [x] Feature: indicatorul "Task activ" din header mereu vizibil — când nu e task activ arată buton dashed cu picker rapid proiect+task; când e activ arată timer + pauză/stop

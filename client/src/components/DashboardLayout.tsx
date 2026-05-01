@@ -213,11 +213,26 @@ function DashboardLayoutContent({
   const budgetAlertCount = (budgetAlerts as any[]).length;
   // Active task session
   const { data: activeSession } = trpc.projects.activeSession.useQuery(undefined, { refetchInterval: 10000 });
+  const { data: enrolledTasksData } = trpc.projects.myEnrolledTasks.useQuery(undefined);
   const utils = trpc.useUtils();
   const [elapsed, setElapsed] = useState(0);
-  // Keep a ref to the last known elapsed so we don't flash 0 during refetch
+  // Keep a ref to the last known elapsed so we don't reset during refetch
   const elapsedRef = useRef(0);
   const [displayElapsed, setDisplayElapsed] = useState(0);
+  // Quick-start picker state
+  const [quickPickerOpen, setQuickPickerOpen] = useState(false);
+  const [quickProjectId, setQuickProjectId] = useState<string>("none");
+  const [quickTaskId, setQuickTaskId] = useState<string>("none");
+  const enrolledProjects = (enrolledTasksData as any[]) ?? [];
+  const quickProjectTasks = enrolledProjects.find((p: any) => String(p.projectId) === quickProjectId)?.tasks ?? [];
+  const startSessionQuick = trpc.projects.startSession.useMutation({
+    onSuccess: () => {
+      utils.projects.activeSession.invalidate();
+      setQuickPickerOpen(false);
+      setQuickProjectId("none");
+      setQuickTaskId("none");
+    },
+  });
 
   useEffect(() => {
     if (!activeSession) {
@@ -537,41 +552,95 @@ function DashboardLayoutContent({
         {/* Desktop topbar */}
         {!isMobile && (
           <div className="flex border-b h-12 items-center justify-end bg-background/95 px-4 backdrop-blur sticky top-0 z-40 gap-2">
-            {/* Active task indicator (desktop) */}
-            {activeSession && (
-              <Popover>
-                <PopoverTrigger asChild>
+            {/* Active task indicator (desktop) — always visible */}
+            <Popover open={activeSession ? undefined : quickPickerOpen} onOpenChange={activeSession ? undefined : setQuickPickerOpen}>
+              <PopoverTrigger asChild>
+                {activeSession ? (
                   <button className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#221F1F] text-white text-xs font-medium hover:bg-gray-800 transition-colors">
                     <Timer className="h-3.5 w-3.5 text-[#FFCB09]" />
                     <span className="font-mono text-[#FFCB09] text-xs">{hh}:{mm2}:{ss}</span>
                     <span className="text-gray-300 text-[10px] truncate max-w-[120px]">{(activeSession as any).taskName}</span>
                     {isSessionPaused && <span className="text-amber-400 text-[10px]">⏸</span>}
                   </button>
-                </PopoverTrigger>
-                <PopoverContent className="w-72 p-3" align="end">
-                  <p className="text-xs font-semibold text-foreground mb-1">Task activ</p>
-                  <p className="text-xs text-gray-600 truncate mb-1">{(activeSession as any).taskName}</p>
-                  <p className="text-[10px] text-gray-400 truncate mb-3">{(activeSession as any).projectName} › {(activeSession as any).phaseName}</p>
-                  <div className="flex gap-2">
-                    {isSessionPaused ? (
-                      <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8"
-                        onClick={() => resumeSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
-                        <Play className="h-3.5 w-3.5 mr-1" />Reia
+                ) : (
+                  <button className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-dashed border-gray-300 text-gray-400 text-xs hover:border-[#FFCB09] hover:text-[#FFCB09] transition-colors">
+                    <Timer className="h-3.5 w-3.5" />
+                    <span>Task activ</span>
+                  </button>
+                )}
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-3" align="end">
+                {activeSession ? (
+                  <>
+                    <p className="text-xs font-semibold text-foreground mb-1">Task activ</p>
+                    <p className="text-xs text-gray-600 truncate mb-1">{(activeSession as any).taskName}</p>
+                    <p className="text-[10px] text-gray-400 truncate mb-3">{(activeSession as any).projectName} › {(activeSession as any).phaseName}</p>
+                    <div className="flex gap-2">
+                      {isSessionPaused ? (
+                        <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8"
+                          onClick={() => resumeSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                          <Play className="h-3.5 w-3.5 mr-1" />Reia
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" className="flex-1 h-8"
+                          onClick={() => pauseSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                          <Pause className="h-3.5 w-3.5 mr-1" />Pauză
+                        </Button>
+                      )}
+                      <Button size="sm" className="flex-1 bg-red-600 hover:bg-red-700 text-white h-8"
+                        onClick={() => stopSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                        <Square className="h-3.5 w-3.5 mr-1" />Stop
                       </Button>
-                    ) : (
-                      <Button size="sm" variant="outline" className="flex-1 h-8"
-                        onClick={() => pauseSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
-                        <Pause className="h-3.5 w-3.5 mr-1" />Pauză
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-semibold text-foreground mb-3">Pornește un task</p>
+                    <div className="space-y-2">
+                      <select
+                        value={quickProjectId}
+                        onChange={e => { setQuickProjectId(e.target.value); setQuickTaskId("none"); }}
+                        className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs focus:border-[#FFCB09] outline-none"
+                      >
+                        <option value="none">Selectează proiect...</option>
+                        {enrolledProjects.map((p: any) => (
+                          <option key={p.projectId} value={String(p.projectId)}>
+                            {p.projectCode ? `${p.projectCode}` : ""}{p.projectAbbreviation ? ` · ${p.projectAbbreviation}` : ""}{p.projectName ? ` — ${p.projectName}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      {quickProjectId !== "none" && quickProjectTasks.length > 0 && (
+                        <select
+                          value={quickTaskId}
+                          onChange={e => setQuickTaskId(e.target.value)}
+                          className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs focus:border-[#FFCB09] outline-none"
+                        >
+                          <option value="none">Selectează task...</option>
+                          {quickProjectTasks.map((t: any) => (
+                            <option key={t.taskId} value={String(t.taskId)}>
+                              {t.phaseName ? `[${t.phaseName}] ` : ""}{t.taskName}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <Button
+                        size="sm"
+                        className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] h-8 text-xs"
+                        disabled={quickProjectId === "none" || quickTaskId === "none" || startSessionQuick.isPending}
+                        onClick={() => {
+                          if (quickProjectId !== "none" && quickTaskId !== "none") {
+                            startSessionQuick.mutate({ taskId: Number(quickTaskId), projectId: Number(quickProjectId) });
+                          }
+                        }}
+                      >
+                        <Play className="h-3 w-3 mr-1 fill-current" />
+                        {startSessionQuick.isPending ? "Se pornește..." : "Start task"}
                       </Button>
-                    )}
-                    <Button size="sm" className="flex-1 bg-red-600 hover:bg-red-700 text-white h-8"
-                      onClick={() => stopSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
-                      <Square className="h-3.5 w-3.5 mr-1" />Stop
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
+                    </div>
+                  </>
+                )}
+              </PopoverContent>
+            </Popover>
             {budgetAlertCount > 0 && (
               <Popover>
                 <PopoverTrigger asChild>
