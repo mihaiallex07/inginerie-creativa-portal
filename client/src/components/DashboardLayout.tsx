@@ -215,31 +215,53 @@ function DashboardLayoutContent({
   const { data: activeSession } = trpc.projects.activeSession.useQuery(undefined, { refetchInterval: 10000 });
   const utils = trpc.useUtils();
   const [elapsed, setElapsed] = useState(0);
+  // Keep a ref to the last known elapsed so we don't flash 0 during refetch
+  const elapsedRef = useRef(0);
+  const [displayElapsed, setDisplayElapsed] = useState(0);
+
   useEffect(() => {
-    if (!activeSession) { setElapsed(0); return; }
+    if (!activeSession) {
+      // Only reset if we truly have no session (not just a refetch gap)
+      setElapsed(0);
+      elapsedRef.current = 0;
+      setDisplayElapsed(0);
+      return;
+    }
     const s = activeSession as any;
     const totalAccumulatedSeconds = (s.totalMinutes ?? 0) * 60;
     // If paused: show accumulated time only, no interval
     if (s.status === "in_pauza") {
-      setElapsed(totalAccumulatedSeconds);
+      const val = Math.max(totalAccumulatedSeconds, elapsedRef.current);
+      setElapsed(val);
+      elapsedRef.current = val;
+      setDisplayElapsed(val);
       return;
     }
     // If active: elapsed = accumulated + time since last resume (or start if never paused)
     // Ensure dates are parsed as UTC (add Z suffix if missing to prevent +3h local timezone offset)
     const toUtcMs = (d: string | Date) => {
       if (!d) return Date.now();
-      const s = String(d);
-      // If it already has timezone info (Z or +/-), parse as-is; otherwise treat as UTC
-      const normalized = /[Zz]|[+-]\d{2}:?\d{2}$/.test(s) ? s : s + 'Z';
+      const str = String(d);
+      const normalized = /[Zz]|[+-]\d{2}:?\d{2}$/.test(str) ? str : str + 'Z';
       return new Date(normalized).getTime();
     };
     const resumeBase = s.resumedAt ? toUtcMs(s.resumedAt) : toUtcMs(s.startedAt);
-    const update = () => setElapsed(totalAccumulatedSeconds + Math.floor((Date.now() - resumeBase) / 1000));
+    const update = () => {
+      const val = totalAccumulatedSeconds + Math.floor((Date.now() - resumeBase) / 1000);
+      setElapsed(val);
+      elapsedRef.current = val;
+      setDisplayElapsed(val);
+    };
     update();
     const t = setInterval(update, 1000);
     return () => clearInterval(t);
   }, [activeSession]);
+
   const pauseSessionGlobal = trpc.projects.pauseSession.useMutation({
+    onMutate: () => {
+      // Freeze the display at current elapsed — don't reset during refetch
+      setDisplayElapsed(elapsedRef.current);
+    },
     onSuccess: () => utils.projects.activeSession.invalidate(),
   });
   const resumeSessionGlobal = trpc.projects.resumeSession.useMutation({
@@ -248,9 +270,10 @@ function DashboardLayoutContent({
   const stopSessionGlobal = trpc.projects.stopSession.useMutation({
     onSuccess: () => utils.projects.activeSession.invalidate(),
   });
-  const hh = String(Math.floor(elapsed / 3600)).padStart(2, "0");
-  const mm2 = String(Math.floor((elapsed % 3600) / 60)).padStart(2, "0");
-  const ss = String(elapsed % 60).padStart(2, "0");
+  // Use displayElapsed for rendering — it's frozen during pause/refetch to avoid flash-to-zero
+  const hh = String(Math.floor(displayElapsed / 3600)).padStart(2, "0");
+  const mm2 = String(Math.floor((displayElapsed % 3600) / 60)).padStart(2, "0");
+  const ss = String(displayElapsed % 60).padStart(2, "0");
   const isSessionPaused = (activeSession as any)?.status === "in_pauza";
 
   useEffect(() => {

@@ -708,3 +708,8 @@
 ## Sprint 61 — Gantt: bare proiecte stivuite în celulă (rând fix per angajat)
 
 - [x] Fix: Process Overview Gantt — rând fix per angajat, bare proiecte mici stivuite vertical în interiorul celulei (ca un calendar cu evenimente colorate), coloana stângă arată doar angajatul
+
+## Sprint 62 — Fix pauza resetează timer + FloatingTimer picker
+
+- [x] Fix: butonul Pauză din header resetează timpul la 0 în loc să-l păstreze (fix: displayElapsed ref + onMutate freeze)
+- [x] Fix: FloatingTimer picker — afișează doar proiectele și task-urile la care ești înrolat (myEnrolledTasks), fără Tip activitate

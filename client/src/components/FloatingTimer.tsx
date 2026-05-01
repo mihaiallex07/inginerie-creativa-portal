@@ -48,7 +48,7 @@ export default function FloatingTimer() {
     enabled: !!user,
     refetchInterval: 5000,
   });
-  const { data: projectsData } = trpc.projects.list.useQuery({ status: "activ" }, { enabled: !!user });
+  const { data: enrolledTasksData } = trpc.projects.myEnrolledTasks.useQuery(undefined, { enabled: !!user });
 
   // Mutations
   const startMutation = trpc.timeTracking.startTimer.useMutation({
@@ -76,8 +76,8 @@ export default function FloatingTimer() {
   // UI state
   const [visible, setVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [activityType, setActivityType] = useState<ActivityType>("proiectare");
   const [projectId, setProjectId] = useState<string>("none");
+  const [taskId, setTaskId] = useState<string>("none");
   const [taskName, setTaskName] = useState("");
   const [elapsed, setElapsed] = useState(0);
   const [shortcut, setShortcut] = useState(() => localStorage.getItem(SHORTCUT_KEY) ?? DEFAULT_SHORTCUT);
@@ -151,12 +151,18 @@ export default function FloatingTimer() {
   }, []);
 
   function handleStart() {
+    // If a task is selected, use its name; otherwise use the typed taskName
+    const enrolledProjects = (enrolledTasksData as any[]) ?? [];
+    const selProject = enrolledProjects.find((p: any) => String(p.projectId) === projectId);
+    const selTask = selProject?.tasks?.find((t: any) => String(t.taskId) === taskId);
+    const finalTaskName = selTask ? selTask.taskName : (taskName.trim() || undefined);
     startMutation.mutate({
-      activityType,
+      activityType: "proiectare",
       projectId: projectId !== "none" ? Number(projectId) : undefined,
-      taskName: taskName.trim() || undefined,
+      taskName: finalTaskName,
     });
     setExpanded(false);
+    setTaskId("none");
   }
 
   function handleStop() {
@@ -183,7 +189,8 @@ export default function FloatingTimer() {
   }
 
   const isRunning = !!runningTimer?.isRunning;
-  const projects = projectsData ?? [];
+  const enrolledProjects = (enrolledTasksData as any[]) ?? [];
+  const selectedProjectTasks = enrolledProjects.find((p: any) => String(p.projectId) === projectId)?.tasks ?? [];
 
   if (!user) return null;
 
@@ -308,39 +315,46 @@ export default function FloatingTimer() {
                   </button>
                 ) : (
                   <div className="space-y-2">
-                    {/* Activity type */}
-                    <select
-                      value={activityType}
-                      onChange={e => setActivityType(e.target.value as ActivityType)}
-                      className="w-full h-8 rounded-md bg-white/10 border border-white/20 px-2 text-xs text-white focus:border-[#FFCB09] outline-none"
-                    >
-                      {ACTIVITY_TYPES.map(t => (
-                        <option key={t} value={t} className="bg-[#221F1F]">{t}</option>
-                      ))}
-                    </select>
-
-                    {/* Project */}
+                    {/* Project dropdown — enrolled projects only */}
                     <select
                       value={projectId}
-                      onChange={e => setProjectId(e.target.value)}
+                      onChange={e => { setProjectId(e.target.value); setTaskId("none"); }}
                       className="w-full h-8 rounded-md bg-white/10 border border-white/20 px-2 text-xs text-white focus:border-[#FFCB09] outline-none"
                     >
-                      <option value="none" className="bg-[#221F1F]">Fără proiect</option>
-                      {projects.map((p: any) => (
-                        <option key={p.id} value={String(p.id)} className="bg-[#221F1F]">
-                          {p.abbreviation ? `${p.abbreviation} — ` : ""}{p.name}
+                      <option value="none" className="bg-[#221F1F]">Diverse</option>
+                      {enrolledProjects.map((p: any) => (
+                        <option key={p.projectId} value={String(p.projectId)} className="bg-[#221F1F]">
+                          {p.projectCode ? `${p.projectCode}` : ""}{p.projectAbbreviation ? ` · ${p.projectAbbreviation}` : ""}{p.projectName ? ` — ${p.projectName}` : ""}
                         </option>
                       ))}
                     </select>
 
-                    {/* Task name */}
-                    <input
-                      value={taskName}
-                      onChange={e => setTaskName(e.target.value)}
-                      placeholder="Titlu activitate (opțional)"
-                      className="w-full h-8 rounded-md bg-white/10 border border-white/20 px-2 text-xs text-white placeholder:text-white/30 focus:border-[#FFCB09] outline-none"
-                      onKeyDown={e => e.key === "Enter" && handleStart()}
-                    />
+                    {/* Task dropdown — enrolled tasks for selected project */}
+                    {projectId !== "none" && selectedProjectTasks.length > 0 && (
+                      <select
+                        value={taskId}
+                        onChange={e => setTaskId(e.target.value)}
+                        className="w-full h-8 rounded-md bg-white/10 border border-white/20 px-2 text-xs text-white focus:border-[#FFCB09] outline-none"
+                      >
+                        <option value="none" className="bg-[#221F1F]">Fără task specific</option>
+                        {selectedProjectTasks.map((t: any) => (
+                          <option key={t.taskId} value={String(t.taskId)} className="bg-[#221F1F]">
+                            {t.phaseName ? `[${t.phaseName}] ` : ""}{t.taskName}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* Title — only shown if no task selected */}
+                    {(projectId === "none" || taskId === "none") && (
+                      <input
+                        value={taskName}
+                        onChange={e => setTaskName(e.target.value)}
+                        placeholder="Titlu activitate (opțional)"
+                        className="w-full h-8 rounded-md bg-white/10 border border-white/20 px-2 text-xs text-white placeholder:text-white/30 focus:border-[#FFCB09] outline-none"
+                        onKeyDown={e => e.key === "Enter" && handleStart()}
+                      />
+                    )}
 
                     <div className="flex gap-1.5">
                       <Button
