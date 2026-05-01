@@ -690,3 +690,11 @@
 - [x] Fix: eliminare câmp "Tip activitate" din dialogul de adăugare activitate TT
 - [x] Fix: task-urile din dropdown afișează doar cele la care utilizatorul este înrolat (task_assignees sau assignedUserId)
 - [x] Fix: proiect dropdown are opțiunea "Diverse" pentru activități fără proiect specific
+
+## Sprint 59 — Process Overview Gantt (angajați × proiecte)
+
+- [x] Backend: procedură ganttData returnează angajați grupați pe departamente cu proiectele la care sunt înrolați
+- [x] Frontend: Process Overview — rânduri = angajați (grupați pe departamente), coloane = zile calendaristice
+- [x] Frontend: bare Gantt = proiectele fiecărui angajat (startDate→endDate), cu cod + abreviere proiect
+- [x] Frontend: click pe bară → popup cu task-urile active ale angajatului în proiectul respectiv
+- [x] Frontend: zoom in/out (8/12/16/24/32/48 px/zi), linie "Azi", navigație în fereastră de 90 zile

@@ -1,470 +1,343 @@
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
-import { useState, useMemo, useRef, useEffect } from "react";
-import {
-  ChevronLeft, ChevronRight, ZoomIn, ZoomOut,
-  Users, Clock, ChevronDown, ChevronRight as ChevronRightIcon,
-  AlertTriangle,
-} from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
-} from "@/components/ui/tooltip";
 
-// ─── helpers ──────────────────────────────────────────────────────────────────
-const MONTH_NAMES = [
-  "Ian", "Feb", "Mar", "Apr", "Mai", "Iun",
-  "Iul", "Aug", "Sep", "Oct", "Nov", "Dec",
-];
-const MONTH_FULL = [
-  "Ianuarie","Februarie","Martie","Aprilie","Mai","Iunie",
-  "Iulie","August","Septembrie","Octombrie","Noiembrie","Decembrie",
-];
+const MONTH_NAMES = ["Ian","Feb","Mar","Apr","Mai","Iun","Iul","Aug","Sep","Oct","Nov","Dec"];
 
-function isLeapYear(y: number) {
-  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+function dayOffset(date: Date | string | null | undefined, viewStart: Date): number {
+  if (!date) return -1;
+  const d = new Date(date as string); d.setHours(0,0,0,0);
+  return Math.round((d.getTime() - viewStart.getTime()) / 86400000);
 }
-function daysInYear(y: number) { return isLeapYear(y) ? 366 : 365; }
-function daysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate(); }
-
-/** 1-indexed day-of-year */
-function doy(date: Date) {
-  const start = new Date(date.getFullYear(), 0, 0);
-  return Math.floor((date.getTime() - start.getTime()) / 86400000);
-}
-
-function clampDoy(date: Date | null | undefined, year: number, fallback: "start" | "end"): number {
-  if (!date) return fallback === "start" ? 1 : daysInYear(year);
-  const d = new Date(date);
-  if (d.getFullYear() < year) return 1;
-  if (d.getFullYear() > year) return daysInYear(year);
-  return doy(d);
-}
-
-function fmtDate(date: any) {
-  if (!date) return "—";
-  return new Date(date).toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" });
-}
-
+function clamp(v: number, min: number, max: number) { return Math.max(min, Math.min(max, v)); }
 function initials(name: string) {
-  return name.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase();
+  return name.split(" ").filter(Boolean).map((p: string) => p[0]).join("").slice(0,2).toUpperCase();
 }
 
-// ─── zoom levels: pixels per day ──────────────────────────────────────────────
-const ZOOM_PX = [2, 3, 4, 6, 8, 12, 16];
-const DEFAULT_ZOOM = 3; // index → 6px/day
+const ZOOM_PX = [8, 12, 16, 24, 32, 48];
+const DEFAULT_ZOOM = 2;
+const VIEW_DAYS = 90;
+const ROW_H = 44;
+const DEPT_H = 30;
+const HEADER_H = 56;
+const LABEL_W = 220;
 
-// ─── row heights ──────────────────────────────────────────────────────────────
-const ROW_PROJECT = 40;
-const ROW_TASK = 32;
-const HEADER_H = 52;
-const LABEL_W = 300;
-
-// ─── status colours ───────────────────────────────────────────────────────────
-const PROJECT_STATUS: Record<string, string> = {
-  activ: "bg-green-100 text-green-800",
-  suspendat: "bg-amber-100 text-amber-800",
-  finalizat: "bg-gray-100 text-gray-600",
-  intern: "bg-blue-100 text-blue-800",
+const DEPT_COLORS: Record<string, string> = {
+  "Proiectare Arhitectura": "#7c3aed",
+  "Proiectare Structura": "#2563eb",
+  "Proiectare Instalatii": "#0891b2",
+  "Vanzari": "#16a34a",
+  "Executie": "#d97706",
+  "Fara departament": "#6b7280",
 };
-const TASK_STATUS_HEX: Record<string, string> = {
-  de_facut: "#94a3b8",
-  in_lucru: "#3b82f6",
-  in_pauza: "#f59e0b",
-  finalizata: "#22c55e",
+function deptColor(dept: string) { return DEPT_COLORS[dept] ?? "#6b7280"; }
+
+const TASK_STATUS_LABEL: Record<string, string> = {
+  de_facut: "De facut", in_lucru: "In lucru", in_pauza: "In pauza", finalizata: "Finalizat",
+};
+const TASK_STATUS_COLOR: Record<string, string> = {
+  de_facut: "bg-gray-200 text-gray-700",
+  in_lucru: "bg-blue-100 text-blue-800",
+  in_pauza: "bg-amber-100 text-amber-800",
+  finalizata: "bg-green-100 text-green-800",
 };
 
-// ─── component ────────────────────────────────────────────────────────────────
 export default function ProcessOverview() {
-  const { user } = useAuth();
-  const today = new Date();
-
-  const [year, setYear] = useState(today.getFullYear());
+  const today = useMemo(() => { const d = new Date(); d.setHours(0,0,0,0); return d; }, []);
   const [zoomIdx, setZoomIdx] = useState(DEFAULT_ZOOM);
-  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
-
   const pxPerDay = ZOOM_PX[zoomIdx];
-  const totalDays = daysInYear(year);
-  const totalWidth = totalDays * pxPerDay;
-
+  const [viewStart, setViewStart] = useState<Date>(() => {
+    const d = new Date(today); d.setDate(d.getDate() - 14); return d;
+  });
+  const viewEnd = useMemo(() => {
+    const d = new Date(viewStart); d.setDate(d.getDate() + VIEW_DAYS - 1); return d;
+  }, [viewStart]);
+  const [popup, setPopup] = useState<any>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const { data: ganttProjects = [], isLoading } = trpc.projects.ganttData.useQuery({});
+  const { data: ganttRows = [], isLoading } = trpc.projects.ganttData.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+  });
 
-  // scroll to today on first load
-  useEffect(() => {
-    if (!scrollRef.current || isLoading) return;
-    const todayDoy = doy(today);
-    const x = (todayDoy - 1) * pxPerDay - scrollRef.current.clientWidth / 2;
-    scrollRef.current.scrollLeft = Math.max(0, x);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading]);
-
-  // month header data
-  const monthHeaders = useMemo(() => {
-    const out = [];
-    let offset = 0;
-    for (let m = 0; m < 12; m++) {
-      const days = daysInMonth(year, m);
-      out.push({ m, days, offset });
-      offset += days;
+  const departments = useMemo(() => {
+    const map = new Map<string, any[]>();
+    for (const row of ganttRows as any[]) {
+      const dept = row.department || "Fara departament";
+      if (!map.has(dept)) map.set(dept, []);
+      map.get(dept)!.push(row);
     }
-    return out;
-  }, [year]);
+    return map;
+  }, [ganttRows]);
 
-  const todayDoy = today.getFullYear() === year ? doy(today) : -1;
-  const todayX = todayDoy > 0 ? (todayDoy - 1) * pxPerDay : -1;
-
-  // build flat rows
-  type Row =
-    | { kind: "project"; p: any; rowIdx: number }
-    | { kind: "task"; p: any; t: any; rowIdx: number };
-
-  const rows = useMemo<Row[]>(() => {
-    const out: Row[] = [];
-    for (const p of ganttProjects as any[]) {
-      out.push({ kind: "project", p, rowIdx: out.length });
-      if (!collapsed.has(p.id)) {
-        for (const t of p.tasks ?? []) {
-          out.push({ kind: "task", p, t, rowIdx: out.length });
-        }
-      }
+  const monthTicks = useMemo(() => {
+    const ticks: { label: string; offset: number; days: number }[] = [];
+    const cur = new Date(viewStart);
+    while (cur <= viewEnd) {
+      const y = cur.getFullYear(); const m = cur.getMonth();
+      const monthEnd = new Date(y, m + 1, 0);
+      const visStart = new Date(Math.max(cur.getTime(), viewStart.getTime()));
+      const visEnd = new Date(Math.min(monthEnd.getTime(), viewEnd.getTime()));
+      const offset = dayOffset(visStart, viewStart);
+      const days = Math.round((visEnd.getTime() - visStart.getTime()) / 86400000) + 1;
+      ticks.push({ label: `${MONTH_NAMES[m]} ${y}`, offset, days });
+      cur.setMonth(m + 1); cur.setDate(1);
     }
-    return out;
-  }, [ganttProjects, collapsed]);
+    return ticks;
+  }, [viewStart, viewEnd]);
 
-  const totalHeight = HEADER_H + rows.length * ROW_PROJECT + 40;
-
-  function toggleProject(id: number) {
-    setCollapsed(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
+  const dayTicks = useMemo(() => {
+    return Array.from({ length: VIEW_DAYS }, (_, i) => {
+      const d = new Date(viewStart); d.setDate(d.getDate() + i);
+      const dow = d.getDay();
+      return {
+        day: d.getDate(), offset: i,
+        isToday: d.getTime() === today.getTime(),
+        isWeekend: dow === 0 || dow === 6,
+      };
     });
+  }, [viewStart, today]);
+
+  const todayOffset = dayOffset(today, viewStart);
+  const totalW = VIEW_DAYS * pxPerDay;
+
+  function navigate(delta: number) {
+    setViewStart(prev => { const d = new Date(prev); d.setDate(d.getDate() + delta); return d; });
+    setPopup(null);
+  }
+  function goToday() {
+    const d = new Date(today); d.setDate(d.getDate() - 14); setViewStart(d); setPopup(null);
+  }
+  function handleBarClick(e: React.MouseEvent, emp: any, proj: any) {
+    e.stopPropagation();
+    const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+    setPopup({ emp, proj, x: rect.left, y: rect.bottom + 8 });
   }
 
-  function scrollToToday() {
-    if (!scrollRef.current) return;
-    const x = (doy(today) - 1) * pxPerDay - scrollRef.current.clientWidth / 2;
-    scrollRef.current.scrollLeft = Math.max(0, x);
-  }
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FFCB09]" />
+    </div>
+  );
 
-  // bar geometry helper
-  function bar(startDate: any, endDate: any) {
-    const s = clampDoy(startDate ? new Date(startDate) : null, year, "start");
-    const e = clampDoy(endDate ? new Date(endDate) : null, year, "end");
-    return { x: (s - 1) * pxPerDay, w: Math.max(pxPerDay, (e - s + 1) * pxPerDay) };
-  }
+  if ((ganttRows as any[]).length === 0) return (
+    <div className="flex items-center justify-center h-64 text-gray-400">
+      <p className="text-sm">Niciun angajat sau proiect activ gasit.</p>
+    </div>
+  );
 
   return (
-    <TooltipProvider>
-      <div className="flex flex-col h-full bg-white select-none">
+    <div className="flex flex-col h-full bg-white" onClick={() => setPopup(null)}>
+      {/* toolbar */}
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-gray-100 shrink-0 flex-wrap">
+        <h1 className="text-lg font-bold text-[#221F1F] mr-1">Process Overview</h1>
+        <Button variant="outline" size="sm" onClick={() => navigate(-14)} className="h-7 w-7 p-0">
+          <ChevronLeft className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="sm" onClick={() => navigate(14)} className="h-7 w-7 p-0">
+          <ChevronRight className="h-4 w-4" />
+        </Button>
+        <Button variant="outline" size="sm" onClick={goToday} className="h-7 px-3 text-xs font-semibold">Azi</Button>
+        <span className="text-xs text-gray-400">
+          {viewStart.toLocaleDateString("ro-RO",{day:"2-digit",month:"short",year:"numeric"})}
+          {" — "}
+          {viewEnd.toLocaleDateString("ro-RO",{day:"2-digit",month:"short",year:"numeric"})}
+        </span>
+        <div className="ml-auto flex items-center gap-1">
+          <Button variant="outline" size="sm"
+            onClick={() => setZoomIdx(i => clamp(i-1,0,ZOOM_PX.length-1))}
+            disabled={zoomIdx===0} className="h-7 w-7 p-0">
+            <ZoomOut className="h-3.5 w-3.5" />
+          </Button>
+          <span className="text-xs text-gray-400 w-12 text-center">{pxPerDay}px/zi</span>
+          <Button variant="outline" size="sm"
+            onClick={() => setZoomIdx(i => clamp(i+1,0,ZOOM_PX.length-1))}
+            disabled={zoomIdx===ZOOM_PX.length-1} className="h-7 w-7 p-0">
+            <ZoomIn className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
 
-        {/* ── toolbar ── */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white z-10 flex-shrink-0 gap-3">
-          <div className="flex items-center gap-3">
-            <h1 className="text-base font-bold text-[#221F1F]">Process Overview</h1>
-            <Badge variant="outline" className="text-xs font-medium">
-              {(ganttProjects as any[]).length} proiecte
-            </Badge>
+      {/* main grid */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* label column */}
+        <div className="shrink-0 flex flex-col border-r border-gray-200" style={{width: LABEL_W}}>
+          <div style={{height: HEADER_H}}
+            className="border-b border-gray-200 bg-gray-50 flex items-end px-3 pb-2 shrink-0">
+            <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Angajat</span>
           </div>
-
-          <div className="flex items-center gap-2">
-            {/* year nav */}
-            <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg px-1.5 py-1">
-              <button onClick={() => setYear(y => y - 1)} className="p-0.5 rounded hover:bg-gray-100 transition-colors">
-                <ChevronLeft className="h-3.5 w-3.5 text-gray-600" />
-              </button>
-              <span className="text-sm font-semibold w-11 text-center">{year}</span>
-              <button onClick={() => setYear(y => y + 1)} className="p-0.5 rounded hover:bg-gray-100 transition-colors">
-                <ChevronRight className="h-3.5 w-3.5 text-gray-600" />
-              </button>
-            </div>
-
-            {/* zoom */}
-            <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg px-1.5 py-1">
-              <button onClick={() => setZoomIdx(z => Math.max(0, z - 1))} disabled={zoomIdx === 0}
-                className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors">
-                <ZoomOut className="h-3.5 w-3.5 text-gray-600" />
-              </button>
-              <span className="text-[11px] text-gray-500 w-10 text-center">{pxPerDay}px/zi</span>
-              <button onClick={() => setZoomIdx(z => Math.min(ZOOM_PX.length - 1, z + 1))} disabled={zoomIdx === ZOOM_PX.length - 1}
-                className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors">
-                <ZoomIn className="h-3.5 w-3.5 text-gray-600" />
-              </button>
-            </div>
-
-            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={scrollToToday}>
-              Azi
-            </Button>
-          </div>
-
-          {/* legend */}
-          <div className="hidden lg:flex items-center gap-3 text-[10px] text-gray-500">
-            {Object.entries(TASK_STATUS_HEX).map(([s, c]) => (
-              <span key={s} className="flex items-center gap-1">
-                <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: c }} />
-                {s.replace("_", " ")}
-              </span>
+          <div className="overflow-y-auto flex-1">
+            {Array.from(departments.entries()).map(([dept, emps]) => (
+              <div key={dept}>
+                <div className="flex items-center gap-2 px-3 text-white text-xs font-semibold uppercase tracking-wide"
+                  style={{height: DEPT_H, background: deptColor(dept)}}>
+                  <span className="truncate">{dept}</span>
+                  <span className="ml-auto opacity-60 text-[10px] font-normal">{emps.length}</span>
+                </div>
+                {emps.map((emp: any) => (
+                  <div key={emp.userId}
+                    className="flex items-center gap-2 px-3 border-b border-gray-50 bg-white"
+                    style={{height: ROW_H}}>
+                    <div className="h-7 w-7 rounded-full flex items-center justify-center text-[11px] font-bold text-white shrink-0"
+                      style={{background: deptColor(dept)}}>
+                      {initials(emp.userName)}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="text-xs font-semibold text-[#221F1F] truncate leading-tight">{emp.userName}</div>
+                      {emp.jobTitle && <div className="text-[10px] text-gray-400 truncate">{emp.jobTitle}</div>}
+                    </div>
+                  </div>
+                ))}
+              </div>
             ))}
           </div>
         </div>
 
-        {/* ── loading / empty ── */}
-        {isLoading && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center">
-              <div className="w-7 h-7 border-2 border-[#FFCB09] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-              <p className="text-sm text-gray-400">Se încarcă Gantt-ul...</p>
-            </div>
-          </div>
-        )}
-        {!isLoading && (ganttProjects as any[]).length === 0 && (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-center text-gray-400">
-              <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-gray-200" />
-              <p className="text-sm font-medium">Niciun proiect activ</p>
-              <p className="text-xs mt-1">Proiectele active vor apărea automat</p>
-            </div>
-          </div>
-        )}
-
-        {/* ── main gantt ── */}
-        {!isLoading && (ganttProjects as any[]).length > 0 && (
-          <div className="flex flex-1 overflow-hidden">
-
-            {/* label column (fixed) */}
-            <div className="flex-shrink-0 border-r border-gray-200 bg-white z-10 flex flex-col" style={{ width: LABEL_W }}>
-              {/* header spacer */}
-              <div style={{ height: HEADER_H }} className="border-b border-gray-200 flex items-end px-3 pb-2 flex-shrink-0">
-                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Proiect / Task</span>
-              </div>
-              {/* rows */}
-              <div className="overflow-y-hidden flex-1">
-                {rows.map(row => {
-                  const key = row.kind === "project" ? `lp-${row.p.id}` : `lt-${row.t.taskId}`;
-                  const h = row.kind === "project" ? ROW_PROJECT : ROW_TASK;
-                  if (row.kind === "project") {
-                    const isOpen = !collapsed.has(row.p.id);
-                    const taskCount = (row.p.tasks ?? []).length;
-                    return (
-                      <div key={key} style={{ height: h }}
-                        className="flex items-center gap-2 px-2 border-b border-gray-100 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
-                        onClick={() => toggleProject(row.p.id)}>
-                        {/* color square */}
-                        <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-sm"
-                          style={{ background: row.p.color || "#FFCB09" }}>
-                          {row.p.emoji || (row.p.abbreviation || row.p.code || "?").slice(0, 2)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-semibold text-[#221F1F] truncate leading-tight">{row.p.name}</p>
-                          <p className="text-[10px] text-gray-400 truncate">{row.p.clientName} · {taskCount} task-uri</p>
-                        </div>
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${PROJECT_STATUS[row.p.status] || "bg-gray-100 text-gray-600"}`}>
-                            {row.p.status}
-                          </span>
-                          {isOpen
-                            ? <ChevronDown className="h-3 w-3 text-gray-400" />
-                            : <ChevronRightIcon className="h-3 w-3 text-gray-400" />}
-                        </div>
-                      </div>
-                    );
-                  } else {
-                    const assignees = row.t.assigneeNames
-                      ? row.t.assigneeNames.split(", ").filter(Boolean)
-                      : [];
-                    return (
-                      <div key={key} style={{ height: h }}
-                        className="flex items-center gap-2 pl-8 pr-2 border-b border-gray-100 bg-white">
-                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
-                          style={{ background: TASK_STATUS_HEX[row.t.taskStatus] || "#94a3b8" }} />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] text-gray-700 truncate leading-tight">{row.t.taskName}</p>
-                          <p className="text-[9px] text-gray-400 truncate">{row.t.phaseCode} · {row.t.phaseName}</p>
-                        </div>
-                        {assignees.length > 0 && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div className="flex -space-x-1 flex-shrink-0">
-                                {assignees.slice(0, 3).map((name: string, i: number) => (
-                                  <div key={i}
-                                    className="w-5 h-5 rounded-full bg-[#FFCB09] flex items-center justify-center text-[8px] font-bold text-[#221F1F] border border-white"
-                                    title={name}>
-                                    {initials(name)}
-                                  </div>
-                                ))}
-                                {assignees.length > 3 && (
-                                  <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[8px] font-bold text-gray-600 border border-white">
-                                    +{assignees.length - 3}
-                                  </div>
-                                )}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent side="right" className="text-xs">
-                              {assignees.join(", ")}
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </div>
-                    );
-                  }
-                })}
-              </div>
-            </div>
-
-            {/* scrollable gantt canvas */}
-            <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-hidden relative">
-              <div style={{ width: totalWidth, minHeight: totalHeight, position: "relative" }}>
-
-                {/* ── month/day header (sticky) ── */}
-                <div style={{ height: HEADER_H, position: "sticky", top: 0, zIndex: 5, background: "white", borderBottom: "1px solid #e5e7eb" }}>
-                  {/* month row */}
-                  <div style={{ height: 28, display: "flex", borderBottom: "1px solid #e5e7eb" }}>
-                    {monthHeaders.map(mh => (
-                      <div key={mh.m} style={{ width: mh.days * pxPerDay, flexShrink: 0, borderRight: "1px solid #e5e7eb" }}
-                        className="flex items-center justify-center">
-                        <span className="text-[11px] font-semibold text-gray-600 truncate px-1">
-                          {pxPerDay >= 4 ? MONTH_FULL[mh.m] : MONTH_NAMES[mh.m]}
-                        </span>
-                      </div>
-                    ))}
+        {/* scrollable gantt */}
+        <div className="flex-1 overflow-auto" ref={scrollRef}>
+          <div style={{width: totalW, minWidth: totalW}}>
+            {/* header */}
+            <div className="sticky top-0 z-10 bg-gray-50 border-b border-gray-200" style={{height: HEADER_H}}>
+              <div className="flex" style={{height: 24}}>
+                {monthTicks.map((tick, i) => (
+                  <div key={i}
+                    className="text-[11px] font-semibold text-gray-600 border-r border-gray-200 flex items-center px-2 shrink-0 overflow-hidden"
+                    style={{width: tick.days * pxPerDay}}>
+                    {tick.label}
                   </div>
-                  {/* day row */}
-                  <div style={{ height: 24, display: "flex", position: "relative" }}>
-                    {monthHeaders.map(mh =>
-                      Array.from({ length: mh.days }, (_, d) => {
-                        const date = new Date(year, mh.m, d + 1);
-                        const isWknd = date.getDay() === 0 || date.getDay() === 6;
-                        const dayDoy = mh.offset + d + 1;
-                        const isToday = dayDoy === todayDoy;
+                ))}
+              </div>
+              <div className="flex" style={{height: 32}}>
+                {dayTicks.map((tick, i) => (
+                  <div key={i}
+                    className={`text-[10px] border-r border-gray-100 flex items-center justify-center shrink-0 font-medium select-none ${
+                      tick.isToday ? "bg-[#FFCB09] text-[#221F1F] font-bold"
+                      : tick.isWeekend ? "bg-gray-100 text-gray-400"
+                      : "text-gray-500"
+                    }`}
+                    style={{width: pxPerDay}}>
+                    {pxPerDay >= 12 ? tick.day : (tick.day % 7 === 1 ? tick.day : "")}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* rows */}
+            <div className="relative">
+              {todayOffset >= 0 && todayOffset < VIEW_DAYS && (
+                <div className="absolute top-0 bottom-0 z-20 pointer-events-none"
+                  style={{
+                    left: todayOffset * pxPerDay + pxPerDay / 2 - 1,
+                    width: 2, background: "#FFCB09", opacity: 0.8,
+                  }} />
+              )}
+              {Array.from(departments.entries()).map(([dept, emps]) => (
+                <div key={dept}>
+                  <div style={{
+                    height: DEPT_H, width: totalW,
+                    background: deptColor(dept) + "18",
+                    borderBottom: `1px solid ${deptColor(dept)}33`,
+                  }} />
+                  {emps.map((emp: any) => (
+                    <div key={emp.userId}
+                      className="relative border-b border-gray-50"
+                      style={{height: ROW_H, width: totalW}}>
+                      {dayTicks.filter(d => d.isWeekend).map(d => (
+                        <div key={d.offset}
+                          className="absolute top-0 bottom-0 pointer-events-none"
+                          style={{left: d.offset * pxPerDay, width: pxPerDay, background: "rgba(0,0,0,0.02)"}} />
+                      ))}
+                      {(emp.projects as any[]).map((proj: any) => {
+                        const startOff = dayOffset(proj.startDate, viewStart);
+                        const endOff = dayOffset(proj.endDate, viewStart);
+                        const visStart = clamp(startOff, 0, VIEW_DAYS - 1);
+                        const visEnd = clamp(endOff, 0, VIEW_DAYS - 1);
+                        if (visEnd < 0 || visStart >= VIEW_DAYS || visEnd < visStart) return null;
+                        const barLeft = visStart * pxPerDay;
+                        const barW = (visEnd - visStart + 1) * pxPerDay;
+                        const label = [proj.projectCode, proj.projectAbbreviation].filter(Boolean).join(" · ");
+                        const hasActive = (proj.tasks as any[]).some((t: any) => t.taskStatus === "in_lucru");
                         return (
-                          <div key={`${mh.m}-${d}`} style={{ width: pxPerDay, flexShrink: 0 }}
-                            className={`flex items-center justify-center text-[9px] border-r border-gray-100 h-full
-                              ${isToday ? "bg-[#FFCB09] font-bold text-[#221F1F]" : isWknd ? "bg-gray-50 text-gray-300" : "text-gray-400"}`}>
-                            {pxPerDay >= 8 ? d + 1 : ""}
+                          <div key={proj.projectId} title={proj.projectName}
+                            className="absolute top-1/2 -translate-y-1/2 rounded-md cursor-pointer flex items-center gap-1 px-2 overflow-hidden select-none hover:brightness-95 transition-all"
+                            style={{
+                              left: barLeft, width: barW, height: 28,
+                              background: proj.projectColor || "#FFCB09",
+                              border: hasActive ? "2px solid #1d4ed8" : "1px solid rgba(0,0,0,0.12)",
+                              boxShadow: hasActive ? "0 0 0 2px rgba(29,78,216,0.2)" : "none",
+                            }}
+                            onClick={e => handleBarClick(e, emp, proj)}>
+                            {proj.projectEmoji && barW >= 32 && (
+                              <span className="text-sm leading-none shrink-0">{proj.projectEmoji}</span>
+                            )}
+                            {barW >= 40 && (
+                              <span className="text-[11px] font-bold truncate leading-none" style={{color: "#221F1F"}}>
+                                {label || proj.projectName}
+                              </span>
+                            )}
                           </div>
                         );
-                      })
-                    )}
-                  </div>
-                </div>
-
-                {/* ── background grid ── */}
-                <div style={{ position: "absolute", top: HEADER_H, left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
-                  {/* weekend shading */}
-                  {monthHeaders.map(mh =>
-                    Array.from({ length: mh.days }, (_, d) => {
-                      const date = new Date(year, mh.m, d + 1);
-                      const isWknd = date.getDay() === 0 || date.getDay() === 6;
-                      if (!isWknd) return null;
-                      const dayDoy = mh.offset + d;
-                      return (
-                        <div key={`wk-${mh.m}-${d}`}
-                          style={{ position: "absolute", left: dayDoy * pxPerDay, top: 0, bottom: 0, width: pxPerDay, background: "rgba(0,0,0,0.025)" }} />
-                      );
-                    })
-                  )}
-                  {/* month dividers */}
-                  {monthHeaders.map(mh => (
-                    <div key={`div-${mh.m}`}
-                      style={{ position: "absolute", left: mh.offset * pxPerDay, top: 0, bottom: 0, width: 1, background: "#e5e7eb" }} />
+                      })}
+                    </div>
                   ))}
-                  {/* today line */}
-                  {todayX >= 0 && (
-                    <div style={{ position: "absolute", left: todayX + pxPerDay / 2, top: 0, bottom: 0, width: 2, background: "#FFCB09", opacity: 0.9 }} />
-                  )}
                 </div>
-
-                {/* ── bars ── */}
-                <div style={{ position: "absolute", top: HEADER_H, left: 0, right: 0 }}>
-                  {rows.map(row => {
-                    const rowTop = row.rowIdx * ROW_PROJECT;
-                    const h = row.kind === "project" ? ROW_PROJECT : ROW_TASK;
-
-                    if (row.kind === "project") {
-                      const b = bar(row.p.startDate, row.p.endDate);
-                      return (
-                        <div key={`bp-${row.p.id}`}
-                          style={{ position: "absolute", top: rowTop, left: 0, right: 0, height: h }}
-                          className="border-b border-gray-100 bg-gray-50/40">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div style={{ position: "absolute", left: b.x, width: b.w, top: 8, height: h - 16, background: row.p.color || "#FFCB09", borderRadius: 5, opacity: 0.85, cursor: "default" }}
-                                className="flex items-center px-2 overflow-hidden">
-                                <span className="text-[10px] font-bold text-white truncate" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}>
-                                  {row.p.emoji ? `${row.p.emoji} ` : ""}{row.p.name}
-                                </span>
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="text-xs max-w-[220px]">
-                              <p className="font-semibold">{row.p.name}</p>
-                              <p className="text-gray-400">{row.p.clientName}</p>
-                              <p>Start: {fmtDate(row.p.startDate)} · Final: {fmtDate(row.p.endDate)}</p>
-                              <p>Manager: {row.p.managerName || "—"}</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      );
-                    } else {
-                      // task bar — spans project dates, fill = progress
-                      const b = bar(row.p.startDate, row.p.endDate);
-                      const pct = row.t.budgetHours > 0
-                        ? Math.min(100, (row.t.minutesWorked / (Number(row.t.budgetHours) * 60)) * 100)
-                        : 0;
-                      const taskColor = TASK_STATUS_HEX[row.t.taskStatus] || "#94a3b8";
-                      const assignees = row.t.assigneeNames
-                        ? row.t.assigneeNames.split(", ").filter(Boolean)
-                        : [];
-                      return (
-                        <div key={`bt-${row.t.taskId}`}
-                          style={{ position: "absolute", top: rowTop, left: 0, right: 0, height: h }}
-                          className="border-b border-gray-100">
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <div style={{ position: "absolute", left: b.x, width: b.w, top: 10, height: h - 20, background: "#e5e7eb", borderRadius: 3, overflow: "hidden", cursor: "default" }}>
-                                {/* progress fill */}
-                                <div style={{ width: `${pct}%`, height: "100%", background: taskColor, opacity: 0.85 }} />
-                                {/* assignee avatars overlay */}
-                                {pxPerDay >= 4 && assignees.length > 0 && b.w > 40 && (
-                                  <div style={{ position: "absolute", top: 0, right: 4, height: "100%", display: "flex", alignItems: "center", gap: 1 }}>
-                                    {assignees.slice(0, 3).map((name: string, i: number) => (
-                                      <div key={i}
-                                        className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-[7px] font-bold border"
-                                        style={{ borderColor: taskColor, color: taskColor }}>
-                                        {initials(name)}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
-                            </TooltipTrigger>
-                            <TooltipContent className="text-xs max-w-[240px]">
-                              <p className="font-semibold">{row.t.taskName}</p>
-                              <p className="text-gray-400">{row.t.phaseCode} · {row.t.phaseName}</p>
-                              {assignees.length > 0 && (
-                                <p className="flex items-center gap-1 mt-1">
-                                  <Users className="h-3 w-3" />{assignees.join(", ")}
-                                </p>
-                              )}
-                              <p className="flex items-center gap-1 mt-1">
-                                <Clock className="h-3 w-3" />
-                                {(row.t.minutesWorked / 60).toFixed(1)}h / {row.t.budgetHours}h ({Math.round(pct)}%)
-                              </p>
-                              <p className="mt-1">Status: <span className="font-medium">{row.t.taskStatus}</span></p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                      );
-                    }
-                  })}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
-        )}
+        </div>
       </div>
-    </TooltipProvider>
+
+      {/* popup */}
+      {popup && (
+        <div className="fixed z-50 bg-white rounded-xl shadow-2xl border border-gray-100 p-4 min-w-[280px] max-w-[360px]"
+          style={{
+            top: Math.min(popup.y, window.innerHeight - 320),
+            left: Math.min(popup.x, window.innerWidth - 380),
+          }}
+          onClick={(e: React.MouseEvent) => e.stopPropagation()}>
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <div className="text-[11px] text-gray-400 font-medium mb-0.5">{popup.emp.userName}</div>
+              <div className="text-sm font-bold text-[#221F1F]">
+                {[popup.proj.projectCode, popup.proj.projectAbbreviation].filter(Boolean).join(" · ") || popup.proj.projectName}
+              </div>
+              <div className="text-xs text-gray-500">{popup.proj.projectName}</div>
+            </div>
+            <button onClick={() => setPopup(null)} className="text-gray-400 hover:text-gray-700 ml-3 shrink-0 mt-0.5">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+          {popup.proj.tasks.length === 0 ? (
+            <p className="text-xs text-gray-400 italic">Niciun task activ in acest proiect.</p>
+          ) : (
+            <div className="space-y-2 max-h-64 overflow-y-auto">
+              {popup.proj.tasks.map((t: any) => (
+                <div key={t.taskId} className="flex items-center gap-2 bg-gray-50 rounded-lg px-3 py-2">
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-semibold text-[#221F1F] truncate">{t.taskName}</div>
+                    <div className="text-[10px] text-gray-400">{t.phaseCode} · {t.phaseName}</div>
+                    {t.budgetHours > 0 && (
+                      <div className="mt-1">
+                        <div className="h-1 rounded-full bg-gray-200 overflow-hidden">
+                          <div className="h-full rounded-full bg-[#FFCB09]"
+                            style={{width: `${Math.min(100, Math.round((t.minutesWorked || 0) / (t.budgetHours * 60) * 100))}%`}} />
+                        </div>
+                        <div className="text-[10px] text-gray-400 mt-0.5">
+                          {Math.round((t.minutesWorked || 0) / 60 * 10) / 10}h / {t.budgetHours}h
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <Badge className={`text-[9px] px-1.5 py-0.5 shrink-0 ${TASK_STATUS_COLOR[t.taskStatus] || "bg-gray-100 text-gray-600"}`}>
+                    {TASK_STATUS_LABEL[t.taskStatus] || t.taskStatus}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

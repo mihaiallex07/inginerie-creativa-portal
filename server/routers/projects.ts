@@ -536,53 +536,83 @@ export const projectsRouter = router({
 
   // ─── GANTT DATA (for Process Overview) ───────────────────────────────────────────
   ganttData: protectedProcedure
-    .input(z.object({ year: z.number().optional(), month: z.number().optional() }).optional())
     .query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const isAdmin = ctx.user.role === "admin" || ctx.user.role === "coordonator";
-      // Get all active projects (admin sees all, user sees their own)
-      const projectsRows = await db.execute(
+      const isAdmin = ctx.user.role === "admin";
+
+      // 1. Get all active employees (admin sees all; non-admin sees only themselves)
+      const usersRows = await db.execute(
         isAdmin
-          ? sql`SELECT p.id, p.name, p.code, p.color, p.emoji, p.abbreviation, p.startDate, p.endDate, p.status,
-                       p.clientName, pm_mgr.name AS managerName
-                FROM projects p
-                LEFT JOIN users pm_mgr ON pm_mgr.id = p.managerId
-                WHERE p.status IN ('activ', 'suspendat')
-                ORDER BY p.startDate, p.name`
-          : sql`SELECT p.id, p.name, p.code, p.color, p.emoji, p.abbreviation, p.startDate, p.endDate, p.status,
-                       p.clientName, pm_mgr.name AS managerName
-                FROM projects p
-                LEFT JOIN users pm_mgr ON pm_mgr.id = p.managerId
-                WHERE p.status IN ('activ', 'suspendat')
-                  AND p.id IN (SELECT projectId FROM project_members WHERE userId = ${ctx.user.id})
-                ORDER BY p.startDate, p.name`
+          ? sql`SELECT id, name, department, jobTitle, avatarUrl
+                FROM users
+                WHERE isActive = 1
+                ORDER BY department, displayOrder, name`
+          : sql`SELECT id, name, department, jobTitle, avatarUrl
+                FROM users
+                WHERE isActive = 1 AND id = ${ctx.user.id}`
       );
-      const projects = (projectsRows as any)[0] ?? [];
-      if (projects.length === 0) return [];
-      const projectIds = projects.map((p: any) => p.id);
-      // Get tasks with assignees for these projects
-      const tasksRows = await db.execute(
-        sql`SELECT pt.id AS taskId, pt.name AS taskName, pt.projectId, pt.phaseId,
-                   pt.status AS taskStatus, pt.budgetHours, pt.minutesWorked,
-                   pp.name AS phaseName, pp.code AS phaseCode, pp.color AS phaseColor,
-                   MIN(pp.displayOrder) AS phaseOrder, MIN(pt.displayOrder) AS taskOrder,
-                   GROUP_CONCAT(DISTINCT u.name ORDER BY u.name SEPARATOR ', ') AS assigneeNames,
-                   GROUP_CONCAT(DISTINCT u.id ORDER BY u.id SEPARATOR ',') AS assigneeIds
-            FROM project_tasks pt
-            JOIN project_phases pp ON pp.id = pt.phaseId
-            LEFT JOIN task_assignees ta ON ta.taskId = pt.id
-            LEFT JOIN users u ON u.id = ta.userId
-            WHERE pt.projectId IN (${sql.raw(projectIds.join(','))})
-              AND pt.status != 'finalizata'
-            GROUP BY pt.id, pt.name, pt.projectId, pt.phaseId, pt.status, pt.budgetHours, pt.minutesWorked, pp.name, pp.code, pp.color
-            ORDER BY phaseOrder, taskOrder`
+      const users = (usersRows as any)[0] ?? [];
+      if (users.length === 0) return [];
+
+      const userIds = users.map((u: any) => u.id);
+
+      // 2. Get projects each user is enrolled in (via project_members)
+      const memberRows = await db.execute(
+        sql`SELECT pm.userId, pm.projectRole,
+                   p.id AS projectId, p.name AS projectName, p.code AS projectCode,
+                   p.color AS projectColor, p.emoji AS projectEmoji, p.abbreviation AS projectAbbreviation,
+                   p.startDate, p.endDate, p.status AS projectStatus, p.clientName
+            FROM project_members pm
+            JOIN projects p ON p.id = pm.projectId
+            WHERE pm.userId IN (${sql.raw(userIds.join(','))})
+              AND p.status IN ('activ', 'suspendat')
+            ORDER BY p.startDate`
       );
-      const tasks = (tasksRows as any)[0] ?? [];
-      // Group tasks by project
-      return projects.map((p: any) => ({
-        ...p,
-        tasks: tasks.filter((t: any) => t.projectId === p.id),
+      const memberProjects = (memberRows as any)[0] ?? [];
+
+      // 3. Get tasks assigned to each user in those projects
+      const projectIds = [...new Set(memberProjects.map((r: any) => r.projectId))] as number[];
+      let userTasks: any[] = [];
+      if (projectIds.length > 0) {
+        const taskRows = await db.execute(
+          sql`SELECT ta.userId, pt.id AS taskId, pt.name AS taskName, pt.projectId,
+                     pt.status AS taskStatus, pt.budgetHours, pt.minutesWorked,
+                     pp.name AS phaseName, pp.code AS phaseCode
+              FROM task_assignees ta
+              JOIN project_tasks pt ON pt.id = ta.taskId
+              JOIN project_phases pp ON pp.id = pt.phaseId
+              WHERE ta.userId IN (${sql.raw(userIds.join(','))})
+                AND pt.projectId IN (${sql.raw(projectIds.join(','))})
+                AND pt.status != 'finalizata'
+              ORDER BY pp.displayOrder, pt.displayOrder`
+        );
+        userTasks = (taskRows as any)[0] ?? [];
+      }
+
+      // 4. Build response: employees with their project bars and tasks
+      return users.map((u: any) => ({
+        userId: u.id,
+        userName: u.name,
+        department: u.department || "Fără departament",
+        jobTitle: u.jobTitle,
+        avatarUrl: u.avatarUrl,
+        projects: memberProjects
+          .filter((mp: any) => mp.userId === u.id)
+          .map((mp: any) => ({
+            projectId: mp.projectId,
+            projectName: mp.projectName,
+            projectCode: mp.projectCode,
+            projectColor: mp.projectColor,
+            projectEmoji: mp.projectEmoji,
+            projectAbbreviation: mp.projectAbbreviation,
+            startDate: mp.startDate,
+            endDate: mp.endDate,
+            projectStatus: mp.projectStatus,
+            clientName: mp.clientName,
+            projectRole: mp.projectRole,
+            tasks: userTasks.filter((t: any) => t.userId === u.id && t.projectId === mp.projectId),
+          })),
       }));
     }),
 
