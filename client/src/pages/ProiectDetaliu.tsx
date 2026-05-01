@@ -83,10 +83,10 @@ function ProgressBar({ pct }: { pct: number }) {
 }
 
 function TaskRow({
-  task, idx, canManage, allUsers, projectId, onRefresh, activeSessionTaskId
+  task, idx, canManage, allUsers, projectId, onRefresh, activeSessionTaskId, activeSession
 }: {
   task: any; idx: number; canManage: boolean; allUsers: any[];
-  projectId: number; onRefresh: () => void; activeSessionTaskId?: number;
+  projectId: number; onRefresh: () => void; activeSessionTaskId?: number; activeSession?: any;
 }) {
   const utils = trpc.useUtils();
   const [editingName, setEditingName] = useState(false);
@@ -195,17 +195,17 @@ function TaskRow({
         <div className="flex items-center gap-1">
           {!isActive ? (
             <Button size="icon" variant="ghost" className="h-6 w-6 text-green-600 hover:bg-green-50" title="Start"
-              onClick={() => startSession.mutate({ taskId: task.id })}>
+              onClick={() => startSession.mutate({ taskId: task.id, projectId })}>
               <Play className="h-3 w-3" />
             </Button>
           ) : (
             <>
               <Button size="icon" variant="ghost" className="h-6 w-6 text-amber-600 hover:bg-amber-50" title="Pauză"
-                onClick={() => pauseSession.mutate({})}>
+                onClick={() => (activeSession as any)?.sessionId && pauseSession.mutate({ sessionId: (activeSession as any).sessionId })}>
                 <Pause className="h-3 w-3" />
               </Button>
               <Button size="icon" variant="ghost" className="h-6 w-6 text-red-600 hover:bg-red-50" title="Stop"
-                onClick={() => stopSession.mutate({})}>
+                onClick={() => (activeSession as any)?.sessionId && stopSession.mutate({ sessionId: (activeSession as any).sessionId })}>
                 <Square className="h-3 w-3" />
               </Button>
             </>
@@ -230,10 +230,10 @@ function TaskRow({
 }
 
 function PhaseRow({
-  phase, canManage, allUsers, projectId, onRefresh, activeSessionTaskId
+  phase, canManage, allUsers, projectId, onRefresh, activeSessionTaskId, activeSession
 }: {
   phase: any; canManage: boolean; allUsers: any[];
-  projectId: number; onRefresh: () => void; activeSessionTaskId?: number;
+  projectId: number; onRefresh: () => void; activeSessionTaskId?: number; activeSession?: any;
 }) {
   const utils = trpc.useUtils();
   const [expanded, setExpanded] = useState(true);
@@ -331,7 +331,7 @@ function PhaseRow({
       {expanded && (phase.tasks || []).map((task: any, idx: number) => (
         <TaskRow key={task.id} task={task} idx={idx} canManage={canManage}
           allUsers={allUsers} projectId={projectId}
-          onRefresh={onRefresh} activeSessionTaskId={activeSessionTaskId} />
+          onRefresh={onRefresh} activeSessionTaskId={activeSessionTaskId} activeSession={activeSession} />
       ))}
       {expanded && canManage && (
         <tr className="border-b border-gray-100">
@@ -403,7 +403,14 @@ export default function ProiectDetaliu() {
   }, [project]);
 
   const [showAddPhase, setShowAddPhase] = useState(false);
+  const [phaseMode, setPhaseMode] = useState<"pick" | "custom">("pick");
+  const [selectedTemplatePhaseId, setSelectedTemplatePhaseId] = useState<string>("");
   const [phaseForm, setPhaseForm] = useState({ name: "", code: "", color: PALETTE_COLORS[0], budgetHours: "" });
+
+  const [showDeleteProject, setShowDeleteProject] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+
+  const { data: defaultTemplate } = trpc.projects.defaultTemplate.useQuery();
 
   const [showAddMember, setShowAddMember] = useState(false);
   const [memberUserId, setMemberUserId] = useState<string>("");
@@ -435,6 +442,10 @@ export default function ProiectDetaliu() {
   });
   const stopSession = trpc.projects.stopSession.useMutation({
     onSuccess: () => { utils.projects.activeSession.invalidate(); utils.projects.get.invalidate({ id: projectId }); },
+  });
+  const deleteProject = trpc.projects.delete.useMutation({
+    onSuccess: () => { toast.success("Proiect șters"); setLocation("/proiecte"); },
+    onError: (e) => toast.error(e.message),
   });
 
   const stats = useMemo(() => {
@@ -492,11 +503,11 @@ export default function ProiectDetaliu() {
           </div>
           <div className="flex gap-2">
             <Button size="sm" variant="outline" className="border-gray-600 text-white hover:bg-gray-700 h-8 px-3"
-              onClick={() => pauseSession.mutate({})}>
+              onClick={() => (activeSession as any)?.sessionId && pauseSession.mutate({ sessionId: (activeSession as any).sessionId })}>
               <Pause className="h-3.5 w-3.5" />
             </Button>
             <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white h-8 px-3"
-              onClick={() => stopSession.mutate({})}>
+              onClick={() => (activeSession as any)?.sessionId && stopSession.mutate({ sessionId: (activeSession as any).sessionId })}>
               <Square className="h-3.5 w-3.5" />
             </Button>
           </div>
@@ -623,14 +634,14 @@ export default function ProiectDetaliu() {
                   <ResponsiveContainer width="100%" height={200}>
                     <PieChart>
                       <Pie data={donutData} cx="50%" cy="50%" innerRadius={50} outerRadius={80} dataKey="value" paddingAngle={2}>
-                        {donutData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        {donutData.map((entry: any, i: number) => <Cell key={i} fill={entry.color} />)}
                       </Pie>
                       <Tooltip formatter={(v: any) => [`${v}h`, ""]} />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : <div className="h-40 flex items-center justify-center text-sm text-gray-400">Nicio fază cu buget</div>}
                 <div className="space-y-1.5 mt-2">
-                  {donutData.map((d, i) => (
+                  {donutData.map((d: any, i: number) => (
                     <div key={i} className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-1.5">
                         <div className="w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: d.color }} />
@@ -693,7 +704,7 @@ export default function ProiectDetaliu() {
                     phases.map((phase: any) => (
                       <PhaseRow key={phase.id} phase={phase} canManage={canManage}
                         allUsers={allUsers} projectId={projectId}
-                        onRefresh={() => refetch()} activeSessionTaskId={activeSessionTaskId} />
+                        onRefresh={() => refetch()} activeSessionTaskId={activeSessionTaskId} activeSession={activeSession} />
                     ))
                   )}
                 </tbody>
@@ -797,41 +808,130 @@ export default function ProiectDetaliu() {
               disabled={updateProject.isPending || !editForm.name}>
               Salvează modificările
             </Button>
+            {user?.role === "admin" && (
+              <div className="border-t pt-3 mt-1">
+                <Button variant="outline" className="w-full text-red-600 border-red-200 hover:bg-red-50 hover:border-red-400"
+                  onClick={() => { setShowEdit(false); setShowDeleteProject(true); }}>
+                  ⚠️ Șterge proiect definitiv
+                </Button>
+              </div>
+            )}
           </div>
         </DialogContent>
       </Dialog>
 
       {/* ── Add phase dialog ────────────────────────────────────────────────── */}
-      <Dialog open={showAddPhase} onOpenChange={setShowAddPhase}>
+      <Dialog open={showAddPhase} onOpenChange={(open) => { setShowAddPhase(open); if (!open) { setPhaseMode("pick"); setSelectedTemplatePhaseId(""); setPhaseForm({ name: "", code: "", color: PALETTE_COLORS[0], budgetHours: "" }); } }}>
         <DialogContent className="max-w-sm">
           <DialogHeader><DialogTitle>Adaugă fază</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div>
-              <Label className="text-xs">Cod fază (ex: G)</Label>
-              <Input value={phaseForm.code} onChange={e => setPhaseForm(f => ({ ...f, code: e.target.value }))} className="mt-1" placeholder="G" />
+            {/* Step 1: pick from template or create custom */}
+            {phaseMode === "pick" ? (
+              <>
+                <div>
+                  <Label className="text-xs">Faze predefinite (din template)</Label>
+                  <div className="mt-2 space-y-1 max-h-60 overflow-y-auto">
+                    {((defaultTemplate as any)?.phases || []).map((tp: any) => {
+                      const alreadyAdded = phases.some((ph: any) => ph.name === tp.name);
+                      return (
+                        <button key={tp.id}
+                          disabled={alreadyAdded}
+                          onClick={() => {
+                            setSelectedTemplatePhaseId(String(tp.id));
+                            setPhaseForm({ name: tp.name, code: tp.code || "", color: tp.color || PALETTE_COLORS[0], budgetHours: "" });
+                            setPhaseMode("custom");
+                          }}
+                          className={`w-full text-left px-3 py-2 rounded-md text-sm border transition-colors ${
+                            alreadyAdded
+                              ? "border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed"
+                              : "border-gray-200 hover:border-[#FFCB09] hover:bg-yellow-50"
+                          }`}>
+                          <span className="font-medium">{tp.code ? `${tp.code}. ` : ""}{tp.name}</span>
+                          {alreadyAdded && <span className="ml-2 text-xs text-gray-400">(deja adaugată)</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="border-t pt-3">
+                  <button onClick={() => { setPhaseMode("custom"); setSelectedTemplatePhaseId(""); }}
+                    className="w-full text-sm text-[#FFCB09] hover:underline font-medium text-left">
+                    + Creează o fază nouă (personalizată)
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {selectedTemplatePhaseId && (
+                  <button onClick={() => { setPhaseMode("pick"); setSelectedTemplatePhaseId(""); setPhaseForm({ name: "", code: "", color: PALETTE_COLORS[0], budgetHours: "" }); }}
+                    className="text-xs text-gray-500 hover:text-gray-700 flex items-center gap-1">
+                    ← Înnapoi la faze predefinite
+                  </button>
+                )}
+                <div>
+                  <Label className="text-xs">Cod fază (ex: G)</Label>
+                  <Input value={phaseForm.code} onChange={e => setPhaseForm(f => ({ ...f, code: e.target.value }))} className="mt-1" placeholder="G" />
+                </div>
+                <div>
+                  <Label className="text-xs">Nume fază *</Label>
+                  <Input value={phaseForm.name} onChange={e => setPhaseForm(f => ({ ...f, name: e.target.value }))} className="mt-1" placeholder="ex: H. Deplasare" />
+                </div>
+                <div>
+                  <Label className="text-xs">Buget ore</Label>
+                  <Input type="number" min="0" value={phaseForm.budgetHours} onChange={e => setPhaseForm(f => ({ ...f, budgetHours: e.target.value }))} className="mt-1" placeholder="0" />
+                </div>
+                <div>
+                  <Label className="text-xs">Culoare</Label>
+                  <ColorPalette value={phaseForm.color} onChange={color => setPhaseForm(f => ({ ...f, color }))} className="mt-2" />
+                </div>
+                <Button className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
+                  onClick={() => addPhase.mutate({
+                    projectId, name: phaseForm.name,
+                    code: phaseForm.code || undefined,
+                    color: phaseForm.color,
+                    budgetHours: phaseForm.budgetHours || "0"
+                  })}
+                  disabled={addPhase.isPending || !phaseForm.name}>
+                  Adaugă faza
+                </Button>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Delete project confirmation dialog ─────────────────────────────── */}
+      <Dialog open={showDeleteProject} onOpenChange={(open) => { setShowDeleteProject(open); if (!open) setDeleteConfirmName(""); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-red-600">⚠️ Șterge proiect</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-700">
+              Această acțiune este <strong>ireversibilă</strong>. Vor fi șterse toate fazele, sarcinile, sesiunile de lucru și datele asociate proiectului.
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700">
+              Scrie numele proiectului pentru a confirma: <strong>{project.name}</strong>
             </div>
             <div>
-              <Label className="text-xs">Nume fază *</Label>
-              <Input value={phaseForm.name} onChange={e => setPhaseForm(f => ({ ...f, name: e.target.value }))} className="mt-1" placeholder="ex: Proiectare Structură" />
+              <Label className="text-xs">Confirmă numele proiectului</Label>
+              <Input
+                value={deleteConfirmName}
+                onChange={e => setDeleteConfirmName(e.target.value)}
+                className="mt-1"
+                placeholder={project.name}
+                autoFocus
+              />
             </div>
-            <div>
-              <Label className="text-xs">Buget ore</Label>
-              <Input type="number" min="0" value={phaseForm.budgetHours} onChange={e => setPhaseForm(f => ({ ...f, budgetHours: e.target.value }))} className="mt-1" placeholder="0" />
+            <div className="flex gap-2">
+              <Button variant="outline" className="flex-1" onClick={() => { setShowDeleteProject(false); setDeleteConfirmName(""); }}>Anulează</Button>
+              <Button
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                disabled={deleteConfirmName !== project.name || deleteProject.isPending}
+                onClick={() => deleteProject.mutate({ id: projectId, confirmName: deleteConfirmName })}>
+                {deleteProject.isPending ? "Se șterge..." : "Șterge definitiv"}
+              </Button>
             </div>
-            <div>
-              <Label className="text-xs">Culoare</Label>
-              <ColorPalette value={phaseForm.color} onChange={color => setPhaseForm(f => ({ ...f, color }))} className="mt-2" />
-            </div>
-            <Button className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-              onClick={() => addPhase.mutate({
-                projectId, name: phaseForm.name,
-                code: phaseForm.code || undefined,
-                color: phaseForm.color,
-                budgetHours: phaseForm.budgetHours || "0"
-              })}
-              disabled={addPhase.isPending || !phaseForm.name}>
-              Adaugă faza
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
@@ -866,7 +966,7 @@ export default function ProiectDetaliu() {
               </Select>
             </div>
             <Button className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-              onClick={() => memberUserId && addMember.mutate({ projectId, userId: parseInt(memberUserId), projectRole: memberRole })}
+              onClick={() => memberUserId && addMember.mutate({ projectId, userId: parseInt(memberUserId), projectRole: memberRole as "coordonator" | "membru" | "consultant" })}
               disabled={addMember.isPending || !memberUserId}>
               Adaugă în echipă
             </Button>
