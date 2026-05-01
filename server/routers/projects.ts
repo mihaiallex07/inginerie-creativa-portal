@@ -631,7 +631,6 @@ export const projectsRouter = router({
            WHERE (
              pt.id IN (SELECT taskId FROM task_assignees WHERE userId = ${ctx.user.id})
              OR pt.assignedUserId = ${ctx.user.id}
-             OR p.id IN (SELECT projectId FROM project_members WHERE userId = ${ctx.user.id})
            )
              AND pt.status != 'finalizata'
              AND p.status = 'activ'

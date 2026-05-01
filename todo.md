@@ -713,3 +713,7 @@
 
 - [x] Fix: butonul Pauză din header resetează timpul la 0 în loc să-l păstreze (fix: displayElapsed ref + onMutate freeze)
 - [x] Fix: FloatingTimer picker — afișează doar proiectele și task-urile la care ești înrolat (myEnrolledTasks), fără Tip activitate
+
+## Sprint 63 — Fix task dropdown TT
+
+- [x] Fix: myEnrolledTasks returna toate task-urile din proiectele la care ești membru (nu doar cele la care ești direct responsabil) — eliminat condiția `project_members` din query
