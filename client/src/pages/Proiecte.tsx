@@ -338,22 +338,40 @@ export default function Proiecte() {
             <Card key={p.id} className="border-border hover:shadow-sm transition-shadow cursor-pointer" onClick={() => setLocation(`/proiecte/${p.id}`)}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
+                  {/* Emoji / icon block */}
                   <div
-                    className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 text-lg font-bold"
-                    style={{ backgroundColor: p.color ?? "#FFCB09", color: "#221F1F" }}
+                    className="h-14 w-14 rounded-xl flex flex-col items-center justify-center shrink-0 gap-0.5"
+                    style={{ backgroundColor: p.color ?? "#FFCB09" }}
                   >
-                    {p.emoji ? p.emoji : (p.abbreviation || p.code?.slice(0, 2) || p.name?.slice(0, 2) || "P").toUpperCase().slice(0, 2)}
+                    {p.emoji ? (
+                      <span className="text-2xl leading-none">{p.emoji}</span>
+                    ) : (
+                      <span className="text-lg font-bold text-[#221F1F] leading-none">
+                        {(p.abbreviation || p.code?.slice(0, 3) || p.name?.slice(0, 2) || "P").toUpperCase().slice(0, 3)}
+                      </span>
+                    )}
+                    {(p.code || p.abbreviation) && (
+                      <span className="text-[9px] font-mono text-[#221F1F]/70 leading-none">
+                        {[p.code, p.abbreviation].filter(Boolean).join(" · ")}
+                      </span>
+                    )}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
-                      {p.code && <span className="text-[10px] font-mono text-muted-foreground">{p.code}</span>}
                       <span className={`text-[10px] px-1.5 py-0.5 rounded font-semibold ${STATUS_COLORS[p.status]}`}>
                         {STATUS_LABELS[p.status]}
                       </span>
                     </div>
                     <p className="text-sm font-semibold text-foreground truncate">{p.name}</p>
                     {p.clientName && <p className="text-xs text-muted-foreground truncate">{p.clientName}</p>}
-                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                    {(p.startDate || p.endDate) && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {p.startDate ? new Date(p.startDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—"}
+                        {" – "}
+                        {p.endDate ? new Date(p.endDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" }) : "—"}
+                      </p>
+                    )}
+                    <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                       {p.phaseCount > 0 && <span>{p.phaseCount} etape</span>}
                       {p.memberCount > 0 && <span>{p.memberCount} membri</span>}
                     </div>

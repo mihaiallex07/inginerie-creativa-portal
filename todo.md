@@ -644,20 +644,21 @@
 
 ## Sprint 55 — Îmbunătățiri sistem proiecte
 
-- [ ] DB: Adăugare etape G (Social Media) și H (Administrativ) în template
-- [ ] DB: Câmpuri `abbreviation` și `emoji` în tabelul `projects`
-- [ ] DB: Suport multi-angajat per task (tabel `task_assignees`)
-- [ ] Backend: `addPhase` returnează și task-urile predefinite din template
-- [ ] Backend: Validare buget etapă la adăugare/editare task (suma task-uri ≤ buget etapă)
-- [ ] Backend: `createProject` acceptă `selectedPhaseIds`, `abbreviation`, `emoji`
-- [ ] Backend: Proceduri multi-assignee: `addTaskAssignee`, `removeTaskAssignee`
-- [ ] Frontend ProiectDetaliu: Redenumire Faze→Etape
-- [ ] Frontend ProiectDetaliu: Butoane creion+coș direct (fără meniu 3 puncte)
-- [ ] Frontend ProiectDetaliu: Click pe text extinde/închide etapa
-- [ ] Frontend ProiectDetaliu: Validare buget vizuală (roșu dacă depășit)
-- [ ] Frontend ProiectDetaliu: Multi-assignee per task (avatare multiple)
-- [ ] Frontend ProiectDetaliu: Butoane Pause/Resume/Stop vizibile pe task-ul activ
-- [ ] Frontend ProiectDetaliu: Responsabili = doar membrii echipei proiectului
-- [ ] Frontend ProiectDetaliu: Fix text invizibil la Contractare în Prezentare generală
-- [ ] Frontend Proiecte: Modal creare proiect cu bifă etape prestabilite + abreviere + emoji
-- [ ] Dashboard: Notificări budget (25/50/75/90%) doar pentru task-urile la care ești responsabil
+- [x] DB: Adăugare etape G (Social Media) și H (Administrativ) în template
+- [x] DB: Câmpuri `abbreviation` și `emoji` în tabelul `projects`
+- [x] DB: Suport multi-angajat per task (tabel `task_assignees`)
+- [x] Backend: `addPhase` returnează și task-urile predefinite din template
+- [x] Backend: Validare buget etapă la adăugare/editare task (suma task-uri ≤ buget etapă)
+- [x] Backend: `createProject` acceptă `selectedPhaseIds`, `abbreviation`, `emoji`
+- [x] Backend: Proceduri multi-assignee: `addTaskAssignee`, `removeTaskAssignee`
+- [x] Frontend ProiectDetaliu: Redenumire Faze→Etape
+- [x] Frontend ProiectDetaliu: Butoane creion+coș direct (fără meniu 3 puncte)
+- [x] Frontend ProiectDetaliu: Click pe text extinde/închide etapa
+- [x] Frontend ProiectDetaliu: Validare buget vizuală (roșu dacă depășit)
+- [x] Frontend ProiectDetaliu: Multi-assignee per task (avatare multiple)
+- [x] Frontend ProiectDetaliu: Butoane Pause/Resume/Stop vizibile pe task-ul activ
+- [x] Frontend ProiectDetaliu: Responsabili = doar membrii echipei proiectului
+- [x] Frontend ProiectDetaliu: Fix text invizibil la Contractare în Prezentare generală
+- [x] Frontend Proiecte: Modal creare proiect cu bifă etape prestabilite + abreviere + emoji
+- [x] Dashboard: Notificări budget (25/50/75/90%) doar pentru task-urile la care ești responsabil
+- [x] Frontend Proiecte: Card proiect redesenat — bloc emoji 56×56 cu fundal colorat, cod+abreviere sub emoji, perioadă proiect (dd.MM.yyyy) sub client, badge status mutat sus
