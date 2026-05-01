@@ -89,24 +89,148 @@ export const projects = mysqlTable("projects", {
   id: int("id").autoincrement().primaryKey(),
   name: varchar("name", { length: 256 }).notNull(),
   code: varchar("code", { length: 64 }),
-  abbreviation: varchar("abbreviation", { length: 32 }),
-  driveId: varchar("driveId", { length: 128 }),
-  drivePath: text("drivePath"),
-  status: mysqlEnum("status", ["activ", "suspendat", "finalizat", "intern"]).default("activ").notNull(),
   clientName: varchar("clientName", { length: 256 }),
-  estimatedHours: decimal("estimatedHours", { precision: 8, scale: 2 }),
+  status: mysqlEnum("status", ["activ", "suspendat", "finalizat", "intern"]).default("activ").notNull(),
+  // isGeneral = true for "Activități Generale" (Social Media, Administrativ etc.)
+  isGeneral: boolean("isGeneral").default(false).notNull(),
   managerId: int("managerId"),
-  coordinatorId: int("coordinatorId"),
   startDate: date("startDate"),
   endDate: date("endDate"),
   description: text("description"),
   color: varchar("color", { length: 16 }).default("#FFCB09"),
+  driveId: varchar("driveId", { length: 128 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
 export type Project = typeof projects.$inferSelect;
 export type InsertProject = typeof projects.$inferInsert;
+
+// ─── PROJECT PHASES ──────────────────────────────────────────────────────────
+export const projectPhases = mysqlTable("project_phases", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  code: varchar("code", { length: 16 }), // e.g. "A", "B", "C"
+  displayOrder: int("displayOrder").default(0).notNull(),
+  budgetHours: decimal("budgetHours", { precision: 8, scale: 2 }).default("0").notNull(),
+  color: varchar("color", { length: 16 }).default("#FFCB09"),
+  status: mysqlEnum("status", ["activa", "suspendata", "finalizata"]).default("activa").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProjectPhase = typeof projectPhases.$inferSelect;
+export type InsertProjectPhase = typeof projectPhases.$inferInsert;
+
+// ─── PROJECT TASKS ───────────────────────────────────────────────────────────
+export const projectTasks = mysqlTable("project_tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  phaseId: int("phaseId").notNull(),
+  projectId: int("projectId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  displayOrder: int("displayOrder").default(0).notNull(),
+  budgetHours: decimal("budgetHours", { precision: 8, scale: 2 }).default("0").notNull(),
+  // minutesWorked is computed from task_sessions, stored for performance
+  minutesWorked: int("minutesWorked").default(0).notNull(),
+  status: mysqlEnum("status", ["neinceputa", "in_lucru", "in_pauza", "finalizata", "blocata"]).default("neinceputa").notNull(),
+  assignedUserId: int("assignedUserId"), // primary assignee
+  alertSent25: boolean("alertSent25").default(false).notNull(),
+  alertSent50: boolean("alertSent50").default(false).notNull(),
+  alertSent75: boolean("alertSent75").default(false).notNull(),
+  alertSent90: boolean("alertSent90").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProjectTask = typeof projectTasks.$inferSelect;
+export type InsertProjectTask = typeof projectTasks.$inferInsert;
+
+// ─── TASK SESSIONS (Start/Pause/Resume/Stop) ─────────────────────────────────
+export const taskSessions = mysqlTable("task_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull(),
+  projectId: int("projectId").notNull(),
+  userId: int("userId").notNull(),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  pausedAt: timestamp("pausedAt"),
+  resumedAt: timestamp("resumedAt"),
+  endedAt: timestamp("endedAt"),
+  // Total active minutes (excluding pauses), updated on stop
+  totalMinutes: int("totalMinutes").default(0).notNull(),
+  status: mysqlEnum("status", ["activa", "in_pauza", "finalizata"]).default("activa").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TaskSession = typeof taskSessions.$inferSelect;
+export type InsertTaskSession = typeof taskSessions.$inferInsert;
+
+// ─── HOUR BANK ───────────────────────────────────────────────────────────────
+// Daily summary of minutes worked per user (aggregated from task_sessions)
+export const hourBank = mysqlTable("hour_bank", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  date: date("date").notNull(),
+  minutesWorked: int("minutesWorked").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type HourBank = typeof hourBank.$inferSelect;
+export type InsertHourBank = typeof hourBank.$inferInsert;
+
+// ─── TASK HOUR REQUESTS ──────────────────────────────────────────────────────
+// Employee requests additional hours for a task with justification
+export const taskHourRequests = mysqlTable("task_hour_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull(),
+  projectId: int("projectId").notNull(),
+  userId: int("userId").notNull(),
+  requestedHours: decimal("requestedHours", { precision: 6, scale: 2 }).notNull(),
+  justification: text("justification").notNull(),
+  status: mysqlEnum("status", ["in_asteptare", "aprobata", "respinsa"]).default("in_asteptare").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewNote: text("reviewNote"),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TaskHourRequest = typeof taskHourRequests.$inferSelect;
+export type InsertTaskHourRequest = typeof taskHourRequests.$inferInsert;
+
+// ─── PROJECT TEMPLATES ───────────────────────────────────────────────────────
+export const projectTemplates = mysqlTable("project_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  isDefault: boolean("isDefault").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProjectTemplate = typeof projectTemplates.$inferSelect;
+
+export const templatePhases = mysqlTable("template_phases", {
+  id: int("id").autoincrement().primaryKey(),
+  templateId: int("templateId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  code: varchar("code", { length: 16 }),
+  displayOrder: int("displayOrder").default(0).notNull(),
+  color: varchar("color", { length: 16 }).default("#FFCB09"),
+});
+
+export type TemplatePhase = typeof templatePhases.$inferSelect;
+
+export const templateTasks = mysqlTable("template_tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  templatePhaseId: int("templatePhaseId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  displayOrder: int("displayOrder").default(0).notNull(),
+});
+
+export type TemplateTask = typeof templateTasks.$inferSelect;
 
 // ─── TIME TRACKING ───────────────────────────────────────────────────────────
 export const timeEntries = mysqlTable("time_entries", {
@@ -330,34 +454,19 @@ export type CompanyEvent = typeof companyEvents.$inferSelect;
 export type InsertCompanyEvent = typeof companyEvents.$inferInsert;
 
 // ─── PROJECT MEMBERS (echipă proiect) ──────────────────────────────────────────────
+// Multiple coordinators per project/phase are supported via projectRole
 export const projectMembers = mysqlTable("project_members", {
   id: int("id").autoincrement().primaryKey(),
   projectId: int("projectId").notNull(),
   userId: int("userId").notNull(),
+  // phaseId: if set, coordinator is scoped to this phase only
+  phaseId: int("phaseId"),
   projectRole: mysqlEnum("projectRole", ["coordonator", "membru", "consultant"]).default("membru").notNull(),
-  allocatedHours: decimal("allocatedHours", { precision: 8, scale: 2 }),
   joinedAt: timestamp("joinedAt").defaultNow().notNull(),
 });
 
 export type ProjectMember = typeof projectMembers.$inferSelect;
 export type InsertProjectMember = typeof projectMembers.$inferInsert;
-
-// ─── PROJECT BUDGET ITEMS (bugetare ore pe categorii) ──────────────────────────
-export const projectBudgetItems = mysqlTable("project_budget_items", {
-  id: int("id").autoincrement().primaryKey(),
-  projectId: int("projectId").notNull(),
-  category: mysqlEnum("category", [
-    "proiectare", "consultanta", "sedinta", "documentare",
-    "deplasare", "administrativ", "verificare", "executie"
-  ]).notNull(),
-  description: text("description"),
-  budgetedHours: decimal("budgetedHours", { precision: 8, scale: 2 }).notNull(),
-  assignedUserId: int("assignedUserId"),
-  createdAt: timestamp("createdAt").defaultNow().notNull(),
-  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
-export type ProjectBudgetItem = typeof projectBudgetItems.$inferSelect;
-export type InsertProjectBudgetItem = typeof projectBudgetItems.$inferInsert;
 
 // ─── APP SETTINGS (key-value store for admin-managed settings) ──────────────
 export const appSettings = mysqlTable("app_settings", {

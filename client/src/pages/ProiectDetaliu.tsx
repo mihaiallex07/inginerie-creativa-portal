@@ -7,27 +7,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
+import { useState, useEffect } from "react";
 import { useParams, useLocation } from "wouter";
 import {
-  ArrowLeft,
-  FolderOpen,
-  ExternalLink,
-  Users,
-  UserPlus,
-  Crown,
-  UserMinus,
-  Clock,
-  Briefcase,
-  Calculator,
-  Plus,
-  Pencil,
-  Trash2,
-  BarChart3,
-  CalendarDays,
-  Settings2,
+  ArrowLeft, FolderOpen, ExternalLink, Users, UserPlus, Crown,
+  UserMinus, Clock, Plus, Pencil, Trash2, CalendarDays, Settings2,
+  ChevronDown, ChevronRight, Play, Pause, Square, CheckCircle2,
+  Circle, AlertCircle, Layers, Timer, Coins, RefreshCw,
 } from "lucide-react";
-import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 
 const STATUS_COLORS: Record<string, string> = {
@@ -36,35 +25,35 @@ const STATUS_COLORS: Record<string, string> = {
   finalizat: "bg-gray-100 text-gray-700 border-gray-200",
   intern: "bg-blue-100 text-blue-800 border-blue-200",
 };
-
 const STATUS_LABELS: Record<string, string> = {
-  activ: "Activ",
-  suspendat: "Suspendat",
-  finalizat: "Finalizat",
-  intern: "Intern",
+  activ: "Activ", suspendat: "Suspendat", finalizat: "Finalizat", intern: "Intern",
 };
-
+const PHASE_STATUS_COLORS: Record<string, string> = {
+  activa: "bg-green-100 text-green-700",
+  suspendata: "bg-amber-100 text-amber-700",
+  finalizata: "bg-gray-100 text-gray-600",
+};
+const TASK_STATUS_COLORS: Record<string, string> = {
+  neinceputa: "text-gray-400",
+  "in_progres": "text-blue-500",
+  in_verificare: "text-amber-500",
+  finalizata: "text-green-500",
+  blocata: "text-red-500",
+};
+const TASK_STATUS_LABELS: Record<string, string> = {
+  neinceputa: "Neîncepută",
+  "in_progres": "În progres",
+  in_verificare: "În verificare",
+  finalizata: "Finalizată",
+  blocata: "Blocată",
+};
 const PROJECT_ROLE_LABELS: Record<string, string> = {
-  coordonator: "Coordonator",
-  membru: "Membru",
-  consultant: "Consultant",
+  coordonator: "Coordonator", membru: "Membru", consultant: "Consultant",
 };
-
 const PROJECT_ROLE_COLORS: Record<string, string> = {
   coordonator: "bg-yellow-100 text-yellow-800 border-yellow-300",
   membru: "bg-green-100 text-green-800 border-green-200",
   consultant: "bg-purple-100 text-purple-800 border-purple-200",
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  proiectare: "Proiectare",
-  consultanta: "Consultanță",
-  sedinta: "Ședință",
-  documentare: "Documentare",
-  deplasare: "Deplasare",
-  administrativ: "Administrativ",
-  verificare: "Verificare",
-  executie: "Execuție",
 };
 
 function getInitials(name: string | null) {
@@ -72,6 +61,287 @@ function getInitials(name: string | null) {
   return name.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
 }
 
+function TaskStatusIcon({ status }: { status: string }) {
+  const cls = TASK_STATUS_COLORS[status] || "text-gray-400";
+  if (status === "finalizata") return <CheckCircle2 className={`h-4 w-4 ${cls}`} />;
+  if (status === "in_progres") return <RefreshCw className={`h-4 w-4 ${cls}`} />;
+  if (status === "blocata") return <AlertCircle className={`h-4 w-4 ${cls}`} />;
+  if (status === "in_verificare") return <Clock className={`h-4 w-4 ${cls}`} />;
+  return <Circle className={`h-4 w-4 ${cls}`} />;
+}
+
+function formatDuration(minutes: number) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m}min`;
+  if (m === 0) return `${h}h`;
+  return `${h}h ${m}min`;
+}
+
+// ─── Active Session Timer ──────────────────────────────────────────────────
+function ActiveSessionBanner({ session, onPause, onStop }: {
+  session: any;
+  onPause: () => void;
+  onStop: () => void;
+}) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!session || session.status !== "activa") return;
+    const startMs = new Date(session.startedAt).getTime();
+    const update = () => setElapsed(Math.floor((Date.now() - startMs) / 1000));
+    update();
+    const id = setInterval(update, 1000);
+    return () => clearInterval(id);
+  }, [session]);
+
+  if (!session) return null;
+  const totalSecs = elapsed + (session.accumulatedMinutes ?? 0) * 60;
+  const hh = String(Math.floor(totalSecs / 3600)).padStart(2, "0");
+  const mm = String(Math.floor((totalSecs % 3600) / 60)).padStart(2, "0");
+  const ss = String(totalSecs % 60).padStart(2, "0");
+
+  return (
+    <div className="fixed bottom-4 right-4 z-50 bg-[#221F1F] text-white rounded-xl shadow-2xl px-5 py-3 flex items-center gap-4 border border-[#FFCB09]/30">
+      <Timer className="h-5 w-5 text-[#FFCB09]" />
+      <div>
+        <p className="text-xs text-gray-400">Sesiune activă</p>
+        <p className="font-mono text-lg font-bold text-[#FFCB09]">{hh}:{mm}:{ss}</p>
+        {session.taskName && <p className="text-xs text-gray-300 truncate max-w-[180px]">{session.taskName}</p>}
+      </div>
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" className="border-gray-600 text-white hover:bg-gray-700 h-8 px-3" onClick={onPause}>
+          <Pause className="h-3.5 w-3.5" />
+        </Button>
+        <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white h-8 px-3" onClick={onStop}>
+          <Square className="h-3.5 w-3.5" />
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Phase Row ─────────────────────────────────────────────────────────────
+function PhaseRow({
+  phase, tasks, canManage, projectId, userId, activeSession,
+  onAddTask, onEditPhase, onDeletePhase, onStartSession, onPauseSession, onStopSession,
+  utils,
+}: any) {
+  const [expanded, setExpanded] = useState(true);
+  const [editTaskOpen, setEditTaskOpen] = useState(false);
+  const [editingTask, setEditingTask] = useState<any>(null);
+  const [taskForm, setTaskForm] = useState({ name: "", description: "", estimatedHours: "", status: "neinceputa", assignedUserId: "" });
+
+  const updateTaskMutation = trpc.projects.updateTask.useMutation({
+    onSuccess: () => {
+      toast.success("Sarcină actualizată!");
+      setEditTaskOpen(false);
+      utils.projects.tasksByPhase.invalidate({ phaseId: phase.id });
+    },
+    onError: (e: any) => toast.error(e.message || "Eroare"),
+  });
+
+  const deleteTaskMutation = trpc.projects.deleteTask.useMutation({
+    onSuccess: () => {
+      toast.success("Sarcină ștearsă!");
+      utils.projects.tasksByPhase.invalidate({ phaseId: phase.id });
+    },
+    onError: (e: any) => toast.error(e.message || "Eroare"),
+  });
+
+  function openEditTask(task: any) {
+    setEditingTask(task);
+    setTaskForm({
+      name: task.name,
+      description: task.description || "",
+      estimatedHours: task.estimatedHours ? String(task.estimatedHours) : "",
+      status: task.status,
+      assignedUserId: task.assignedUserId ? String(task.assignedUserId) : "",
+    });
+    setEditTaskOpen(true);
+  }
+
+  const phaseTasks = tasks ?? [];
+  const done = phaseTasks.filter((t: any) => t.status === "finalizata").length;
+  const total = phaseTasks.length;
+
+  return (
+    <div className="border border-border rounded-lg overflow-hidden">
+      {/* Phase header */}
+      <div
+        className="flex items-center gap-3 px-4 py-3 bg-muted/30 cursor-pointer hover:bg-muted/50 transition-colors"
+        onClick={() => setExpanded(e => !e)}
+      >
+        {expanded ? <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" /> : <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />}
+        {phase.color && <div className="h-3 w-3 rounded-full shrink-0" style={{ backgroundColor: phase.color }} />}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2">
+            {phase.code && <span className="text-xs font-mono text-muted-foreground">{phase.code}</span>}
+            <span className="text-sm font-semibold text-foreground">{phase.name}</span>
+            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${PHASE_STATUS_COLORS[phase.status] || "bg-gray-100 text-gray-600"}`}>
+              {phase.status === "activa" ? "Activă" : phase.status === "suspendata" ? "Suspendată" : "Finalizată"}
+            </span>
+          </div>
+          {total > 0 && (
+            <div className="flex items-center gap-2 mt-1">
+              <div className="flex-1 max-w-[120px] bg-gray-200 rounded-full h-1.5">
+                <div className="h-1.5 rounded-full bg-[#FFCB09] transition-all" style={{ width: `${total > 0 ? (done / total) * 100 : 0}%` }} />
+              </div>
+              <span className="text-[10px] text-muted-foreground">{done}/{total} sarcini</span>
+            </div>
+          )}
+        </div>
+        {phase.budgetHours && (
+          <span className="text-xs text-muted-foreground shrink-0">{phase.budgetHours}h buget</span>
+        )}
+        {canManage && (
+          <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onAddTask(phase)}>
+              <Plus className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEditPhase(phase)}>
+              <Pencil className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => {
+              if (confirm(`Ștergi faza "${phase.name}"? Toate sarcinile vor fi șterse.`)) onDeletePhase(phase.id);
+            }}>
+              <Trash2 className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Tasks */}
+      {expanded && (
+        <div className="divide-y divide-border/50">
+          {phaseTasks.length === 0 ? (
+            <div className="px-4 py-4 text-center text-sm text-muted-foreground">
+              Nicio sarcină în această fază
+              {canManage && <span className="ml-1">— apasă <strong>+</strong> pentru a adăuga</span>}
+            </div>
+          ) : (
+            phaseTasks.map((task: any) => {
+              const isActive = activeSession?.taskId === task.id && activeSession?.status === "activa";
+              const isPaused = activeSession?.taskId === task.id && activeSession?.status === "pauza";
+              return (
+                <div key={task.id} className={`flex items-center gap-3 px-4 py-2.5 hover:bg-muted/20 transition-colors ${isActive ? "bg-yellow-50/50" : ""}`}>
+                  <TaskStatusIcon status={task.status} />
+                  <div className="flex-1 min-w-0">
+                    <p className={`text-sm ${task.status === "finalizata" ? "line-through text-muted-foreground" : "text-foreground"}`}>{task.name}</p>
+                    <div className="flex items-center gap-3 mt-0.5">
+                      {task.estimatedHours && (
+                        <span className="text-[10px] text-muted-foreground">{task.estimatedHours}h estimate</span>
+                      )}
+                      {task.workedMinutes > 0 && (
+                        <span className="text-[10px] text-blue-600">{formatDuration(task.workedMinutes)} lucrate</span>
+                      )}
+                      {task.assignedUserName && (
+                        <span className="text-[10px] text-muted-foreground">{task.assignedUserName}</span>
+                      )}
+                    </div>
+                  </div>
+                  {/* Session controls */}
+                  <div className="flex items-center gap-1 shrink-0">
+                    {isActive ? (
+                      <>
+                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-amber-300 text-amber-700" onClick={() => onPauseSession()}>
+                          <Pause className="h-3 w-3 mr-1" /> Pauză
+                        </Button>
+                        <Button size="sm" className="h-7 px-2 text-xs bg-red-100 text-red-700 hover:bg-red-200" onClick={() => onStopSession()}>
+                          <Square className="h-3 w-3 mr-1" /> Stop
+                        </Button>
+                      </>
+                    ) : isPaused ? (
+                      <>
+                        <Button size="sm" className="h-7 px-2 text-xs bg-green-100 text-green-700 hover:bg-green-200" onClick={() => onStartSession(task.id)}>
+                          <Play className="h-3 w-3 mr-1" /> Continuă
+                        </Button>
+                        <Button size="sm" className="h-7 px-2 text-xs bg-red-100 text-red-700 hover:bg-red-200" onClick={() => onPauseSession()}>
+                          <Square className="h-3 w-3 mr-1" /> Stop
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="h-7 px-2 text-xs text-muted-foreground hover:text-green-700 hover:bg-green-50"
+                        disabled={!!activeSession && activeSession.status === "activa"}
+                        onClick={() => onStartSession(task.id)}
+                      >
+                        <Play className="h-3 w-3 mr-1" /> Start
+                      </Button>
+                    )}
+                    {canManage && (
+                      <>
+                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEditTask(task)}>
+                          <Pencil className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => { if (confirm(`Ștergi sarcina "${task.name}"?`)) deleteTaskMutation.mutate({ id: task.id }); }}>
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Edit Task Dialog */}
+      <Dialog open={editTaskOpen} onOpenChange={setEditTaskOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Editează sarcina</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label className="text-xs">Nume sarcină *</Label>
+              <Input value={taskForm.name} onChange={e => setTaskForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs">Descriere</Label>
+              <Textarea value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} rows={2} className="mt-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Ore estimate</Label>
+                <Input type="number" value={taskForm.estimatedHours} onChange={e => setTaskForm(f => ({ ...f, estimatedHours: e.target.value }))} className="mt-1" min="0.5" step="0.5" />
+              </div>
+              <div>
+                <Label className="text-xs">Status</Label>
+                <Select value={taskForm.status} onValueChange={v => setTaskForm(f => ({ ...f, status: v }))}>
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(TASK_STATUS_LABELS).map(([k, v]) => <SelectItem key={k} value={k}>{v}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setEditTaskOpen(false)}>Anulează</Button>
+              <Button
+                className="flex-1 bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
+                disabled={updateTaskMutation.isPending || !taskForm.name}
+                onClick={() => editingTask && updateTaskMutation.mutate({
+                  id: editingTask.id,
+                  name: taskForm.name,
+                  description: taskForm.description || undefined,
+                  budgetHours: taskForm.estimatedHours || undefined,
+                  status: taskForm.status as any,
+                })}
+              >
+                {updateTaskMutation.isPending ? "Se salvează..." : "Salvează"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+// ─── Main Component ────────────────────────────────────────────────────────
 export default function ProiectDetaliu() {
   const params = useParams<{ id: string }>();
   const [, setLocation] = useLocation();
@@ -79,57 +349,157 @@ export default function ProiectDetaliu() {
   const utils = trpc.useUtils();
   const projectId = Number(params.id);
 
-  const [addMemberOpen, setAddMemberOpen] = useState(false);
-  const [selectedUserId, setSelectedUserId] = useState<string>("");
-  const [selectedRole, setSelectedRole] = useState<string>("membru");
-  const [allocatedHours, setAllocatedHours] = useState("");
+  const [activeTab, setActiveTab] = useState<"faze" | "echipa" | "banca-ore">("faze");
 
-  // Budget state
-  const [budgetDialogOpen, setBudgetDialogOpen] = useState(false);
-  const [editingBudgetItem, setEditingBudgetItem] = useState<any>(null);
-  const [budgetForm, setBudgetForm] = useState({
-    category: "proiectare" as string,
-    description: "",
-    budgetedHours: "",
-    assignedUserId: "" as string,
+  // Add Phase dialog
+  const [addPhaseOpen, setAddPhaseOpen] = useState(false);
+  const [editPhaseOpen, setEditPhaseOpen] = useState(false);
+  const [editingPhase, setEditingPhase] = useState<any>(null);
+  const [phaseForm, setPhaseForm] = useState({ name: "", code: "", budgetHours: "", color: "#FFCB09" });
+
+  // Add Task dialog
+  const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [addTaskPhase, setAddTaskPhase] = useState<any>(null);
+  const [taskForm, setTaskForm] = useState({ name: "", description: "", estimatedHours: "" });
+
+  // Add Member dialog
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState("");
+  const [selectedRole, setSelectedRole] = useState("membru");
+
+  // Edit project
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editForm, setEditForm] = useState({
+    name: "", code: "", clientName: "", status: "activ",
+    description: "", driveId: "", color: "#FFCB09", startDate: "", endDate: "",
   });
 
-  const { data: project, isLoading } = trpc.projects.getWithTeam.useQuery({ id: projectId });
+  // Delete project
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
+
+  // Hour bank request
+  const [hourRequestOpen, setHourRequestOpen] = useState(false);
+  const [hourRequestForm, setHourRequestForm] = useState({ phaseId: "", requestedHours: "", justification: "" });
+
+  // ─── Queries ──────────────────────────────────────────────────────────────
+  const { data: project, isLoading } = trpc.projects.get.useQuery({ id: projectId });
+  const { data: phases } = trpc.projects.phases.useQuery({ projectId });
+  const { data: members } = trpc.projects.members.useQuery({ projectId });
+  const { data: activeSession } = trpc.projects.activeSession.useQuery();
+  const { data: hourBank } = trpc.projects.myHourBank.useQuery(undefined);
+  const { data: hourRequests } = trpc.projects.hourRequests.useQuery({ projectId }, {
+    enabled: user?.role === "admin" || user?.role === "coordonator",
+  });
   const { data: allUsers } = trpc.adminUsers.list.useQuery(undefined, {
     enabled: user?.role === "admin" || user?.role === "coordonator",
   });
-  const { data: budgetData } = trpc.projects.budgetItems.useQuery({ projectId });
 
   const canManage = user?.role === "admin" || user?.role === "coordonator";
   const isAdmin = user?.role === "admin";
 
-  // Edit project state
-  const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editForm, setEditForm] = useState({
-    name: "", code: "", abbreviation: "", clientName: "", status: "activ",
-    description: "", driveId: "", color: "#FFCB09",
-    startDate: "", endDate: "",
-  });
-
-  // Delete project state
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [deleteConfirmName, setDeleteConfirmName] = useState("");
-
-  const editProjectMutation = trpc.projects.upsert.useMutation({
-    onSuccess: () => {
-      toast.success("Proiect actualizat!");
-      setEditDialogOpen(false);
-      utils.projects.getWithTeam.invalidate({ id: projectId });
-    },
-    onError: () => toast.error("Eroare la actualizare"),
+  // ─── Mutations ────────────────────────────────────────────────────────────
+  const updateProjectMutation = trpc.projects.update.useMutation({
+    onSuccess: () => { toast.success("Proiect actualizat!"); setEditDialogOpen(false); utils.projects.get.invalidate({ id: projectId }); },
+    onError: (e) => toast.error(e.message || "Eroare"),
   });
 
   const deleteProjectMutation = trpc.projects.delete.useMutation({
+    onSuccess: () => { toast.success("Proiect șters!"); setLocation("/proiecte"); },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const addPhaseMutation = trpc.projects.addPhase.useMutation({
     onSuccess: () => {
-      toast.success("Proiect șters!");
-      setLocation("/proiecte");
+      toast.success("Fază adăugată!");
+      setAddPhaseOpen(false);
+      setPhaseForm({ name: "", code: "", budgetHours: "", color: "#FFCB09" });
+      utils.projects.phases.invalidate({ projectId });
     },
-    onError: (err) => toast.error(err.message || "Eroare la ștergere"),
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const updatePhaseMutation = trpc.projects.updatePhase.useMutation({
+    onSuccess: () => {
+      toast.success("Fază actualizată!");
+      setEditPhaseOpen(false);
+      utils.projects.phases.invalidate({ projectId });
+    },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const deletePhaseMutation = trpc.projects.deletePhase.useMutation({
+    onSuccess: () => { toast.success("Fază ștearsă!"); utils.projects.phases.invalidate({ projectId }); },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const addTaskMutation = trpc.projects.addTask.useMutation({
+    onSuccess: () => {
+      toast.success("Sarcină adăugată!");
+      setAddTaskOpen(false);
+      setTaskForm({ name: "", description: "", estimatedHours: "" });
+      if (addTaskPhase) utils.projects.tasksByPhase.invalidate({ phaseId: addTaskPhase.id });
+    },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const addMemberMutation = trpc.projects.addMember.useMutation({
+    onSuccess: () => {
+      toast.success("Membru adăugat!");
+      setAddMemberOpen(false);
+      setSelectedUserId("");
+      setSelectedRole("membru");
+      utils.projects.members.invalidate({ projectId });
+    },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const removeMemberMutation = trpc.projects.removeMember.useMutation({
+    onSuccess: () => { toast.success("Membru eliminat!"); utils.projects.members.invalidate({ projectId }); },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const updateRoleMutation = trpc.projects.updateMemberRole.useMutation({
+    onSuccess: () => { toast.success("Rol actualizat!"); utils.projects.members.invalidate({ projectId }); },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const startSessionMutation = trpc.projects.startSession.useMutation({
+    onSuccess: () => { toast.success("Sesiune pornită!"); utils.projects.activeSession.invalidate(); },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const pauseSessionMutation = trpc.projects.pauseSession.useMutation({
+    onSuccess: () => { toast.success("Sesiune pusă pe pauză"); utils.projects.activeSession.invalidate(); },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const stopSessionMutation = trpc.projects.stopSession.useMutation({
+    onSuccess: () => {
+      toast.success("Sesiune finalizată!");
+      utils.projects.activeSession.invalidate();
+      utils.projects.myHourBank.invalidate();
+    },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const requestHoursMutation = trpc.projects.requestMoreHours.useMutation({
+    onSuccess: () => {
+      toast.success("Cerere trimisă!");
+      setHourRequestOpen(false);
+      setHourRequestForm({ phaseId: "", requestedHours: "", justification: "" });
+      utils.projects.myHourBank.invalidate();
+    },
+    onError: (e) => toast.error(e.message || "Eroare"),
+  });
+
+  const reviewHourRequestMutation = trpc.projects.reviewHourRequest.useMutation({
+    onSuccess: () => {
+      toast.success("Cerere procesată!");
+      utils.projects.hourRequests.invalidate({ projectId });
+      utils.projects.myHourBank.invalidate();
+    },
+    onError: (e) => toast.error(e.message || "Eroare"),
   });
 
   function openEditDialog() {
@@ -137,7 +507,6 @@ export default function ProiectDetaliu() {
     setEditForm({
       name: project.name || "",
       code: project.code || "",
-      abbreviation: (project as any).abbreviation || "",
       clientName: project.clientName || "",
       status: project.status || "activ",
       description: project.description || "",
@@ -149,120 +518,20 @@ export default function ProiectDetaliu() {
     setEditDialogOpen(true);
   }
 
-  function handleSaveEdit() {
-    editProjectMutation.mutate({
-      id: projectId,
-      name: editForm.name,
-      code: editForm.code || undefined,
-      abbreviation: editForm.abbreviation || undefined,
-      clientName: editForm.clientName || undefined,
-      status: editForm.status as any,
-      description: editForm.description || undefined,
-      driveId: editForm.driveId || undefined,
-      color: editForm.color || undefined,
-      startDate: editForm.startDate || null,
-      endDate: editForm.endDate || null,
+  function openEditPhase(phase: any) {
+    setEditingPhase(phase);
+    setPhaseForm({
+      name: phase.name,
+      code: phase.code || "",
+      budgetHours: phase.budgetHours ? String(phase.budgetHours) : "",
+      color: phase.color || "#FFCB09",
     });
-  }
-
-  function handleDeleteProject() {
-    if (!project) return;
-    deleteProjectMutation.mutate({ id: projectId, confirmName: deleteConfirmName });
-  }
-
-  const addMemberMutation = trpc.projects.addMember.useMutation({
-    onSuccess: () => {
-      toast.success("Membru adăugat în echipă!");
-      setAddMemberOpen(false);
-      setSelectedUserId("");
-      setSelectedRole("membru");
-      setAllocatedHours("");
-      utils.projects.getWithTeam.invalidate({ id: projectId });
-    },
-    onError: () => toast.error("Eroare la adăugare"),
-  });
-
-  const removeMemberMutation = trpc.projects.removeMember.useMutation({
-    onSuccess: () => {
-      toast.success("Membru eliminat din echipă");
-      utils.projects.getWithTeam.invalidate({ id: projectId });
-    },
-    onError: () => toast.error("Eroare la eliminare"),
-  });
-
-  const updateRoleMutation = trpc.projects.updateMemberRole.useMutation({
-    onSuccess: () => {
-      toast.success("Rol actualizat!");
-      utils.projects.getWithTeam.invalidate({ id: projectId });
-    },
-    onError: () => toast.error("Eroare la actualizare"),
-  });
-
-  const addBudgetMutation = trpc.projects.addBudgetItem.useMutation({
-    onSuccess: () => {
-      toast.success("Categorie buget adăugată!");
-      setBudgetDialogOpen(false);
-      resetBudgetForm();
-      utils.projects.budgetItems.invalidate({ projectId });
-    },
-    onError: () => toast.error("Eroare la adăugare"),
-  });
-
-  const updateBudgetMutation = trpc.projects.updateBudgetItem.useMutation({
-    onSuccess: () => {
-      toast.success("Buget actualizat!");
-      setBudgetDialogOpen(false);
-      setEditingBudgetItem(null);
-      resetBudgetForm();
-      utils.projects.budgetItems.invalidate({ projectId });
-    },
-    onError: () => toast.error("Eroare la actualizare"),
-  });
-
-  const deleteBudgetMutation = trpc.projects.deleteBudgetItem.useMutation({
-    onSuccess: () => {
-      toast.success("Categorie buget ștearsă!");
-      utils.projects.budgetItems.invalidate({ projectId });
-    },
-    onError: () => toast.error("Eroare la ștergere"),
-  });
-
-  function resetBudgetForm() {
-    setBudgetForm({ category: "proiectare", description: "", budgetedHours: "", assignedUserId: "" });
-  }
-
-  function openEditBudget(item: any) {
-    setEditingBudgetItem(item);
-    setBudgetForm({
-      category: item.category,
-      description: item.description || "",
-      budgetedHours: String(item.budgetedHours),
-      assignedUserId: item.assignedUserId ? String(item.assignedUserId) : "",
-    });
-    setBudgetDialogOpen(true);
-  }
-
-  function handleSaveBudget() {
-    if (!budgetForm.budgetedHours || Number(budgetForm.budgetedHours) <= 0) {
-      return toast.error("Introduceți un număr valid de ore");
-    }
-    const payload = {
-      projectId,
-      category: budgetForm.category as any,
-      description: budgetForm.description || undefined,
-      budgetedHours: budgetForm.budgetedHours,
-      assignedUserId: budgetForm.assignedUserId ? Number(budgetForm.assignedUserId) : null,
-    };
-    if (editingBudgetItem) {
-      updateBudgetMutation.mutate({ id: editingBudgetItem.id, ...payload });
-    } else {
-      addBudgetMutation.mutate(payload);
-    }
+    setEditPhaseOpen(true);
   }
 
   if (isLoading) {
     return (
-      <div className="max-w-4xl mx-auto space-y-4">
+      <div className="max-w-5xl mx-auto space-y-4">
         <div className="h-8 w-48 bg-muted rounded animate-pulse" />
         <div className="h-32 bg-muted rounded-lg animate-pulse" />
         <div className="h-64 bg-muted rounded-lg animate-pulse" />
@@ -272,7 +541,7 @@ export default function ProiectDetaliu() {
 
   if (!project) {
     return (
-      <div className="max-w-4xl mx-auto text-center py-20">
+      <div className="max-w-5xl mx-auto text-center py-20">
         <FolderOpen className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-40" />
         <p className="text-muted-foreground">Proiectul nu a fost găsit</p>
         <Button variant="outline" className="mt-4" onClick={() => setLocation("/proiecte")}>
@@ -282,209 +551,172 @@ export default function ProiectDetaliu() {
     );
   }
 
-  const members = (project.members ?? []) as any[];
-  const coordinator = members.find((m: any) => m.projectRole === "coordonator");
-  const regularMembers = members.filter((m: any) => m.projectRole !== "coordonator");
-
-  // Users not yet in the project
-  const existingUserIds = new Set(members.map((m: any) => m.userId));
+  const membersList = (members ?? []) as any[];
+  const existingUserIds = new Set(membersList.map((m: any) => m.userId));
   const availableUsers = (allUsers ?? []).filter((u: any) => u.isActive && !existingUserIds.has(u.id));
+  const phasesList = (phases ?? []) as any[];
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
+    <div className="max-w-5xl mx-auto space-y-5 pb-24">
+      {/* Active session banner */}
+      {activeSession && (
+        <ActiveSessionBanner
+          session={activeSession}
+          onPause={() => pauseSessionMutation.mutate({ sessionId: activeSession.id })}
+          onStop={() => stopSessionMutation.mutate({ sessionId: activeSession.id })}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" onClick={() => setLocation("/proiecte")} className="shrink-0">
-          <ArrowLeft className="h-4 w-4" />
+        <Button variant="ghost" size="icon" className="shrink-0" onClick={() => setLocation("/proiecte")}>
+          <ArrowLeft className="h-5 w-5" />
         </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-2">
-            <div
-              className="h-8 w-8 rounded-lg flex items-center justify-center shrink-0"
-              style={{ backgroundColor: project.color ?? "#FFCB09" }}
-            >
-              <FolderOpen className="h-4 w-4 text-white" />
-            </div>
-            <h1 className="text-xl font-bold text-foreground">{project.name}</h1>
-            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold border ${STATUS_COLORS[project.status]}`}>
-              {STATUS_LABELS[project.status]}
+        <div
+          className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0"
+          style={{ backgroundColor: project.color ?? "#FFCB09" }}
+        >
+          <FolderOpen className="h-5 w-5 text-white" />
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            {project.code && <span className="text-xs font-mono text-muted-foreground">{project.code}</span>}
+            <h1 className="text-lg font-bold text-foreground truncate">{project.name}</h1>
+            <span className={`text-xs px-2 py-0.5 rounded border font-medium ${STATUS_COLORS[project.status] || ""}`}>
+              {STATUS_LABELS[project.status] || project.status}
             </span>
           </div>
-          {project.code && <p className="text-xs text-muted-foreground mt-0.5 ml-10">Cod: {project.code}</p>}
+          {project.clientName && <p className="text-sm text-muted-foreground">{project.clientName}</p>}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           {project.driveId && (
-            <a
-              href={`https://drive.google.com/drive/folders/${project.driveId}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-[#FFCB09] transition-colors"
-            >
-              <ExternalLink className="h-4 w-4" /> Google Drive
+            <a href={`https://drive.google.com/drive/folders/${project.driveId}`} target="_blank" rel="noopener noreferrer"
+              className="p-2 rounded hover:bg-muted transition-colors" title="Google Drive">
+              <ExternalLink className="h-4 w-4 text-muted-foreground" />
             </a>
           )}
           {canManage && (
-            <Button variant="outline" size="sm" onClick={openEditDialog}>
-              <Pencil className="h-3.5 w-3.5 mr-1" /> Editare
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={openEditDialog}>
+              <Settings2 className="h-3.5 w-3.5" /> Editează
             </Button>
           )}
           {isAdmin && (
-            <Button variant="outline" size="sm" className="text-red-600 border-red-200 hover:bg-red-50" onClick={() => { setDeleteConfirmName(""); setDeleteDialogOpen(true); }}>
-              <Trash2 className="h-3.5 w-3.5 mr-1" /> Șterge
+            <Button variant="ghost" size="icon" className="text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => setDeleteDialogOpen(true)}>
+              <Trash2 className="h-4 w-4" />
             </Button>
           )}
         </div>
       </div>
 
-      {/* Project Info Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <Card className="border-border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-blue-50 flex items-center justify-center shrink-0">
-              <Briefcase className="h-5 w-5 text-blue-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Client</p>
-              <p className="text-sm font-semibold truncate">{project.clientName || "Nespecificat"}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-green-50 flex items-center justify-center shrink-0">
-              <Users className="h-5 w-5 text-green-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Echipă</p>
-              <p className="text-sm font-semibold">{members.length} {members.length === 1 ? "membru" : "membri"}</p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-purple-50 flex items-center justify-center shrink-0">
-              <CalendarDays className="h-5 w-5 text-purple-600" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-xs text-muted-foreground">Perioadă</p>
-              <p className="text-sm font-semibold truncate">
-                {project.startDate && project.endDate
-                  ? `${new Date(project.startDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "short" })} – ${new Date(project.endDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "short", year: "numeric" })}`
-                  : project.startDate
-                    ? `Din ${new Date(project.startDate).toLocaleDateString("ro-RO", { day: "2-digit", month: "short", year: "numeric" })}`
-                    : "Nespecificat"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="border-border">
-          <CardContent className="p-4 flex items-center gap-3">
-            <div className="h-10 w-10 rounded-lg bg-yellow-50 flex items-center justify-center shrink-0">
-              <Clock className="h-5 w-5 text-yellow-600" />
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Ore bugetate</p>
-              <p className="text-sm font-semibold">
-                {budgetData && budgetData.totalBudgeted > 0
-                  ? <>{budgetData.totalBudgeted}h <span className="text-xs font-normal text-muted-foreground">({budgetData.totalWorked}h lucrate)</span></>
-                  : project.estimatedHours ? `${project.estimatedHours}h` : "Nespecificat"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Meta info */}
+      <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+        {project.startDate && (
+          <div className="flex items-center gap-1.5">
+            <CalendarDays className="h-3.5 w-3.5" />
+            <span>{new Date(project.startDate).toLocaleDateString("ro-RO")}</span>
+            {project.endDate && <><span>→</span><span>{new Date(project.endDate).toLocaleDateString("ro-RO")}</span></>}
+          </div>
+        )}
+        {project.description && <p className="text-sm text-muted-foreground">{project.description}</p>}
       </div>
 
-      {/* Description */}
-      {project.description && (
-        <Card className="border-border">
-          <CardContent className="p-4">
-            <p className="text-xs text-muted-foreground mb-1">Descriere</p>
-            <p className="text-sm text-foreground whitespace-pre-wrap">{project.description}</p>
-          </CardContent>
-        </Card>
-      )}
+      {/* Tabs */}
+      <div className="flex gap-1 border-b border-border">
+        {[
+          { id: "faze", label: "Faze & Sarcini", icon: Layers },
+          { id: "echipa", label: "Echipă", icon: Users },
+          { id: "banca-ore", label: "Bancă de Ore", icon: Coins },
+        ].map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            onClick={() => setActiveTab(id as any)}
+            className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === id
+                ? "border-[#FFCB09] text-foreground"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <Icon className="h-4 w-4" />
+            {label}
+          </button>
+        ))}
+      </div>
 
-      {/* Team Section */}
-      <Card className="border-border">
-        <CardHeader className="pb-3">
+      {/* ─── TAB: FAZE & SARCINI ─────────────────────────────────────────── */}
+      {activeTab === "faze" && (
+        <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="h-4 w-4 text-[#FFCB09]" />
-              Echipa proiectului
-            </CardTitle>
+            <h2 className="text-sm font-semibold text-foreground">Faze proiect</h2>
             {canManage && (
-              <Button
-                size="sm"
-                className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold gap-1.5"
-                onClick={() => setAddMemberOpen(true)}
-              >
-                <UserPlus className="h-3.5 w-3.5" />
-                Adaugă membru
+              <Button size="sm" className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold gap-1.5" onClick={() => setAddPhaseOpen(true)}>
+                <Plus className="h-3.5 w-3.5" /> Adaugă fază
               </Button>
             )}
           </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {/* Coordinator */}
-          {coordinator && (
-            <div className="mb-4">
-              <p className="text-xs text-muted-foreground mb-2 flex items-center gap-1.5">
-                <Crown className="h-3 w-3 text-[#FFCB09]" />
-                COORDONATOR PROIECT
-              </p>
-              <div className="flex items-center gap-3 p-3 rounded-lg bg-yellow-50/50 border border-yellow-200/50">
-                <Avatar className="h-10 w-10 border-2 border-[#FFCB09]">
-                  <AvatarFallback className="bg-[#FFCB09] text-[#221F1F] font-bold text-sm">
-                    {getInitials(coordinator.name)}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground">{coordinator.name}</p>
-                  <p className="text-xs text-muted-foreground">{coordinator.email}</p>
-                  {coordinator.jobTitle && (
-                    <p className="text-xs text-muted-foreground">{coordinator.jobTitle} — {coordinator.department}</p>
-                  )}
-                </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${PROJECT_ROLE_COLORS.coordonator}`}>
-                  Coordonator
-                </span>
-                {canManage && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50"
-                    onClick={() => removeMemberMutation.mutate({ projectId, userId: coordinator.userId })}
-                    title="Elimină din echipă"
-                  >
-                    <UserMinus className="h-3.5 w-3.5" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          )}
 
-          {/* Regular Members */}
-          {regularMembers.length > 0 && (
-            <div>
-              <p className="text-xs text-muted-foreground mb-2">MEMBRI ECHIPĂ ({regularMembers.length})</p>
-              <div className="space-y-1.5">
-                {regularMembers.map((m: any) => (
-                  <div key={m.userId} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/50 transition-colors">
-                    <Avatar className="h-9 w-9">
-                      <AvatarFallback className="bg-muted text-foreground font-semibold text-xs">
-                        {getInitials(m.name)}
-                      </AvatarFallback>
+          {phasesList.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg">
+              <Layers className="h-10 w-10 mx-auto mb-3 opacity-40" />
+              <p className="text-sm">Nicio fază definită</p>
+              {canManage && <p className="text-xs mt-1">Adaugă prima fază pentru a organiza sarcinile</p>}
+            </div>
+          ) : (
+            phasesList.map((phase: any) => (
+              <PhaseTasksWrapper
+                key={phase.id}
+                phase={phase}
+                canManage={canManage}
+                projectId={projectId}
+                userId={user?.id}
+                activeSession={activeSession}
+                onAddTask={(p: any) => { setAddTaskPhase(p); setAddTaskOpen(true); }}
+                onEditPhase={openEditPhase}
+                onDeletePhase={(id: number) => deletePhaseMutation.mutate({ id })}
+                onStartSession={(taskId: number) => startSessionMutation.mutate({ taskId, projectId })}
+                onPauseSession={() => activeSession && pauseSessionMutation.mutate({ sessionId: activeSession.id })}
+                onStopSession={() => activeSession && stopSessionMutation.mutate({ sessionId: activeSession.id })}
+                utils={utils}
+              />
+            ))
+          )}
+        </div>
+      )}
+
+      {/* ─── TAB: ECHIPĂ ─────────────────────────────────────────────────── */}
+      {activeTab === "echipa" && (
+        <Card className="border-border">
+          <CardHeader className="pb-3">
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base flex items-center gap-2">
+                <Users className="h-4 w-4 text-[#FFCB09]" /> Echipa proiectului
+              </CardTitle>
+              {canManage && (
+                <Button size="sm" className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold gap-1.5" onClick={() => setAddMemberOpen(true)}>
+                  <UserPlus className="h-3.5 w-3.5" /> Adaugă
+                </Button>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            {membersList.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                <p className="text-sm">Niciun membru în echipă</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {membersList.map((m: any) => (
+                  <div key={m.userId} className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-muted/30 transition-colors">
+                    <Avatar className="h-8 w-8 shrink-0">
+                      <AvatarFallback className="text-xs bg-muted">{getInitials(m.name)}</AvatarFallback>
                     </Avatar>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-foreground">{m.name}</p>
-                      <p className="text-xs text-muted-foreground">{m.jobTitle || m.department || m.email}</p>
+                      <p className="text-sm font-medium text-foreground truncate">{m.name || m.email}</p>
+                      {m.department && <p className="text-xs text-muted-foreground">{m.department}</p>}
                     </div>
                     {canManage ? (
-                      <Select
-                        value={m.projectRole}
-                        onValueChange={(v) => updateRoleMutation.mutate({ projectId, userId: m.userId, projectRole: v as any })}
-                      >
-                        <SelectTrigger className="w-32 h-7 text-xs">
+                      <Select value={m.projectRole} onValueChange={v => updateRoleMutation.mutate({ projectId, userId: m.userId, projectRole: v as any })}>
+                        <SelectTrigger className={`h-7 text-xs w-32 border ${PROJECT_ROLE_COLORS[m.projectRole] || ""}`}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -494,247 +726,263 @@ export default function ProiectDetaliu() {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${PROJECT_ROLE_COLORS[m.projectRole]}`}>
-                        {PROJECT_ROLE_LABELS[m.projectRole]}
+                      <span className={`text-xs px-2 py-0.5 rounded border ${PROJECT_ROLE_COLORS[m.projectRole] || ""}`}>
+                        {PROJECT_ROLE_LABELS[m.projectRole] || m.projectRole}
                       </span>
                     )}
-                    {m.allocatedHours && (
-                      <span className="text-xs text-muted-foreground">{m.allocatedHours}h</span>
-                    )}
+                    {m.projectRole === "coordonator" && <Crown className="h-3.5 w-3.5 text-[#FFCB09] shrink-0" />}
                     {canManage && (
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50"
-                        onClick={() => removeMemberMutation.mutate({ projectId, userId: m.userId })}
-                        title="Elimină din echipă"
-                      >
+                      <Button variant="ghost" size="icon" className="h-7 w-7 text-red-400 hover:text-red-600 hover:bg-red-50 shrink-0"
+                        onClick={() => removeMemberMutation.mutate({ projectId, userId: m.userId })}>
                         <UserMinus className="h-3.5 w-3.5" />
                       </Button>
                     )}
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Empty state */}
-          {members.length === 0 && (
-            <div className="text-center py-8 text-muted-foreground">
-              <Users className="h-8 w-8 mx-auto mb-2 opacity-40" />
-              <p className="text-sm">Niciun membru în echipă</p>
-              {canManage && <p className="text-xs mt-1">Adaugă membri folosind butonul de mai sus</p>}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Budget Section */}
-      {canManage && (
-        <Card className="border-border">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Calculator className="h-4 w-4 text-[#FFCB09]" />
-                Bugetare ore pe categorii
-              </CardTitle>
-              <Button
-                size="sm"
-                className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold gap-1.5"
-                onClick={() => { setEditingBudgetItem(null); resetBudgetForm(); setBudgetDialogOpen(true); }}
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Adaugă categorie
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {/* Summary bar */}
-            {budgetData && budgetData.totalBudgeted > 0 && (
-              <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">Sumar buget</span>
-                  </div>
-                  <div className="flex items-center gap-4 text-sm">
-                    <span>Bugetat: <strong>{budgetData.totalBudgeted}h</strong></span>
-                    <span>Lucrat: <strong className={budgetData.totalWorked > budgetData.totalBudgeted ? "text-red-600" : "text-green-600"}>{budgetData.totalWorked}h</strong></span>
-                    <span>Rămas: <strong>{Math.max(0, budgetData.totalBudgeted - budgetData.totalWorked)}h</strong></span>
-                  </div>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2.5">
-                  <div
-                    className={`h-2.5 rounded-full transition-all ${budgetData.totalWorked > budgetData.totalBudgeted ? "bg-red-500" : "bg-[#FFCB09]"}`}
-                    style={{ width: `${Math.min(100, (budgetData.totalWorked / budgetData.totalBudgeted) * 100)}%` }}
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* Budget items table */}
-            {budgetData && budgetData.items.length > 0 ? (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-border">
-                      <th className="text-left py-2 px-2 text-xs text-muted-foreground font-medium">Categorie</th>
-                      <th className="text-left py-2 px-2 text-xs text-muted-foreground font-medium">Descriere</th>
-                      <th className="text-right py-2 px-2 text-xs text-muted-foreground font-medium">Ore bugetate</th>
-                      <th className="text-left py-2 px-2 text-xs text-muted-foreground font-medium">Alocat</th>
-                      <th className="text-right py-2 px-2 text-xs text-muted-foreground font-medium w-20">Acțiuni</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {budgetData.items.map((item: any) => (
-                      <tr key={item.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                        <td className="py-2 px-2">
-                          <span className="inline-flex items-center gap-1.5 text-xs font-medium px-2 py-0.5 rounded-full bg-yellow-50 text-yellow-800 border border-yellow-200">
-                            {CATEGORY_LABELS[item.category] || item.category}
-                          </span>
-                        </td>
-                        <td className="py-2 px-2 text-xs text-muted-foreground max-w-[200px] truncate">
-                          {item.description || "—"}
-                        </td>
-                        <td className="py-2 px-2 text-right font-semibold">{item.budgetedHours}h</td>
-                        <td className="py-2 px-2">
-                          {item.assignedUserName ? (
-                            <span className="text-xs">{item.assignedUserName}</span>
-                          ) : (
-                            <span className="text-xs text-muted-foreground">Nealocat</span>
-                          )}
-                        </td>
-                        <td className="py-2 px-2 text-right">
-                          <div className="flex items-center justify-end gap-1">
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => openEditBudget(item)}>
-                              <Pencil className="h-3 w-3" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-6 w-6 text-red-400 hover:text-red-600 hover:bg-red-50"
-                              onClick={() => { if (confirm("Ștergi această categorie de buget?")) deleteBudgetMutation.mutate({ id: item.id }); }}
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-muted-foreground">
-                <Calculator className="h-8 w-8 mx-auto mb-2 opacity-40" />
-                <p className="text-sm">Nicio categorie de buget definită</p>
-                <p className="text-xs mt-1">Adaugă categorii de ore folosind butonul de mai sus</p>
-              </div>
             )}
           </CardContent>
         </Card>
       )}
 
-      {/* Budget Dialog */}
-      <Dialog open={budgetDialogOpen} onOpenChange={(v) => { setBudgetDialogOpen(v); if (!v) { setEditingBudgetItem(null); resetBudgetForm(); } }}>
+      {/* ─── TAB: BANCĂ DE ORE ───────────────────────────────────────────── */}
+      {activeTab === "banca-ore" && (
+        <div className="space-y-4">
+          {/* My hour bank */}
+          <Card className="border-border">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Coins className="h-4 w-4 text-[#FFCB09]" /> Banca mea de ore
+                </CardTitle>
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setHourRequestOpen(true)}>
+                  <Plus className="h-3.5 w-3.5" /> Solicită ore
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!hourBank || hourBank.length === 0 ? (
+                <div className="text-center py-6 text-muted-foreground">
+                  <Coins className="h-8 w-8 mx-auto mb-2 opacity-40" />
+                  <p className="text-sm">Nu ai ore alocate în acest proiect</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {(hourBank as any[]).map((entry: any) => {
+                    const used = entry.usedMinutes / 60;
+                    const total = entry.allocatedHours;
+                    const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
+                    return (
+                      <div key={entry.id} className="p-3 rounded-lg border border-border">
+                        <div className="flex items-center justify-between mb-2">
+                          <div>
+                            <p className="text-sm font-medium">{entry.phaseName || "General"}</p>
+                            <p className="text-xs text-muted-foreground">{entry.category || "toate categoriile"}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm font-semibold">{used.toFixed(1)}h / {total}h</p>
+                            <p className={`text-xs ${pct >= 90 ? "text-red-600" : "text-muted-foreground"}`}>{pct.toFixed(0)}% utilizat</p>
+                          </div>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`h-2 rounded-full transition-all ${pct >= 100 ? "bg-red-500" : pct >= 80 ? "bg-amber-500" : "bg-[#FFCB09]"}`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Hour requests (admin/coordonator) */}
+          {canManage && hourRequests && (hourRequests as any[]).length > 0 && (
+            <Card className="border-border">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-[#FFCB09]" /> Cereri ore în așteptare
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {(hourRequests as any[]).filter((r: any) => r.status === "pending").map((req: any) => (
+                    <div key={req.id} className="flex items-start gap-3 p-3 rounded-lg border border-border">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium">{req.requesterName || req.requesterEmail}</p>
+                        <p className="text-xs text-muted-foreground">{req.phaseName || "General"} — {req.requestedHours}h solicitate</p>
+                        {req.justification && <p className="text-xs text-muted-foreground mt-1 italic">"{req.justification}"</p>}
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <Button size="sm" className="h-7 bg-green-100 text-green-700 hover:bg-green-200 text-xs"
+                          onClick={() => reviewHourRequestMutation.mutate({ id: req.id, status: "aprobata" })}>
+                          Aprobă
+                        </Button>
+                        <Button size="sm" className="h-7 bg-red-100 text-red-700 hover:bg-red-200 text-xs"
+                          onClick={() => reviewHourRequestMutation.mutate({ id: req.id, status: "respinsa" })}>
+                          Respinge
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ─── DIALOGS ─────────────────────────────────────────────────────── */}
+
+      {/* Add Phase */}
+      <Dialog open={addPhaseOpen} onOpenChange={setAddPhaseOpen}>
         <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>{editingBudgetItem ? "Editează categorie buget" : "Adaugă categorie buget"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
-              <Label>Categorie activitate</Label>
-              <Select value={budgetForm.category} onValueChange={(v) => setBudgetForm(f => ({ ...f, category: v }))}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(CATEGORY_LABELS).map(([k, v]) => (
-                    <SelectItem key={k} value={k}>{v}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          <DialogHeader><DialogTitle>Adaugă fază</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label className="text-xs">Nume fază *</Label>
+              <Input value={phaseForm.name} onChange={e => setPhaseForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
             </div>
-            <div className="space-y-1.5">
-              <Label>Descriere (opțional)</Label>
-              <Textarea
-                value={budgetForm.description}
-                onChange={e => setBudgetForm(f => ({ ...f, description: e.target.value }))}
-                placeholder="Detalii despre activitatea bugetată..."
-                rows={2}
-              />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Cod (opțional)</Label>
+                <Input value={phaseForm.code} onChange={e => setPhaseForm(f => ({ ...f, code: e.target.value }))} className="mt-1" placeholder="ex: A" />
+              </div>
+              <div>
+                <Label className="text-xs">Ore buget</Label>
+                <Input type="number" value={phaseForm.budgetHours} onChange={e => setPhaseForm(f => ({ ...f, budgetHours: e.target.value }))} className="mt-1" min="0" step="0.5" />
+              </div>
             </div>
-            <div className="space-y-1.5">
-              <Label>Ore bugetate</Label>
-              <Input
-                type="number"
-                value={budgetForm.budgetedHours}
-                onChange={e => setBudgetForm(f => ({ ...f, budgetedHours: e.target.value }))}
-                placeholder="ex: 40"
-                min="0.5"
-                step="0.5"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label>Alocat angajatului (opțional)</Label>
-              <Select value={budgetForm.assignedUserId} onValueChange={(v) => setBudgetForm(f => ({ ...f, assignedUserId: v }))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selectează angajatul" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">Nealocat</SelectItem>
-                  {members.map((m: any) => (
-                    <SelectItem key={m.userId} value={String(m.userId)}>
-                      {m.name || m.email}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-3">
+              <Label className="text-xs">Culoare</Label>
+              <input type="color" value={phaseForm.color} onChange={e => setPhaseForm(f => ({ ...f, color: e.target.value }))} className="h-8 w-16 rounded cursor-pointer" />
             </div>
             <div className="flex gap-2 pt-1">
-              <Button variant="outline" className="flex-1" onClick={() => { setBudgetDialogOpen(false); setEditingBudgetItem(null); resetBudgetForm(); }}>
-                Anulează
-              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setAddPhaseOpen(false)}>Anulează</Button>
               <Button
                 className="flex-1 bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-                onClick={handleSaveBudget}
-                disabled={addBudgetMutation.isPending || updateBudgetMutation.isPending}
+                disabled={addPhaseMutation.isPending || !phaseForm.name}
+                onClick={() => addPhaseMutation.mutate({
+                  projectId,
+                  name: phaseForm.name,
+                  code: phaseForm.code || undefined,
+                  budgetHours: phaseForm.budgetHours || undefined,
+                  color: phaseForm.color || undefined,
+                })}
               >
-                {(addBudgetMutation.isPending || updateBudgetMutation.isPending) ? "Se salvează..." : editingBudgetItem ? "Salvează" : "Adaugă"}
+                {addPhaseMutation.isPending ? "Se adaugă..." : "Adaugă faza"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Add Member Dialog */}
-      <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+      {/* Edit Phase */}
+      <Dialog open={editPhaseOpen} onOpenChange={setEditPhaseOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Editează faza</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label className="text-xs">Nume fază *</Label>
+              <Input value={phaseForm.name} onChange={e => setPhaseForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Cod</Label>
+                <Input value={phaseForm.code} onChange={e => setPhaseForm(f => ({ ...f, code: e.target.value }))} className="mt-1" />
+              </div>
+              <div>
+                <Label className="text-xs">Ore buget</Label>
+                <Input type="number" value={phaseForm.budgetHours} onChange={e => setPhaseForm(f => ({ ...f, budgetHours: e.target.value }))} className="mt-1" min="0" step="0.5" />
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Label className="text-xs">Culoare</Label>
+              <input type="color" value={phaseForm.color} onChange={e => setPhaseForm(f => ({ ...f, color: e.target.value }))} className="h-8 w-16 rounded cursor-pointer" />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setEditPhaseOpen(false)}>Anulează</Button>
+              <Button
+                className="flex-1 bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
+                disabled={updatePhaseMutation.isPending || !phaseForm.name}
+                onClick={() => editingPhase && updatePhaseMutation.mutate({
+                  id: editingPhase.id,
+                  name: phaseForm.name,
+                  code: phaseForm.code || undefined,
+                  budgetHours: phaseForm.budgetHours || undefined,
+                  color: phaseForm.color || undefined,
+                })}
+              >
+                {updatePhaseMutation.isPending ? "Se salvează..." : "Salvează"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Task */}
+      <Dialog open={addTaskOpen} onOpenChange={setAddTaskOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Adaugă membru în echipă</DialogTitle>
+            <DialogTitle>Adaugă sarcină{addTaskPhase ? ` — ${addTaskPhase.name}` : ""}</DialogTitle>
           </DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label className="text-xs">Nume sarcină *</Label>
+              <Input value={taskForm.name} onChange={e => setTaskForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs">Descriere (opțional)</Label>
+              <Textarea value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} rows={2} className="mt-1" />
+            </div>
+            <div>
+              <Label className="text-xs">Ore estimate</Label>
+              <Input type="number" value={taskForm.estimatedHours} onChange={e => setTaskForm(f => ({ ...f, estimatedHours: e.target.value }))} className="mt-1" min="0.5" step="0.5" />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setAddTaskOpen(false)}>Anulează</Button>
+              <Button
+                className="flex-1 bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
+                disabled={addTaskMutation.isPending || !taskForm.name || !addTaskPhase}
+                onClick={() => addTaskPhase && addTaskMutation.mutate({
+                  phaseId: addTaskPhase.id,
+                  projectId,
+                  name: taskForm.name,
+                  description: taskForm.description || undefined,
+                  budgetHours: taskForm.estimatedHours || undefined,
+                })}
+              >
+                {addTaskMutation.isPending ? "Se adaugă..." : "Adaugă sarcina"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Member */}
+      <Dialog open={addMemberOpen} onOpenChange={setAddMemberOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Adaugă membru în echipă</DialogTitle></DialogHeader>
           <div className="space-y-4 pt-2">
-            <div className="space-y-1.5">
+            <div>
               <Label>Angajat</Label>
               <Select value={selectedUserId} onValueChange={setSelectedUserId}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Selectează angajatul" />
-                </SelectTrigger>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selectează angajatul" /></SelectTrigger>
                 <SelectContent>
                   {availableUsers.map((u: any) => (
                     <SelectItem key={u.id} value={String(u.id)}>
-                      {u.name || u.email} {u.department ? `— ${u.department}` : ""}
+                      {u.name || u.email}{u.department ? ` — ${u.department}` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label>Rol pe proiect</Label>
+            <div>
+              <Label>Rol în proiect</Label>
               <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="coordonator">Coordonator</SelectItem>
                   <SelectItem value="membru">Membru</SelectItem>
@@ -742,31 +990,12 @@ export default function ProiectDetaliu() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="space-y-1.5">
-              <Label>Ore alocate (opțional)</Label>
-              <Input
-                type="number"
-                value={allocatedHours}
-                onChange={e => setAllocatedHours(e.target.value)}
-                placeholder="ex: 120"
-              />
-            </div>
             <div className="flex gap-2 pt-1">
-              <Button variant="outline" className="flex-1" onClick={() => setAddMemberOpen(false)}>
-                Anulează
-              </Button>
+              <Button variant="outline" className="flex-1" onClick={() => setAddMemberOpen(false)}>Anulează</Button>
               <Button
                 className="flex-1 bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-                onClick={() => {
-                  if (!selectedUserId) return toast.error("Selectează un angajat");
-                  addMemberMutation.mutate({
-                    projectId,
-                    userId: Number(selectedUserId),
-                    projectRole: selectedRole as any,
-                    allocatedHours: allocatedHours || undefined,
-                  });
-                }}
                 disabled={addMemberMutation.isPending || !selectedUserId}
+                onClick={() => addMemberMutation.mutate({ projectId, userId: Number(selectedUserId), projectRole: selectedRole as any })}
               >
                 {addMemberMutation.isPending ? "Se adaugă..." : "Adaugă"}
               </Button>
@@ -775,7 +1004,7 @@ export default function ProiectDetaliu() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Project Dialog */}
+      {/* Edit Project */}
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader>
@@ -793,10 +1022,6 @@ export default function ProiectDetaliu() {
                 <Label className="text-xs">Cod</Label>
                 <Input value={editForm.code} onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))} placeholder="ex: 222" />
               </div>
-            </div>
-            <div>
-              <Label className="text-xs">Abreviere</Label>
-              <Input value={editForm.abbreviation} onChange={e => setEditForm(f => ({ ...f, abbreviation: e.target.value.toUpperCase() }))} placeholder="ex: MVT" maxLength={10} />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -845,15 +1070,17 @@ export default function ProiectDetaliu() {
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Anulează</Button>
-              <Button className="bg-[#FFCB09] text-black hover:bg-[#e6b800]" onClick={handleSaveEdit} disabled={editProjectMutation.isPending || !editForm.name}>
-                {editProjectMutation.isPending ? "Se salvează..." : "Salvează"}
+              <Button className="bg-[#FFCB09] text-black hover:bg-[#e6b800]"
+                onClick={() => updateProjectMutation.mutate({ id: projectId, ...editForm, status: editForm.status as any, startDate: editForm.startDate || null, endDate: editForm.endDate || null })}
+                disabled={updateProjectMutation.isPending || !editForm.name}>
+                {updateProjectMutation.isPending ? "Se salvează..." : "Salvează"}
               </Button>
             </div>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Project Dialog - requires typing project name */}
+      {/* Delete Project */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -864,28 +1091,59 @@ export default function ProiectDetaliu() {
           <div className="space-y-4 mt-2">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-sm text-red-800 font-medium">Această acțiune este ireversibilă!</p>
-              <p className="text-xs text-red-600 mt-1">
-                Se vor șterge: membrii echipei, bugetul pe categorii, și legăturile cu intrările de timp.
-                Intrările de timp nu vor fi șterse, dar nu vor mai fi asociate cu acest proiect.
-              </p>
+              <p className="text-xs text-red-600 mt-1">Se vor șterge: fazele, sarcinile, sesiunile, membrii echipei și banca de ore.</p>
             </div>
             <div>
-              <Label className="text-xs">Pentru confirmare, tastați numele proiectului: <strong>{project.name}</strong></Label>
-              <Input
-                value={deleteConfirmName}
-                onChange={e => setDeleteConfirmName(e.target.value)}
-                placeholder={project.name}
-                className="mt-1 border-red-200 focus:ring-red-500"
-              />
+              <Label className="text-xs">Tastați numele proiectului pentru confirmare: <strong>{project.name}</strong></Label>
+              <Input value={deleteConfirmName} onChange={e => setDeleteConfirmName(e.target.value)} placeholder={project.name} className="mt-1 border-red-200" />
             </div>
             <div className="flex justify-end gap-2 pt-2">
               <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Anulează</Button>
-              <Button
-                variant="destructive"
-                onClick={handleDeleteProject}
-                disabled={deleteProjectMutation.isPending || deleteConfirmName !== project.name}
-              >
+              <Button variant="destructive" onClick={() => deleteProjectMutation.mutate({ id: projectId, confirmName: deleteConfirmName })}
+                disabled={deleteProjectMutation.isPending || deleteConfirmName !== project.name}>
                 {deleteProjectMutation.isPending ? "Se șterge..." : "Șterge definitiv"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hour Request */}
+      <Dialog open={hourRequestOpen} onOpenChange={setHourRequestOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader><DialogTitle>Solicită ore suplimentare</DialogTitle></DialogHeader>
+          <div className="space-y-3 pt-2">
+            <div>
+              <Label className="text-xs">Faza (opțional)</Label>
+              <Select value={hourRequestForm.phaseId} onValueChange={v => setHourRequestForm(f => ({ ...f, phaseId: v }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Toate fazele" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">General (toate fazele)</SelectItem>
+                  {phasesList.map((p: any) => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs">Ore solicitate *</Label>
+              <Input type="number" value={hourRequestForm.requestedHours} onChange={e => setHourRequestForm(f => ({ ...f, requestedHours: e.target.value }))} className="mt-1" min="0.5" step="0.5" />
+            </div>
+            <div>
+              <Label className="text-xs">Justificare</Label>
+              <Textarea value={hourRequestForm.justification} onChange={e => setHourRequestForm(f => ({ ...f, justification: e.target.value }))} rows={2} className="mt-1" placeholder="Motivul solicitării..." />
+            </div>
+            <div className="flex gap-2 pt-1">
+              <Button variant="outline" className="flex-1" onClick={() => setHourRequestOpen(false)}>Anulează</Button>
+              <Button
+                className="flex-1 bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
+                disabled={requestHoursMutation.isPending || !hourRequestForm.requestedHours}
+                onClick={() => requestHoursMutation.mutate({
+                  taskId: 0,
+                  projectId,
+                  requestedHours: hourRequestForm.requestedHours,
+                  justification: hourRequestForm.justification || "Solicitare ore suplimentare",
+                })}
+              >
+                {requestHoursMutation.isPending ? "Se trimite..." : "Trimite cererea"}
               </Button>
             </div>
           </div>
@@ -893,4 +1151,10 @@ export default function ProiectDetaliu() {
       </Dialog>
     </div>
   );
+}
+
+// ─── Phase Tasks Wrapper (loads tasks per phase) ───────────────────────────
+function PhaseTasksWrapper(props: any) {
+  const { data: tasks } = trpc.projects.tasksByPhase.useQuery({ phaseId: props.phase.id });
+  return <PhaseRow {...props} tasks={tasks} />;
 }

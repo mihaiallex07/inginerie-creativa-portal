@@ -1,6 +1,7 @@
 import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
+import { projectsRouter } from "./routers/projects";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { z } from "zod";
 import {
@@ -88,11 +89,6 @@ import {
   removeProjectMember,
   updateProjectMemberRole,
   getProjectWithTeam,
-  getProjectBudgetItems,
-  createBudgetItem,
-  updateBudgetItem,
-  deleteBudgetItem,
-  getProjectBudgetSummary,
   getProcessOverview,
   deleteProject,
   updateUsersDisplayOrder,
@@ -542,169 +538,8 @@ export const appRouter = router({
 
   // ─── PONTAJ (REMOVED — migrat la iFlow)
 
-    // ─── PROJECTS ────────────────────────────────────────────────────────────
-  projects: router({
-    list: protectedProcedure
-      .input(z.object({ status: z.string().optional() }))
-      .query(async ({ input }) => {
-        return getProjects(input.status);
-      }),
-
-    upsert: protectedProcedure
-      .input(z.object({
-        id: z.number().optional(),
-        name: z.string().min(1),
-        code: z.string().optional(),
-        abbreviation: z.string().optional(),
-        driveId: z.string().optional(),
-        status: z.enum(["activ", "suspendat", "finalizat", "intern"]).optional(),
-        clientName: z.string().optional(),
-        estimatedHours: z.string().optional(),
-        description: z.string().optional(),
-        color: z.string().optional(),
-        coordinatorId: z.number().optional().nullable(),
-        startDate: z.string().optional().nullable(),
-        endDate: z.string().optional().nullable(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin" && role !== "coordonator") {
-          throw new Error("Acces interzis");
-        }
-        const { startDate, endDate, ...rest } = input;
-        await upsertProject({
-          ...rest,
-          managerId: ctx.user.id,
-          coordinatorId: input.coordinatorId,
-          startDate: startDate ? new Date(startDate) : null,
-          endDate: endDate ? new Date(endDate) : null,
-        });
-        return { success: true };
-      }),
-
-    // Get project with full team
-    getWithTeam: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .query(async ({ input }) => {
-        return getProjectWithTeam(input.id);
-      }),
-
-    // Get project members
-    members: protectedProcedure
-      .input(z.object({ projectId: z.number() }))
-      .query(async ({ input }) => {
-        return getProjectMembers(input.projectId);
-      }),
-
-    // Add member to project (admin or coordonator)
-    addMember: protectedProcedure
-      .input(z.object({
-        projectId: z.number(),
-        userId: z.number(),
-        projectRole: z.enum(["coordonator", "membru", "consultant"]).default("membru"),
-        allocatedHours: z.string().optional(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin" && role !== "coordonator") {
-          throw new Error("Acces interzis");
-        }
-        await addProjectMember(input.projectId, input.userId, input.projectRole, input.allocatedHours);
-        // If adding as coordonator, also update the project's coordinatorId
-        if (input.projectRole === "coordonator") {
-          await upsertProject({ id: input.projectId, name: "", coordinatorId: input.userId });
-        }
-        return { success: true };
-      }),
-
-    // Remove member from project
-    removeMember: protectedProcedure
-      .input(z.object({ projectId: z.number(), userId: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin" && role !== "coordonator") {
-          throw new Error("Acces interzis");
-        }
-        await removeProjectMember(input.projectId, input.userId);
-        return { success: true };
-      }),
-
-    // ── Budget items (bugetare ore pe categorii) ──
-    budgetItems: protectedProcedure
-      .input(z.object({ projectId: z.number() }))
-      .query(async ({ input }) => {
-        return getProjectBudgetSummary(input.projectId);
-      }),
-
-    addBudgetItem: protectedProcedure
-      .input(z.object({
-        projectId: z.number(),
-        category: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]),
-        description: z.string().optional(),
-        budgetedHours: z.string(),
-        assignedUserId: z.number().optional().nullable(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin" && role !== "coordonator") throw new Error("Acces interzis");
-        return createBudgetItem(input);
-      }),
-
-    updateBudgetItem: protectedProcedure
-      .input(z.object({
-        id: z.number(),
-        category: z.enum(["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).optional(),
-        description: z.string().optional().nullable(),
-        budgetedHours: z.string().optional(),
-        assignedUserId: z.number().optional().nullable(),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin" && role !== "coordonator") throw new Error("Acces interzis");
-        const { id, ...data } = input;
-        return updateBudgetItem(id, data);
-      }),
-
-    deleteBudgetItem: protectedProcedure
-      .input(z.object({ id: z.number() }))
-      .mutation(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin" && role !== "coordonator") throw new Error("Acces interzis");
-        return deleteBudgetItem(input.id);
-      }),
-
-    // Update member role on project
-    updateMemberRole: protectedProcedure
-      .input(z.object({
-        projectId: z.number(),
-        userId: z.number(),
-        projectRole: z.enum(["coordonator", "membru", "consultant"]),
-      }))
-      .mutation(async ({ ctx, input }) => {
-        const role = ctx.user.role;
-        if (role !== "admin" && role !== "coordonator") {
-          throw new Error("Acces interzis");
-        }
-        await updateProjectMemberRole(input.projectId, input.userId, input.projectRole);
-        if (input.projectRole === "coordonator") {
-          await upsertProject({ id: input.projectId, name: "", coordinatorId: input.userId });
-        }
-        return { success: true };
-      }),
-
-    // Delete project (admin only, with cascade)
-    delete: protectedProcedure
-      .input(z.object({ id: z.number(), confirmName: z.string() }))
-      .mutation(async ({ ctx, input }) => {
-        if (ctx.user.role !== "admin") throw new Error("Doar administratorii pot șterge proiecte");
-        // Verify project exists and name matches
-        const project = await getProjectWithTeam(input.id);
-        if (!project) throw new Error("Proiectul nu există");
-        if (project.name !== input.confirmName) throw new Error("Numele proiectului nu corespunde");
-        await deleteProject(input.id);
-        return { success: true };
-      }),
-  }),
+  // ─── PROJECTS (new project management system) ──────────────────────────────
+  projects: projectsRouter,
 
   // ─── TIME TRACKING ───────────────────────────────────────────────────────
   timeTracking: router({

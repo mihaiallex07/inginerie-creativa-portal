@@ -49,7 +49,7 @@ export default function Proiecte() {
   const { data: projects, isLoading } = trpc.projects.list.useQuery({ status: statusFilter === "toate" ? undefined : statusFilter });
   const canManage = user?.role === "admin" || user?.role === "coordonator";
 
-  const upsert = trpc.projects.upsert.useMutation({
+  const createProject = trpc.projects.create.useMutation({
     onSuccess: () => {
       toast.success("Proiect salvat!");
       setOpen(false);
@@ -59,9 +59,9 @@ export default function Proiecte() {
     onError: () => toast.error("Eroare la salvare"),
   });
 
-  const filtered = projects?.filter(p =>
+  const filtered = (projects ?? []).filter((p: any) =>
     !search || p.name.toLowerCase().includes(search.toLowerCase()) || (p.clientName ?? "").toLowerCase().includes(search.toLowerCase())
-  ) ?? [];
+  );
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
@@ -141,13 +141,12 @@ export default function Proiecte() {
                 </div>
                 <Button
                   className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-                  onClick={() => upsert.mutate({
+                  onClick={() => createProject.mutate({
                     ...form,
-                    estimatedHours: undefined,
                     startDate: form.startDate || null,
                     endDate: form.endDate || null,
                   })}
-                  disabled={upsert.isPending || !form.name}
+                  disabled={createProject.isPending || !form.name}
                 >
                   Salvează proiectul
                 </Button>
@@ -182,7 +181,7 @@ export default function Proiecte() {
         </div>
       ) : filtered.length > 0 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          {filtered.map(p => (
+          {filtered.map((p: any) => (
             <Card key={p.id} className="border-border hover:shadow-sm transition-shadow cursor-pointer" onClick={() => setLocation(`/proiecte/${p.id}`)}>
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">

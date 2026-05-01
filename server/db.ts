@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, isNotNull, isNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, isNotNull, isNull, lte, or, sql, ne, inArray } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import {
   companyEvents,
@@ -13,6 +13,15 @@ import {
   processReadConfirmations,
   processes,
   projects,
+  projectPhases,
+  projectTasks,
+  projectMembers,
+  taskSessions,
+  hourBank,
+  taskHourRequests,
+  projectTemplates,
+  templatePhases,
+  templateTasks,
   proposalComments,
   proposalVotes,
   proposals,
@@ -25,6 +34,16 @@ import {
   employeeDriveFolders,
   driveFileSnapshots,
   DriveFileSnapshot,
+  Project,
+  ProjectPhase,
+  ProjectTask,
+  ProjectMember,
+  TaskSession,
+  HourBank,
+  TaskHourRequest,
+  ProjectTemplate,
+  TemplatePhase,
+  TemplateTask,
 } from "../drizzle/schema";
 import { ENV } from "./_core/env";
 
@@ -1194,7 +1213,6 @@ export async function deleteUserCompletely(userId: number) {
 }
 
 // ─── PROJECT MEMBERS (echipă proiect) ──────────────────────────────────────
-import { projectMembers } from "../drizzle/schema";
 
 export async function getProjectMembers(projectId: number) {
   const db = await getDb();
@@ -1209,23 +1227,28 @@ export async function getProjectMembers(projectId: number) {
   return (rows as any)[0] ?? [];
 }
 
-export async function addProjectMember(projectId: number, userId: number, projectRole: string = "membru", allocatedHours?: string) {
+export async function addProjectMember(projectId: number, userId: number, projectRole: string = "membru", phaseId?: number | null) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
   await db.insert(projectMembers).values({
     projectId,
     userId,
     projectRole: projectRole as any,
-    allocatedHours: allocatedHours ?? null,
-  }).onDuplicateKeyUpdate({ set: { projectRole: projectRole as any, allocatedHours: allocatedHours ?? null } });
+    phaseId: phaseId ?? null,
+  });
   return { success: true };
 }
 
-export async function removeProjectMember(projectId: number, userId: number) {
+export async function removeProjectMember(projectId: number, userId: number, phaseId?: number | null) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  await db.delete(projectMembers)
-    .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId)));
+  if (phaseId != null) {
+    await db.delete(projectMembers)
+      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId), eq(projectMembers.phaseId, phaseId)));
+  } else {
+    await db.delete(projectMembers)
+      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId), isNull(projectMembers.phaseId)));
+  }
   return { success: true };
 }
 
@@ -1245,76 +1268,6 @@ export async function getProjectWithTeam(projectId: number) {
   if (!project) return null;
   const members = await getProjectMembers(projectId);
   return { ...project, members };
-}
-
-// ─── PROJECT BUDGET ITEMS (bugetare ore pe categorii) ──────────────────────────
-import { projectBudgetItems } from "../drizzle/schema";
-
-export async function getProjectBudgetItems(projectId: number) {
-  const db = await getDb();
-  if (!db) return [];
-  const rows = await db.execute(
-    sql`SELECT pbi.*, u.name AS assignedUserName
-        FROM project_budget_items pbi
-        LEFT JOIN users u ON u.id = pbi.assignedUserId
-        WHERE pbi.projectId = ${projectId}
-        ORDER BY pbi.category, pbi.id`
-  );
-  return (rows as any)[0] ?? [];
-}
-
-export async function createBudgetItem(data: {
-  projectId: number;
-  category: string;
-  description?: string | null;
-  budgetedHours: string;
-  assignedUserId?: number | null;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("DB unavailable");
-  const result = await db.insert(projectBudgetItems).values({
-    projectId: data.projectId,
-    category: data.category as any,
-    description: data.description ?? null,
-    budgetedHours: data.budgetedHours,
-    assignedUserId: data.assignedUserId ?? null,
-  });
-  return { success: true, id: (result as any)[0]?.insertId };
-}
-
-export async function updateBudgetItem(id: number, data: {
-  category?: string;
-  description?: string | null;
-  budgetedHours?: string;
-  assignedUserId?: number | null;
-}) {
-  const db = await getDb();
-  if (!db) throw new Error("DB unavailable");
-  await db.update(projectBudgetItems).set(data as any).where(eq(projectBudgetItems.id, id));
-  return { success: true };
-}
-
-export async function deleteBudgetItem(id: number) {
-  const db = await getDb();
-  if (!db) throw new Error("DB unavailable");
-  await db.delete(projectBudgetItems).where(eq(projectBudgetItems.id, id));
-  return { success: true };
-}
-
-export async function getProjectBudgetSummary(projectId: number) {
-  const db = await getDb();
-  if (!db) return { items: [], totalBudgeted: 0, totalWorked: 0 };
-  const items = await getProjectBudgetItems(projectId);
-  const totalBudgeted = items.reduce((sum: number, i: any) => sum + Number(i.budgetedHours || 0), 0);
-  // Get actual worked hours from time_entries for this project
-  const workedRows = await db.execute(
-    sql`SELECT COALESCE(SUM(durationMinutes), 0) AS totalMinutes
-        FROM time_entries
-        WHERE projectId = ${projectId}`
-  );
-  const totalWorkedMinutes = Number((workedRows as any)[0]?.[0]?.totalMinutes ?? 0);
-  const totalWorked = Math.round((totalWorkedMinutes / 60) * 100) / 100;
-  return { items, totalBudgeted, totalWorked };
 }
 
 // ─── PROCESS OVERVIEW (calendar echipă) ──────────────────────────────────────
@@ -1354,7 +1307,6 @@ export async function getProcessOverview(dateFrom: string, dateTo: string) {
   // 4. Project member assignments (to know which projects each user is on)
   const assignments = await db.execute(
     sql`SELECT pm.userId, pm.projectId, pm.projectRole, p.name AS projectName, p.code AS projectCode,
-               p.abbreviation AS projectAbbreviation,
                p.startDate AS projectStart, p.endDate AS projectEnd, p.status AS projectStatus
         FROM project_members pm
         JOIN projects p ON p.id = pm.projectId
@@ -1374,12 +1326,15 @@ export async function getProcessOverview(dateFrom: string, dateTo: string) {
   };
 }
 
-// ─── DELETE PROJECT (cascade: members, budget items, time entries) ──────────
+// ─── DELETE PROJECT (cascade: phases, tasks, sessions, members, time entries) ──────
 export async function deleteProject(projectId: number) {
   const db = await getDb();
   if (!db) throw new Error("DB not available");
-  // Delete cascade: budget items, members, then project
-  await db.delete(projectBudgetItems).where(eq(projectBudgetItems.projectId, projectId));
+  // Delete cascade: sessions, tasks, phases, members, then project
+  await db.delete(taskSessions).where(eq(taskSessions.projectId, projectId));
+  await db.delete(taskHourRequests).where(eq(taskHourRequests.projectId, projectId));
+  await db.delete(projectTasks).where(eq(projectTasks.projectId, projectId));
+  await db.delete(projectPhases).where(eq(projectPhases.projectId, projectId));
   await db.delete(projectMembers).where(eq(projectMembers.projectId, projectId));
   // Unlink time entries (set projectId to null instead of deleting)
   await db.update(timeEntries).set({ projectId: null } as any).where(eq(timeEntries.projectId as any, projectId));
@@ -1711,4 +1666,589 @@ export async function getAllActiveDriveSnapshots(): Promise<DriveFileSnapshot[]>
   const db = await getDb();
   if (!db) return [];
   return db.select().from(driveFileSnapshots).where(isNull(driveFileSnapshots.deletedAt));
+}
+
+// ─── PROJECT MANAGEMENT HELPERS ──────────────────────────────────────────────
+
+export async function listProjects(opts?: { status?: string; userId?: number; isAdmin?: boolean }) {
+  const db = await getDb();
+  if (!db) return [];
+  if (opts?.isAdmin) {
+    const rows = await db.execute(
+      sql`SELECT p.*, u.name AS managerName,
+          COUNT(DISTINCT pm.userId) AS memberCount,
+          COUNT(DISTINCT ph.id) AS phaseCount
+          FROM projects p
+          LEFT JOIN users u ON u.id = p.managerId
+          LEFT JOIN project_members pm ON pm.projectId = p.id
+          LEFT JOIN project_phases ph ON ph.projectId = p.id
+          ${opts.status ? sql`WHERE p.status = ${opts.status}` : sql``}
+          GROUP BY p.id
+          ORDER BY p.isGeneral DESC, p.name`
+    );
+    return (rows as any)[0] ?? [];
+  } else {
+    const rows = await db.execute(
+      sql`SELECT p.*, pm.projectRole AS myRole,
+          COUNT(DISTINCT ph.id) AS phaseCount
+          FROM projects p
+          JOIN project_members pm ON pm.projectId = p.id AND pm.userId = ${opts?.userId ?? 0}
+          LEFT JOIN project_phases ph ON ph.projectId = p.id
+          ${opts?.status ? sql`WHERE p.status = ${opts.status}` : sql``}
+          GROUP BY p.id, pm.projectRole
+          ORDER BY p.isGeneral DESC, p.name`
+    );
+    return (rows as any)[0] ?? [];
+  }
+}
+
+export async function getProjectById(id: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [project] = await db.select().from(projects).where(eq(projects.id, id)).limit(1);
+  return project ?? null;
+}
+
+export async function createProject(data: {
+  name: string;
+  code?: string | null;
+  clientName?: string | null;
+  status?: "activ" | "suspendat" | "finalizat" | "intern";
+  isGeneral?: boolean;
+  managerId?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  description?: string | null;
+  color?: string | null;
+  driveId?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(projects).values({
+    name: data.name,
+    code: data.code ?? null,
+    clientName: data.clientName ?? null,
+    status: data.status ?? "activ",
+    isGeneral: data.isGeneral ?? false,
+    managerId: data.managerId ?? null,
+    startDate: data.startDate ? (data.startDate as any) : null,
+    endDate: data.endDate ? (data.endDate as any) : null,
+    description: data.description ?? null,
+    color: data.color ?? "#FFCB09",
+    driveId: data.driveId ?? null,
+  });
+  return { success: true, id: (result as any)[0]?.insertId };
+}
+
+export async function updateProject(id: number, data: Partial<{
+  name: string;
+  code: string | null;
+  clientName: string | null;
+  status: "activ" | "suspendat" | "finalizat" | "intern";
+  isGeneral: boolean;
+  managerId: number | null;
+  startDate: string | null;
+  endDate: string | null;
+  description: string | null;
+  color: string | null;
+  driveId: string | null;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(projects).set(data as any).where(eq(projects.id, id));
+  return { success: true };
+}
+
+export async function createProjectFromTemplate(data: {
+  name: string;
+  code?: string | null;
+  clientName?: string | null;
+  managerId?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  description?: string | null;
+  color?: string | null;
+  templateId?: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(projects).values({
+    name: data.name,
+    code: data.code ?? null,
+    clientName: data.clientName ?? null,
+    status: "activ",
+    isGeneral: false,
+    managerId: data.managerId ?? null,
+    startDate: data.startDate ? (data.startDate as any) : null,
+    endDate: data.endDate ? (data.endDate as any) : null,
+    description: data.description ?? null,
+    color: data.color ?? "#FFCB09",
+  });
+  const projectId = (result as any)[0]?.insertId;
+
+  if (data.templateId) {
+    const phases = await db.select().from(templatePhases)
+      .where(eq(templatePhases.templateId, data.templateId))
+      .orderBy(templatePhases.displayOrder);
+
+    for (const phase of phases) {
+      const phResult = await db.insert(projectPhases).values({
+        projectId,
+        name: phase.name,
+        code: phase.code,
+        displayOrder: phase.displayOrder,
+        budgetHours: "0",
+        color: phase.color,
+        status: "activa",
+      });
+      const phaseId = (phResult as any)[0]?.insertId;
+
+      const tasks = await db.select().from(templateTasks)
+        .where(eq(templateTasks.templatePhaseId, phase.id))
+        .orderBy(templateTasks.displayOrder);
+
+      for (const task of tasks) {
+        await db.insert(projectTasks).values({
+          phaseId,
+          projectId,
+          name: task.name,
+          displayOrder: task.displayOrder,
+          budgetHours: "0",
+          minutesWorked: 0,
+          status: "neinceputa",
+        });
+      }
+    }
+  }
+
+  return { success: true, id: projectId };
+}
+
+// ─── PROJECT PHASES ──────────────────────────────────────────────────────────
+
+export async function getProjectPhases(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(projectPhases)
+    .where(eq(projectPhases.projectId, projectId))
+    .orderBy(projectPhases.displayOrder);
+}
+
+export async function createPhase(data: {
+  projectId: number;
+  name: string;
+  code?: string | null;
+  displayOrder?: number;
+  budgetHours?: string;
+  color?: string | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(projectPhases).values({
+    projectId: data.projectId,
+    name: data.name,
+    code: data.code ?? null,
+    displayOrder: data.displayOrder ?? 0,
+    budgetHours: data.budgetHours ?? "0",
+    color: data.color ?? "#FFCB09",
+    status: "activa",
+  });
+  return { success: true, id: (result as any)[0]?.insertId };
+}
+
+export async function updatePhase(id: number, data: Partial<{
+  name: string;
+  code: string | null;
+  displayOrder: number;
+  budgetHours: string;
+  color: string | null;
+  status: "activa" | "suspendata" | "finalizata";
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(projectPhases).set(data as any).where(eq(projectPhases.id, id));
+  return { success: true };
+}
+
+export async function deletePhase(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const tasks = await db.select({ id: projectTasks.id }).from(projectTasks).where(eq(projectTasks.phaseId, id));
+  for (const task of tasks) {
+    await db.delete(taskSessions).where(eq(taskSessions.taskId, task.id));
+    await db.delete(taskHourRequests).where(eq(taskHourRequests.taskId, task.id));
+  }
+  await db.delete(projectTasks).where(eq(projectTasks.phaseId, id));
+  await db.delete(projectPhases).where(eq(projectPhases.id, id));
+  return { success: true };
+}
+
+// ─── PROJECT TASKS ───────────────────────────────────────────────────────────
+
+export async function getTasksByPhase(phaseId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT pt.*, u.name AS assignedUserName, u.avatarUrl AS assignedUserAvatar
+        FROM project_tasks pt
+        LEFT JOIN users u ON u.id = pt.assignedUserId
+        WHERE pt.phaseId = ${phaseId}
+        ORDER BY pt.displayOrder, pt.id`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+export async function getTasksByProject(projectId: number, userId?: number) {
+  const db = await getDb();
+  if (!db) return [];
+  if (userId) {
+    const rows = await db.execute(
+      sql`SELECT pt.*, ph.name AS phaseName, ph.code AS phaseCode, ph.color AS phaseColor,
+               u.name AS assignedUserName
+          FROM project_tasks pt
+          JOIN project_phases ph ON ph.id = pt.phaseId
+          LEFT JOIN users u ON u.id = pt.assignedUserId
+          WHERE pt.projectId = ${projectId} AND pt.assignedUserId = ${userId}
+          ORDER BY ph.displayOrder, pt.displayOrder`
+    );
+    return (rows as any)[0] ?? [];
+  }
+  const rows = await db.execute(
+    sql`SELECT pt.*, ph.name AS phaseName, ph.code AS phaseCode, ph.color AS phaseColor,
+             u.name AS assignedUserName
+        FROM project_tasks pt
+        JOIN project_phases ph ON ph.id = pt.phaseId
+        LEFT JOIN users u ON u.id = pt.assignedUserId
+        WHERE pt.projectId = ${projectId}
+        ORDER BY ph.displayOrder, pt.displayOrder`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+export async function createTask(data: {
+  phaseId: number;
+  projectId: number;
+  name: string;
+  description?: string | null;
+  displayOrder?: number;
+  budgetHours?: string;
+  assignedUserId?: number | null;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(projectTasks).values({
+    phaseId: data.phaseId,
+    projectId: data.projectId,
+    name: data.name,
+    description: data.description ?? null,
+    displayOrder: data.displayOrder ?? 0,
+    budgetHours: data.budgetHours ?? "0",
+    minutesWorked: 0,
+    status: "neinceputa",
+    assignedUserId: data.assignedUserId ?? null,
+  });
+  return { success: true, id: (result as any)[0]?.insertId };
+}
+
+export async function updateTask(id: number, data: Partial<{
+  name: string;
+  description: string | null;
+  displayOrder: number;
+  budgetHours: string;
+  status: "neinceputa" | "in_lucru" | "in_pauza" | "finalizata" | "blocata";
+  assignedUserId: number | null;
+}>) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.update(projectTasks).set(data as any).where(eq(projectTasks.id, id));
+  return { success: true };
+}
+
+export async function deleteTask(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  await db.delete(taskSessions).where(eq(taskSessions.taskId, id));
+  await db.delete(taskHourRequests).where(eq(taskHourRequests.taskId, id));
+  await db.delete(projectTasks).where(eq(projectTasks.id, id));
+  return { success: true };
+}
+
+// ─── TASK SESSIONS ───────────────────────────────────────────────────────────
+
+export async function getActiveSession(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db.execute(
+    sql`SELECT ts.*, pt.name AS taskName, pt.budgetHours, pt.minutesWorked,
+             ph.name AS phaseName, ph.code AS phaseCode,
+             p.name AS projectName, p.color AS projectColor
+        FROM task_sessions ts
+        JOIN project_tasks pt ON pt.id = ts.taskId
+        JOIN project_phases ph ON ph.id = pt.phaseId
+        JOIN projects p ON p.id = ts.projectId
+        WHERE ts.userId = ${userId} AND ts.status IN ('activa', 'in_pauza')
+        LIMIT 1`
+  );
+  return (rows as any)[0]?.[0] ?? null;
+}
+
+export async function startTaskSession(userId: number, taskId: number, projectId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const existing = await getActiveSession(userId);
+  if (existing) throw new Error("Ai deja o sesiune activă. Oprește-o înainte de a începe alta.");
+  const result = await db.insert(taskSessions).values({
+    taskId,
+    projectId,
+    userId,
+    startedAt: new Date(),
+    status: "activa",
+    totalMinutes: 0,
+  });
+  const sessionId = (result as any)[0]?.insertId;
+  await db.update(projectTasks).set({ status: "in_lucru" }).where(eq(projectTasks.id, taskId));
+  return { success: true, sessionId };
+}
+
+export async function pauseTaskSession(sessionId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [session] = await db.select().from(taskSessions)
+    .where(and(eq(taskSessions.id, sessionId), eq(taskSessions.userId, userId))).limit(1);
+  if (!session) throw new Error("Sesiunea nu există");
+  if (session.status !== "activa") throw new Error("Sesiunea nu este activă");
+  const now = new Date();
+  const startTime = session.resumedAt ?? session.startedAt;
+  const minutesSinceStart = Math.floor((now.getTime() - startTime.getTime()) / 60000);
+  const newTotal = session.totalMinutes + minutesSinceStart;
+  await db.update(taskSessions).set({ status: "in_pauza", pausedAt: now, totalMinutes: newTotal }).where(eq(taskSessions.id, sessionId));
+  await db.update(projectTasks).set({ status: "in_pauza" }).where(eq(projectTasks.id, session.taskId));
+  return { success: true, totalMinutes: newTotal };
+}
+
+export async function resumeTaskSession(sessionId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [session] = await db.select().from(taskSessions)
+    .where(and(eq(taskSessions.id, sessionId), eq(taskSessions.userId, userId))).limit(1);
+  if (!session) throw new Error("Sesiunea nu există");
+  if (session.status !== "in_pauza") throw new Error("Sesiunea nu este în pauză");
+  await db.update(taskSessions).set({ status: "activa", resumedAt: new Date() }).where(eq(taskSessions.id, sessionId));
+  await db.update(projectTasks).set({ status: "in_lucru" }).where(eq(projectTasks.id, session.taskId));
+  return { success: true };
+}
+
+export async function stopTaskSession(sessionId: number, userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [session] = await db.select().from(taskSessions)
+    .where(and(eq(taskSessions.id, sessionId), eq(taskSessions.userId, userId))).limit(1);
+  if (!session) throw new Error("Sesiunea nu există");
+  if (session.status === "finalizata") throw new Error("Sesiunea este deja finalizată");
+  const now = new Date();
+  let finalMinutes = session.totalMinutes;
+  if (session.status === "activa") {
+    const startTime = session.resumedAt ?? session.startedAt;
+    const minutesSinceStart = Math.floor((now.getTime() - startTime.getTime()) / 60000);
+    finalMinutes += minutesSinceStart;
+  }
+  await db.update(taskSessions).set({ status: "finalizata", endedAt: now, totalMinutes: finalMinutes }).where(eq(taskSessions.id, sessionId));
+  const totalRows = await db.execute(
+    sql`SELECT COALESCE(SUM(totalMinutes), 0) AS total FROM task_sessions WHERE taskId = ${session.taskId} AND status = 'finalizata'`
+  );
+  const totalMinutesForTask = Number((totalRows as any)[0]?.[0]?.total ?? 0);
+  await db.update(projectTasks).set({ minutesWorked: totalMinutesForTask, status: "in_pauza" }).where(eq(projectTasks.id, session.taskId));
+  const today = now.toISOString().split("T")[0];
+  await upsertHourBank(userId, today, finalMinutes);
+  await checkBudgetAlerts(session.taskId, session.projectId, totalMinutesForTask);
+  return { success: true, totalMinutes: finalMinutes };
+}
+
+export async function getSessionsForTask(taskId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT ts.*, u.name AS userName FROM task_sessions ts JOIN users u ON u.id = ts.userId WHERE ts.taskId = ${taskId} ORDER BY ts.startedAt DESC`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+// ─── HOUR BANK ───────────────────────────────────────────────────────────────
+
+export async function upsertHourBank(userId: number, date: string, additionalMinutes: number) {
+  const db = await getDb();
+  if (!db) return;
+  await db.execute(
+    sql`INSERT INTO hour_bank (userId, date, minutesWorked) VALUES (${userId}, ${date}, ${additionalMinutes}) ON DUPLICATE KEY UPDATE minutesWorked = minutesWorked + ${additionalMinutes}`
+  );
+}
+
+export async function getHourBankForUser(userId: number, dateFrom?: string, dateTo?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT hb.*, u.name AS userName FROM hour_bank hb JOIN users u ON u.id = hb.userId WHERE hb.userId = ${userId} ${dateFrom ? sql`AND hb.date >= ${dateFrom}` : sql``} ${dateTo ? sql`AND hb.date <= ${dateTo}` : sql``} ORDER BY hb.date DESC`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+export async function getHourBankAll(dateFrom?: string, dateTo?: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT hb.*, u.name AS userName, u.department FROM hour_bank hb JOIN users u ON u.id = hb.userId WHERE 1=1 ${dateFrom ? sql`AND hb.date >= ${dateFrom}` : sql``} ${dateTo ? sql`AND hb.date <= ${dateTo}` : sql``} ORDER BY hb.date DESC, u.name`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+async function checkBudgetAlerts(taskId: number, projectId: number, minutesWorked: number) {
+  const db = await getDb();
+  if (!db) return;
+  const [task] = await db.select().from(projectTasks).where(eq(projectTasks.id, taskId)).limit(1);
+  if (!task) return;
+  const budgetMinutes = Number(task.budgetHours) * 60;
+  if (budgetMinutes <= 0) return;
+  const pct = (minutesWorked / budgetMinutes) * 100;
+  const coordinators = await db.execute(
+    sql`SELECT pm.userId FROM project_members pm WHERE pm.projectId = ${projectId} AND pm.projectRole = 'coordonator' UNION SELECT u.id FROM users u WHERE u.role = 'admin'`
+  );
+  const coordIds: number[] = ((coordinators as any)[0] ?? []).map((r: any) => r.userId);
+  const sendAlert = async (threshold: number, alertField: string) => {
+    if (pct >= threshold && !(task as any)[alertField]) {
+      await db.update(projectTasks).set({ [alertField]: true } as any).where(eq(projectTasks.id, taskId));
+      const assigneeIds = task.assignedUserId ? [task.assignedUserId] : [];
+      const allRecipients = Array.from(new Set([...coordIds, ...assigneeIds]));
+      const [phase] = await db.select().from(projectPhases).where(eq(projectPhases.id, task.phaseId)).limit(1);
+      const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+      const title = `⚠️ Budget ${threshold}% — ${task.name}`;
+      const content = `Task-ul "${task.name}" din faza "${phase?.name}" (${project?.name}) a atins ${threshold}% din bugetul alocat (${Math.round(minutesWorked / 60 * 10) / 10}h / ${task.budgetHours}h).`;
+      for (const uid of allRecipients) {
+        await db.insert(notifications).values({ userId: uid, type: "budget_alert", title, content, isRead: false } as any);
+      }
+    }
+  };
+  await sendAlert(25, "alertSent25");
+  await sendAlert(50, "alertSent50");
+  await sendAlert(75, "alertSent75");
+  await sendAlert(90, "alertSent90");
+}
+
+// ─── TASK HOUR REQUESTS ──────────────────────────────────────────────────────
+
+export async function createHourRequest(data: {
+  taskId: number;
+  projectId: number;
+  userId: number;
+  requestedHours: string;
+  justification: string;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const result = await db.insert(taskHourRequests).values({
+    taskId: data.taskId,
+    projectId: data.projectId,
+    userId: data.userId,
+    requestedHours: data.requestedHours,
+    justification: data.justification,
+    status: "in_asteptare",
+  });
+  return { success: true, id: (result as any)[0]?.insertId };
+}
+
+export async function getHourRequestsForProject(projectId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT thr.*, u.name AS userName, pt.name AS taskName, ph.name AS phaseName
+        FROM task_hour_requests thr JOIN users u ON u.id = thr.userId
+        JOIN project_tasks pt ON pt.id = thr.taskId
+        JOIN project_phases ph ON ph.id = pt.phaseId
+        WHERE thr.projectId = ${projectId} ORDER BY thr.createdAt DESC`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+export async function getMyHourRequests(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT thr.*, pt.name AS taskName, ph.name AS phaseName, p.name AS projectName
+        FROM task_hour_requests thr JOIN project_tasks pt ON pt.id = thr.taskId
+        JOIN project_phases ph ON ph.id = pt.phaseId
+        JOIN projects p ON p.id = thr.projectId
+        WHERE thr.userId = ${userId} ORDER BY thr.createdAt DESC`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+export async function reviewHourRequest(id: number, reviewedBy: number, status: "aprobata" | "respinsa", reviewNote?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("DB unavailable");
+  const [req] = await db.select().from(taskHourRequests).where(eq(taskHourRequests.id, id)).limit(1);
+  if (!req) throw new Error("Cererea nu există");
+  await db.update(taskHourRequests).set({ status, reviewedBy, reviewNote: reviewNote ?? null, reviewedAt: new Date() }).where(eq(taskHourRequests.id, id));
+  if (status === "aprobata") {
+    const [task] = await db.select().from(projectTasks).where(eq(projectTasks.id, req.taskId)).limit(1);
+    if (task) {
+      const newBudget = Number(task.budgetHours) + Number(req.requestedHours);
+      await db.update(projectTasks).set({ budgetHours: String(newBudget) }).where(eq(projectTasks.id, req.taskId));
+    }
+  }
+  const statusLabel = status === "aprobata" ? "aprobată ✅" : "respinsă ❌";
+  await db.insert(notifications).values({
+    userId: req.userId, type: "hour_request",
+    title: `Cerere ore ${statusLabel}`,
+    content: `Cererea ta de ${req.requestedHours}h suplimentare a fost ${statusLabel}.${reviewNote ? ` Notă: ${reviewNote}` : ""}`,
+    isRead: false,
+  } as any);
+  return { success: true };
+}
+
+// ─── PROJECT TEMPLATES ───────────────────────────────────────────────────────
+
+export async function getDefaultTemplate() {
+  const db = await getDb();
+  if (!db) return null;
+  const [template] = await db.select().from(projectTemplates).where(eq(projectTemplates.isDefault, true)).limit(1);
+  if (!template) return null;
+  const phases = await db.select().from(templatePhases).where(eq(templatePhases.templateId, template.id)).orderBy(templatePhases.displayOrder);
+  const result = [];
+  for (const phase of phases) {
+    const tasks = await db.select().from(templateTasks).where(eq(templateTasks.templatePhaseId, phase.id)).orderBy(templateTasks.displayOrder);
+    result.push({ ...phase, tasks });
+  }
+  return { ...template, phases: result };
+}
+
+export async function listTemplates() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(projectTemplates).orderBy(desc(projectTemplates.isDefault), projectTemplates.name);
+}
+
+// ─── PROJECT DETAIL (full with phases, tasks, members) ───────────────────────
+
+export async function getProjectDetail(projectId: number, userId?: number, isAdmin?: boolean) {
+  const db = await getDb();
+  if (!db) return null;
+  const [project] = await db.select().from(projects).where(eq(projects.id, projectId)).limit(1);
+  if (!project) return null;
+  if (!isAdmin && userId) {
+    const [membership] = await db.select().from(projectMembers)
+      .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.userId, userId))).limit(1);
+    if (!membership) return null;
+  }
+  const phases = await db.select().from(projectPhases).where(eq(projectPhases.projectId, projectId)).orderBy(projectPhases.displayOrder);
+  const phasesWithTasks = [];
+  for (const phase of phases) {
+    const tasks = await getTasksByPhase(phase.id);
+    phasesWithTasks.push({ ...phase, tasks });
+  }
+  const members = await db.execute(
+    sql`SELECT pm.*, u.name, u.email, u.department, u.jobTitle, u.avatarUrl, u.role AS globalRole
+        FROM project_members pm JOIN users u ON u.id = pm.userId
+        WHERE pm.projectId = ${projectId}
+        ORDER BY FIELD(pm.projectRole, 'coordonator', 'membru', 'consultant'), u.name`
+  );
+  return { ...project, phases: phasesWithTasks, members: (members as any)[0] ?? [] };
 }

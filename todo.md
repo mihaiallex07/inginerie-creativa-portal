@@ -587,3 +587,48 @@
 ## Sprint 52 — Bug fixes /admin-utilizatori
 - [x] Bug fix: DELETE pontaj WHERE user_id = ? — coloana se numea userId (camelCase), nu user_id; corectat în toate DELETE-urile din deleteUserCompletely
 - [x] Bug fix: `<p>` nested în AlertDialogDescription (care e tot `<p>`) — înlocuit cu `<div>` + `asChild`
+
+## Sprint 53 — Sistem complet de management proiecte
+
+### DB Schema
+- [x] Ștergere tabele vechi proiecte (projects, project_members, etc.)
+- [x] Tabel `projects` (id, code, name, clientName, status, managerId, startDate, endDate, description, createdAt)
+- [x] Tabel `project_phases` (id, projectId, name, order, budgetHours, color, status)
+- [x] Tabel `project_tasks` (id, phaseId, projectId, name, order, budgetHours, status, description)
+- [x] Tabel `project_members` (id, projectId, userId, role: coordinator|member, phaseId nullable)
+- [x] Tabel `task_sessions` (id, taskId, userId, startedAt, pausedAt, resumedAt, endedAt, totalMinutes, status: active|paused|completed)
+- [x] Tabel `hour_bank` (id, userId, date, minutesWorked, source: task_session)
+- [x] Tabel `task_hour_requests` (id, taskId, userId, requestedHours, justification, status: pending|approved|rejected, reviewedBy, reviewedAt)
+- [x] Tabel `project_templates` (id, name, description) + `template_phases` + `template_tasks`
+
+### Backend tRPC
+- [x] projects.list (admin: toate, coordonator: unde e alocat, angajat: unde e alocat)
+- [x] projects.create (admin/coordonator)
+- [x] projects.getById (cu faze, task-uri, membri, statistici)
+- [x] projects.update, projects.delete
+- [x] projects.createFromTemplate (aplică template predefinit din PDF)
+- [x] phases.create, phases.update, phases.delete, phases.reorder
+- [x] tasks.create, tasks.update, tasks.delete, tasks.reorder
+- [x] members.add (cu rol: coordinator/member, opțional per fază), members.remove
+- [x] sessions.start (oprește automat sesiunea activă dacă există), sessions.pause, sessions.resume, sessions.stop
+- [x] sessions.getActive (sesiunea activă a utilizatorului curent)
+- [x] hourBank.getMyHours (per utilizator, per lună), hourBank.getAllUsers (admin)
+- [x] hourRequests.create, hourRequests.review (approve/reject)
+- [x] Budget alerts: notificare la 25%, 50%, 75%, 90% din bugetul unui task
+
+### Frontend Admin/Coordonator
+- [x] Pagina /proiecte — lista proiecte cu filtre, buton creare proiect nou
+- [x] Modal creare proiect: cod, nume, client, manager, date, opțiune „din template"
+- [x] Pagina /proiecte/:id — tab Faze & Task-uri — expandabil cu faze/task-uri, buget, progres
+- [x] Tab Echipă — lista membri cu rol, posibilitate adăugare/eliminare
+- [x] Tab Bancă de Ore — ore alocate per fază, cereri ore în așteptare
+
+### Frontend Angajat
+- [x] Pagina /proiecte — lista proiecte alocate (card simplu cu progres)
+- [x] Pagina /proiecte/:id — butoane Start/Pause/Resume/Stop per sarcină
+- [x] Timer activ vizibil (cronometru live pe task-ul activ, banner fix jos-dreapta)
+- [x] Bancă de ore: ore alocate per fază, progres bar, formular cerere ore suplimentare
+- [x] Notificări budget: alertă la 25%/50%/75%/90% din bugetul task-ului
+
+### Teste
+- [x] 89/89 teste trec (projects.test.ts + portal.test.ts + auth.logout.test.ts)
