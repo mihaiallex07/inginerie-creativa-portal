@@ -641,3 +641,23 @@
 - [x] Pagina proiect: tab Faze & Task-uri (folder expandabil, buget/lucrat/rămas/progres/responsabili)
 - [x] Alocare angajați per task (add/remove assignees)
 - [x] Fix color picker în modal Proiect nou
+
+## Sprint 55 — Îmbunătățiri sistem proiecte
+
+- [ ] DB: Adăugare etape G (Social Media) și H (Administrativ) în template
+- [ ] DB: Câmpuri `abbreviation` și `emoji` în tabelul `projects`
+- [ ] DB: Suport multi-angajat per task (tabel `task_assignees`)
+- [ ] Backend: `addPhase` returnează și task-urile predefinite din template
+- [ ] Backend: Validare buget etapă la adăugare/editare task (suma task-uri ≤ buget etapă)
+- [ ] Backend: `createProject` acceptă `selectedPhaseIds`, `abbreviation`, `emoji`
+- [ ] Backend: Proceduri multi-assignee: `addTaskAssignee`, `removeTaskAssignee`
+- [ ] Frontend ProiectDetaliu: Redenumire Faze→Etape
+- [ ] Frontend ProiectDetaliu: Butoane creion+coș direct (fără meniu 3 puncte)
+- [ ] Frontend ProiectDetaliu: Click pe text extinde/închide etapa
+- [ ] Frontend ProiectDetaliu: Validare buget vizuală (roșu dacă depășit)
+- [ ] Frontend ProiectDetaliu: Multi-assignee per task (avatare multiple)
+- [ ] Frontend ProiectDetaliu: Butoane Pause/Resume/Stop vizibile pe task-ul activ
+- [ ] Frontend ProiectDetaliu: Responsabili = doar membrii echipei proiectului
+- [ ] Frontend ProiectDetaliu: Fix text invizibil la Contractare în Prezentare generală
+- [ ] Frontend Proiecte: Modal creare proiect cu bifă etape prestabilite + abreviere + emoji
+- [ ] Dashboard: Notificări budget (25/50/75/90%) doar pentru task-urile la care ești responsabil

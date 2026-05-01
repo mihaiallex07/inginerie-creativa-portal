@@ -24,6 +24,7 @@ import {
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
+  AlertTriangle,
   BarChart3,
   Bell,
   BookOpen,
@@ -46,6 +47,7 @@ import {
   Users,
 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
@@ -202,6 +204,9 @@ function DashboardLayoutContent({
   // Pending invitations count
   const { data: pendingInvitations = [] } = trpc.invitations.pending.useQuery(undefined, { refetchInterval: 30000 });
   const unreadCount = (pendingInvitations as any[]).length;
+  // Budget alerts for tasks where user is responsible
+  const { data: budgetAlerts = [] } = trpc.projects.myBudgetAlerts.useQuery(undefined, { refetchInterval: 60000 });
+  const budgetAlertCount = (budgetAlerts as any[]).length;
 
   useEffect(() => {
     if (isCollapsed) setIsResizing(false);
@@ -377,23 +382,93 @@ function DashboardLayoutContent({
               <SidebarTrigger className="h-9 w-9 rounded-lg" />
               <img src={LOGO_ICON} alt="IC" className="h-7 w-7 object-contain" />
             </div>
-            <button
-              onClick={() => setLocation("/notificari")}
-              className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
-            >
-              <Bell className="h-5 w-5" />
-              {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 h-4 w-4 flex items-center justify-center bg-[#FFCB09] text-[#221F1F] text-[9px] font-bold rounded-full">
-                  {unreadCount > 9 ? "9+" : unreadCount}
-                </span>
+            <div className="flex items-center gap-1">
+              {budgetAlertCount > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors" title="Alerte buget">
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      <span className="absolute top-1 right-1 h-3.5 w-3.5 flex items-center justify-center bg-red-500 text-white text-[8px] font-bold rounded-full">
+                        {budgetAlertCount > 9 ? "9+" : budgetAlertCount}
+                      </span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-3" align="end">
+                    <p className="text-xs font-semibold text-foreground mb-2">⚠️ Alerte buget sarcini</p>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {(budgetAlerts as any[]).map((a: any) => (
+                        <div key={a.id} className="flex items-start gap-2 p-2 rounded-lg bg-amber-50 border border-amber-100">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-gray-800 truncate">{a.name}</p>
+                            <p className="text-[10px] text-gray-500 truncate">{a.projectName} › {a.phaseName}</p>
+                          </div>
+                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                            Number(a.pct) >= 90 ? 'bg-red-100 text-red-700' :
+                            Number(a.pct) >= 75 ? 'bg-orange-100 text-orange-700' :
+                            Number(a.pct) >= 50 ? 'bg-amber-100 text-amber-700' :
+                            'bg-yellow-50 text-yellow-700'
+                          }`}>{a.pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="mt-2 text-xs text-[#FFCB09] hover:underline w-full text-left" onClick={() => setLocation('/proiecte')}>
+                      Vezi proiectele →
+                    </button>
+                  </PopoverContent>
+                </Popover>
               )}
-            </button>
+              <button
+                onClick={() => setLocation("/notificari")}
+                className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 h-4 w-4 flex items-center justify-center bg-[#FFCB09] text-[#221F1F] text-[9px] font-bold rounded-full">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
           </div>
         )}
 
         {/* Desktop topbar */}
         {!isMobile && (
           <div className="flex border-b h-12 items-center justify-end bg-background/95 px-4 backdrop-blur sticky top-0 z-40 gap-2">
+{budgetAlertCount > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="relative h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors" title="Alerte buget">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <span className="absolute top-0.5 right-0.5 h-3.5 w-3.5 flex items-center justify-center bg-red-500 text-white text-[8px] font-bold rounded-full">
+                      {budgetAlertCount > 9 ? "9+" : budgetAlertCount}
+                    </span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-3" align="end">
+                  <p className="text-xs font-semibold text-foreground mb-2">⚠️ Alerte buget sarcini</p>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {(budgetAlerts as any[]).map((a: any) => (
+                      <div key={a.id} className="flex items-start gap-2 p-2 rounded-lg bg-amber-50 border border-amber-100">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-800 truncate">{a.name}</p>
+                          <p className="text-[10px] text-gray-500 truncate">{a.projectName} › {a.phaseName}</p>
+                        </div>
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                          Number(a.pct) >= 90 ? 'bg-red-100 text-red-700' :
+                          Number(a.pct) >= 75 ? 'bg-orange-100 text-orange-700' :
+                          Number(a.pct) >= 50 ? 'bg-amber-100 text-amber-700' :
+                          'bg-yellow-50 text-yellow-700'
+                        }`}>{a.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="mt-2 text-xs text-[#FFCB09] hover:underline w-full text-left" onClick={() => setLocation('/proiecte')}>
+                    Vezi proiectele →
+                  </button>
+                </PopoverContent>
+              </Popover>
+            )}
             <button
               onClick={() => setLocation("/notificari")}
               className="relative h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"

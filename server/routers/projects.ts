@@ -1,4 +1,4 @@
-import { protectedProcedure, router } from "../_core/trpc";
+import { router, protectedProcedure } from "../\_core/trpc";
 import { z } from "zod";
 import {
   listProjects,
@@ -35,7 +35,94 @@ import {
   reviewHourRequest,
   getDefaultTemplate,
   listTemplates,
+  getDb,
 } from "../db";
+import { sql } from "drizzle-orm";
+
+// ─── HELPER: get task assignees ─────────────────────────────────────────────
+async function getTaskAssignees(taskId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  const rows = await db.execute(
+    sql`SELECT ta.userId, u.name, u.avatarUrl, u.jobTitle FROM task_assignees ta
+        JOIN users u ON u.id = ta.userId WHERE ta.taskId = ${taskId} ORDER BY ta.assignedAt`
+  );
+  return (rows as any)[0] ?? [];
+}
+
+// ─── HELPER: get phase budget usage ─────────────────────────────────────────
+async function getPhaseBudgetUsage(phaseId: number, excludeTaskId?: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  let rows: any;
+  if (excludeTaskId) {
+    rows = await db.execute(
+      sql`SELECT COALESCE(SUM(CAST(budgetHours AS DECIMAL(10,2))), 0) as totalUsed
+          FROM project_tasks WHERE phaseId = ${phaseId} AND status != 'finalizata' AND id != ${excludeTaskId}`
+    );
+  } else {
+    rows = await db.execute(
+      sql`SELECT COALESCE(SUM(CAST(budgetHours AS DECIMAL(10,2))), 0) as totalUsed
+          FROM project_tasks WHERE phaseId = ${phaseId} AND status != 'finalizata'`
+    );
+  }
+  return parseFloat(((rows as any)[0]?.[0])?.totalUsed || "0");
+}
+
+// ─── HELPER: get phase budget ────────────────────────────────────────────────
+async function getPhaseBudget(phaseId: number) {
+  const db = await getDb();
+  if (!db) return 0;
+  const rows = await db.execute(
+    sql`SELECT budgetHours FROM project_phases WHERE id = ${phaseId}`
+  );
+  return parseFloat(((rows as any)[0]?.[0])?.budgetHours || "0");
+}
+
+// ─── HELPER: create project with selected phases ─────────────────────────────
+async function createProjectWithSelectedPhases(data: {
+  name: string; abbreviation?: string | null; emoji?: string | null;
+  code?: string | null; clientName?: string | null; status?: "activ" | "suspendat" | "finalizat" | "intern";
+  startDate?: string | null; endDate?: string | null; description?: string | null;
+  color?: string | null; driveId?: string | null; managerId: number; isGeneral?: boolean;
+  selectedPhaseIds?: number[];
+}) {
+  const { selectedPhaseIds, ...projectData } = data;
+  const project = await createProject(projectData);
+  if (!selectedPhaseIds || selectedPhaseIds.length === 0) return project;
+
+  const db = await getDb();
+  if (!db) return project;
+
+  for (const tplPhaseId of selectedPhaseIds) {
+    // Get template phase
+    const phaseRows = await db.execute(
+      sql`SELECT * FROM template_phases WHERE id = ${tplPhaseId}`
+    );
+    const phase = ((phaseRows as any)[0])?.[0];
+    if (!phase) continue;
+
+    const phaseInsert = await db.execute(
+      sql`INSERT INTO project_phases (projectId, name, code, displayOrder, color, status, budgetHours)
+          VALUES (${project.id}, ${phase.name}, ${phase.code}, ${phase.displayOrder}, ${phase.color}, 'activa', '0')`
+    );
+    const phaseId = (phaseInsert as any)[0]?.insertId;
+    if (!phaseId) continue;
+
+    // Get tasks for this template phase
+    const taskRows = await db.execute(
+      sql`SELECT * FROM template_tasks WHERE templatePhaseId = ${tplPhaseId} ORDER BY displayOrder`
+    );
+    const tasks = (taskRows as any)[0] ?? [];
+    for (const task of tasks) {
+      await db.execute(
+        sql`INSERT INTO project_tasks (phaseId, projectId, name, displayOrder, status, budgetHours, minutesWorked)
+            VALUES (${phaseId}, ${project.id}, ${task.name}, ${task.displayOrder}, 'neinceputa', '0', 0)`
+      );
+    }
+  }
+  return project;
+}
 
 export const projectsRouter = router({
   // ─── PROJECT CRUD ──────────────────────────────────────────────────────────
@@ -56,6 +143,8 @@ export const projectsRouter = router({
   create: protectedProcedure
     .input(z.object({
       name: z.string().min(1),
+      abbreviation: z.string().optional().nullable(),
+      emoji: z.string().optional().nullable(),
       code: z.string().optional().nullable(),
       clientName: z.string().optional().nullable(),
       status: z.enum(["activ", "suspendat", "finalizat", "intern"]).optional(),
@@ -65,23 +154,24 @@ export const projectsRouter = router({
       description: z.string().optional().nullable(),
       color: z.string().optional().nullable(),
       driveId: z.string().optional().nullable(),
-      templateId: z.number().optional().nullable(),
+      selectedPhaseIds: z.array(z.number()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
-      const { templateId, ...rest } = input;
-      // Always apply template 1 (Standard IC) unless explicitly overridden or set to null
-      const effectiveTemplateId = templateId !== undefined ? templateId : 1;
-      if (effectiveTemplateId) {
-        return createProjectFromTemplate({ ...rest, managerId: ctx.user.id, templateId: effectiveTemplateId });
-      }
-      return createProject({ ...rest, managerId: ctx.user.id });
+      const { selectedPhaseIds, ...rest } = input;
+      return createProjectWithSelectedPhases({
+        ...rest,
+        managerId: ctx.user.id,
+        selectedPhaseIds,
+      });
     }),
 
   update: protectedProcedure
     .input(z.object({
       id: z.number(),
       name: z.string().optional(),
+      abbreviation: z.string().optional().nullable(),
+      emoji: z.string().optional().nullable(),
       code: z.string().optional().nullable(),
       clientName: z.string().optional().nullable(),
       status: z.enum(["activ", "suspendat", "finalizat", "intern"]).optional(),
@@ -124,10 +214,30 @@ export const projectsRouter = router({
       displayOrder: z.number().optional(),
       budgetHours: z.string().optional(),
       color: z.string().optional().nullable(),
+      templatePhaseId: z.number().optional().nullable(), // if from template, auto-add tasks
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
-      return createPhase(input);
+      const { templatePhaseId, ...phaseData } = input;
+      const phase = await createPhase(phaseData);
+
+      // If from template, auto-add tasks
+      if (templatePhaseId) {
+        const db = await getDb();
+        if (db) {
+          const taskRows = await db.execute(
+            sql`SELECT * FROM template_tasks WHERE templatePhaseId = ${templatePhaseId} ORDER BY displayOrder`
+          );
+          const tasks = (taskRows as any)[0] ?? [];
+          for (const task of tasks as any[]) {
+            await db.execute(
+              sql`INSERT INTO project_tasks (phaseId, projectId, name, displayOrder, status, budgetHours, minutesWorked)
+                  VALUES (${phase.id}, ${input.projectId}, ${task.name}, ${task.displayOrder}, 'neinceputa', '0', 0)`
+            );
+          }
+        }
+      }
+      return phase;
     }),
 
   updatePhase: protectedProcedure
@@ -175,10 +285,18 @@ export const projectsRouter = router({
       description: z.string().optional().nullable(),
       displayOrder: z.number().optional(),
       budgetHours: z.string().optional(),
-      assignedUserId: z.number().optional().nullable(),
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
+      // Budget validation: check if adding this task would exceed phase budget
+      const phaseBudget = await getPhaseBudget(input.phaseId);
+      if (phaseBudget > 0 && input.budgetHours) {
+        const used = await getPhaseBudgetUsage(input.phaseId);
+        const newHours = parseFloat(input.budgetHours || "0");
+        if (used + newHours > phaseBudget) {
+          throw new Error(`Bugetul etapei este depășit. Disponibil: ${(phaseBudget - used).toFixed(1)}h din ${phaseBudget}h`);
+        }
+      }
       return createTask(input);
     }),
 
@@ -190,11 +308,22 @@ export const projectsRouter = router({
       displayOrder: z.number().optional(),
       budgetHours: z.string().optional(),
       status: z.enum(["neinceputa", "in_lucru", "in_pauza", "finalizata", "blocata"]).optional(),
-      assignedUserId: z.number().optional().nullable(),
+      phaseId: z.number().optional(), // needed for budget validation
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
-      const { id, ...data } = input;
+      const { id, phaseId, ...data } = input;
+      // Budget validation if budgetHours is being updated
+      if (phaseId && data.budgetHours !== undefined) {
+        const phaseBudget = await getPhaseBudget(phaseId);
+        if (phaseBudget > 0) {
+          const used = await getPhaseBudgetUsage(phaseId, id);
+          const newHours = parseFloat(data.budgetHours || "0");
+          if (used + newHours > phaseBudget) {
+            throw new Error(`Bugetul etapei este depășit. Disponibil: ${(phaseBudget - used).toFixed(1)}h din ${phaseBudget}h`);
+          }
+        }
+      }
       return updateTask(id, data);
     }),
 
@@ -203,6 +332,39 @@ export const projectsRouter = router({
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
       return deleteTask(input.id);
+    }),
+
+  // ─── TASK ASSIGNEES (multi-user) ────────────────────────────────────────────
+  taskAssignees: protectedProcedure
+    .input(z.object({ taskId: z.number() }))
+    .query(async ({ input }) => {
+      return getTaskAssignees(input.taskId);
+    }),
+
+  addTaskAssignee: protectedProcedure
+    .input(z.object({ taskId: z.number(), userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
+      const db = await getDb();
+      if (db) {
+        await db.execute(
+          sql`INSERT IGNORE INTO task_assignees (taskId, userId) VALUES (${input.taskId}, ${input.userId})`
+        );
+      }
+      return { success: true };
+    }),
+
+  removeTaskAssignee: protectedProcedure
+    .input(z.object({ taskId: z.number(), userId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
+      const db = await getDb();
+      if (db) {
+        await db.execute(
+          sql`DELETE FROM task_assignees WHERE taskId = ${input.taskId} AND userId = ${input.userId}`
+        );
+      }
+      return { success: true };
     }),
 
   // ─── MEMBERS ───────────────────────────────────────────────────────────────
@@ -332,5 +494,31 @@ export const projectsRouter = router({
 
   templates: protectedProcedure.query(async () => {
     return listTemplates();
+  }),
+
+  // ─── BUDGET NOTIFICATIONS (for current user's assigned tasks) ───────────────
+  myBudgetAlerts: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const rows = await db.execute(
+      sql`SELECT pt.id, pt.name, pt.budgetHours, pt.minutesWorked,
+              pp.name as phaseName, pp.code as phaseCode,
+              p.id as projectId, p.name as projectName,
+              CASE
+                WHEN pt.budgetHours > 0 THEN ROUND((pt.minutesWorked / (CAST(pt.budgetHours AS DECIMAL) * 60)) * 100)
+                ELSE 0
+              END as pct
+       FROM task_assignees ta
+       JOIN project_tasks pt ON pt.id = ta.taskId
+       JOIN project_phases pp ON pp.id = pt.phaseId
+       JOIN projects p ON p.id = pt.projectId
+       WHERE ta.userId = ${ctx.user.id}
+         AND pt.status != 'finalizata'
+         AND pt.budgetHours > 0
+         AND pt.minutesWorked > 0
+         AND (pt.minutesWorked / (CAST(pt.budgetHours AS DECIMAL) * 60)) >= 0.25
+       ORDER BY pct DESC`
+    );
+    return ((rows as any)[0] ?? []) as any[];
   }),
 });

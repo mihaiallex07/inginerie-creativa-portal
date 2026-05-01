@@ -7,11 +7,21 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useState } from "react";
-import { FolderOpen, Plus, ExternalLink, Search } from "lucide-react";
+import { FolderOpen, Plus, ExternalLink, Search, ChevronDown, ChevronRight } from "lucide-react";
 import { ColorPalette } from "@/components/ColorPalette";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
+
+// Construction/architecture emojis for project icons
+const PROJECT_EMOJIS = [
+  "🏠", "🏢", "🏗️", "🏛️", "🏬", "🏭", "🏰", "🏯",
+  "🏟️", "🏪", "🏫", "🏨", "🏦", "🏥", "🏤", "🏣",
+  "🏡", "🏘️", "🏚️", "🏙️", "🌆", "🌇", "🌃", "🌉",
+  "🔨", "🪚", "🔧", "🪛", "⚙️", "🪤", "🧱", "🪵",
+  "📐", "📏", "🗺️", "🗜️", "🔩", "🪝", "🪜", "🛠️",
+];
 
 const STATUS_COLORS: Record<string, string> = {
   activ: "bg-green-100 text-green-800",
@@ -34,10 +44,13 @@ export default function Proiecte() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("toate");
   const [open, setOpen] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [expandedPhases, setExpandedPhases] = useState<Record<number, boolean>>({});
   const [form, setForm] = useState({
     name: "",
     code: "",
     abbreviation: "",
+    emoji: "",
     clientName: "",
     driveId: "",
     description: "",
@@ -46,19 +59,44 @@ export default function Proiecte() {
     startDate: "",
     endDate: "",
   });
+  const [selectedPhaseIds, setSelectedPhaseIds] = useState<number[]>([]);
 
   const { data: projects, isLoading } = trpc.projects.list.useQuery({ status: statusFilter === "toate" ? undefined : statusFilter });
+  const { data: defaultTemplate } = trpc.projects.defaultTemplate.useQuery(undefined, { enabled: open });
   const canManage = user?.role === "admin" || user?.role === "coordonator";
+
+  const templatePhases = (defaultTemplate as any)?.phases || [];
 
   const createProject = trpc.projects.create.useMutation({
     onSuccess: () => {
-      toast.success("Proiect salvat!");
+      toast.success("Proiect creat cu succes!");
       setOpen(false);
-      setForm({ name: "", code: "", abbreviation: "", clientName: "", driveId: "", description: "", status: "activ", color: "#FFCB09", startDate: "", endDate: "" });
+      resetForm();
       utils.projects.list.invalidate();
     },
-    onError: () => toast.error("Eroare la salvare"),
+    onError: (e) => toast.error(e.message || "Eroare la salvare"),
   });
+
+  function resetForm() {
+    setForm({ name: "", code: "", abbreviation: "", emoji: "", clientName: "", driveId: "", description: "", status: "activ", color: "#FFCB09", startDate: "", endDate: "" });
+    setSelectedPhaseIds([]);
+    setExpandedPhases({});
+    setShowEmojiPicker(false);
+  }
+
+  function togglePhase(id: number) {
+    setSelectedPhaseIds(prev =>
+      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
+    );
+  }
+
+  function toggleAllPhases() {
+    if (selectedPhaseIds.length === templatePhases.length) {
+      setSelectedPhaseIds([]);
+    } else {
+      setSelectedPhaseIds(templatePhases.map((p: any) => p.id));
+    }
+  }
 
   const filtered = (projects ?? []).filter((p: any) =>
     !search || p.name.toLowerCase().includes(search.toLowerCase()) || (p.clientName ?? "").toLowerCase().includes(search.toLowerCase())
@@ -72,22 +110,25 @@ export default function Proiecte() {
           <p className="text-sm text-muted-foreground mt-0.5">Proiecte active și arhivate</p>
         </div>
         {canManage && (
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) resetForm(); }}>
             <DialogTrigger asChild>
               <Button className="bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold gap-2">
                 <Plus className="h-4 w-4" />
                 Proiect nou
               </Button>
             </DialogTrigger>
-            <DialogContent className="max-w-md">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Proiect nou</DialogTitle>
               </DialogHeader>
               <div className="space-y-3 py-2">
+                {/* Name */}
                 <div>
                   <Label className="text-xs">Nume proiect *</Label>
-                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
+                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" placeholder="ex: Modul Găzduire Via Transilvanica" />
                 </div>
+
+                {/* Code + Abbreviation */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">Cod intern</Label>
@@ -98,14 +139,20 @@ export default function Proiecte() {
                     <Input value={form.abbreviation} onChange={e => setForm(f => ({ ...f, abbreviation: e.target.value.toUpperCase() }))} placeholder="ex: MVT" className="mt-1" maxLength={10} />
                   </div>
                 </div>
+
+                {/* Client */}
                 <div>
                   <Label className="text-xs">Client</Label>
                   <Input value={form.clientName} onChange={e => setForm(f => ({ ...f, clientName: e.target.value }))} className="mt-1" />
                 </div>
+
+                {/* Drive ID */}
                 <div>
                   <Label className="text-xs">ID Folder Google Drive</Label>
                   <Input value={form.driveId} onChange={e => setForm(f => ({ ...f, driveId: e.target.value }))} placeholder="ID-ul folderului din Drive" className="mt-1" />
                 </div>
+
+                {/* Dates */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <Label className="text-xs">Data start</Label>
@@ -116,12 +163,12 @@ export default function Proiecte() {
                     <Input type="date" value={form.endDate} onChange={e => setForm(f => ({ ...f, endDate: e.target.value }))} className="mt-1" />
                   </div>
                 </div>
+
+                {/* Status */}
                 <div>
                   <Label className="text-xs">Status</Label>
                   <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v as any }))}>
-                    <SelectTrigger className="mt-1">
-                      <SelectValue />
-                    </SelectTrigger>
+                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="activ">Activ</SelectItem>
                       <SelectItem value="suspendat">Suspendat</SelectItem>
@@ -130,24 +177,133 @@ export default function Proiecte() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Description */}
                 <div>
                   <Label className="text-xs">Descriere</Label>
                   <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="mt-1" />
                 </div>
+
+                {/* Color */}
                 <div>
-                  <Label className="text-xs">Culoare</Label>
+                  <Label className="text-xs">Culoare proiect</Label>
                   <ColorPalette value={form.color} onChange={color => setForm(f => ({ ...f, color }))} className="mt-2" />
                 </div>
+
+                {/* Emoji icon */}
+                <div>
+                  <Label className="text-xs">Icon proiect (opțional)</Label>
+                  <div className="mt-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        className="w-10 h-10 rounded-lg border-2 border-gray-200 flex items-center justify-center text-xl hover:border-[#FFCB09] transition-colors"
+                        style={{ backgroundColor: form.color }}
+                        onClick={() => setShowEmojiPicker(v => !v)}
+                        title="Alege icon"
+                      >
+                        {form.emoji || <span className="text-xs text-gray-400">?</span>}
+                      </button>
+                      {form.emoji && (
+                        <button type="button" className="text-xs text-gray-400 hover:text-red-500" onClick={() => setForm(f => ({ ...f, emoji: "" }))}>
+                          Elimină icon
+                        </button>
+                      )}
+                      {!form.emoji && <span className="text-xs text-gray-400">Apasă pentru a alege un emoji</span>}
+                    </div>
+                    {showEmojiPicker && (
+                      <div className="mt-2 p-3 border border-gray-200 rounded-lg bg-white shadow-sm">
+                        <div className="grid grid-cols-8 gap-1">
+                          {PROJECT_EMOJIS.map(emoji => (
+                            <button
+                              key={emoji}
+                              type="button"
+                              className={`w-8 h-8 text-lg rounded hover:bg-yellow-50 flex items-center justify-center transition-colors ${form.emoji === emoji ? "bg-yellow-100 ring-2 ring-[#FFCB09]" : ""}`}
+                              onClick={() => { setForm(f => ({ ...f, emoji })); setShowEmojiPicker(false); }}
+                            >
+                              {emoji}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Phase selection */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <Label className="text-xs">Etape de lucru incluse</Label>
+                    <button type="button" className="text-xs text-[#FFCB09] hover:underline font-medium" onClick={toggleAllPhases}>
+                      {selectedPhaseIds.length === templatePhases.length ? "Deselectează toate" : "Selectează toate"}
+                    </button>
+                  </div>
+                  {templatePhases.length === 0 ? (
+                    <div className="text-xs text-gray-400 py-2">Se încarcă etapele...</div>
+                  ) : (
+                    <div className="border border-gray-200 rounded-lg overflow-hidden">
+                      {templatePhases.map((phase: any) => {
+                        const isChecked = selectedPhaseIds.includes(phase.id);
+                        const isExpanded = expandedPhases[phase.id];
+                        return (
+                          <div key={phase.id} className="border-b border-gray-100 last:border-b-0">
+                            <div className="flex items-center gap-2 px-3 py-2.5 hover:bg-gray-50 transition-colors">
+                              <Checkbox
+                                id={`phase-${phase.id}`}
+                                checked={isChecked}
+                                onCheckedChange={() => togglePhase(phase.id)}
+                                className="data-[state=checked]:bg-[#FFCB09] data-[state=checked]:border-[#FFCB09]"
+                              />
+                              <label htmlFor={`phase-${phase.id}`} className="flex-1 text-sm cursor-pointer select-none">
+                                <span className="font-medium">{phase.code ? `${phase.code}. ` : ""}{phase.name}</span>
+                                <span className="ml-2 text-xs text-gray-400">• {(phase.tasks || []).length} sarcini</span>
+                              </label>
+                              {(phase.tasks || []).length > 0 && (
+                                <button type="button" className="text-gray-400 hover:text-gray-600 p-0.5"
+                                  onClick={() => setExpandedPhases(prev => ({ ...prev, [phase.id]: !prev[phase.id] }))}>
+                                  {isExpanded ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronRight className="h-3.5 w-3.5" />}
+                                </button>
+                              )}
+                            </div>
+                            {isExpanded && (
+                              <div className="pl-9 pr-3 pb-2 bg-gray-50">
+                                {(phase.tasks || []).map((task: any, i: number) => (
+                                  <div key={task.id} className="text-xs text-gray-500 py-0.5">
+                                    {String.fromCharCode(97 + i)}. {task.name}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {selectedPhaseIds.length > 0 && (
+                    <p className="text-xs text-green-600 mt-1.5">
+                      ✓ {selectedPhaseIds.length} etape selectate cu sarcinile lor vor fi adăugate automat
+                    </p>
+                  )}
+                  {selectedPhaseIds.length === 0 && (
+                    <p className="text-xs text-gray-400 mt-1.5">
+                      Nicio etapă selectată — proiectul va fi creat fără etape predefinite
+                    </p>
+                  )}
+                </div>
+
                 <Button
                   className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
                   onClick={() => createProject.mutate({
                     ...form,
+                    emoji: form.emoji || null,
+                    abbreviation: form.abbreviation || null,
                     startDate: form.startDate || null,
                     endDate: form.endDate || null,
+                    selectedPhaseIds: selectedPhaseIds.length > 0 ? selectedPhaseIds : undefined,
                   })}
                   disabled={createProject.isPending || !form.name}
                 >
-                  Salvează proiectul
+                  {createProject.isPending ? "Se creează..." : "Salvează proiectul"}
                 </Button>
               </div>
             </DialogContent>
@@ -161,9 +317,7 @@ export default function Proiecte() {
           <Input placeholder="Caută proiecte..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue placeholder="Status" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="toate">Toate</SelectItem>
             <SelectItem value="activ">Active</SelectItem>
@@ -185,10 +339,10 @@ export default function Proiecte() {
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
                   <div
-                    className="h-9 w-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ backgroundColor: p.color ?? "#FFCB09" }}
+                    className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 text-lg font-bold"
+                    style={{ backgroundColor: p.color ?? "#FFCB09", color: "#221F1F" }}
                   >
-                    <FolderOpen className="h-4 w-4 text-white" />
+                    {p.emoji ? p.emoji : (p.abbreviation || p.code?.slice(0, 2) || p.name?.slice(0, 2) || "P").toUpperCase().slice(0, 2)}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-0.5">
@@ -199,6 +353,10 @@ export default function Proiecte() {
                     </div>
                     <p className="text-sm font-semibold text-foreground truncate">{p.name}</p>
                     {p.clientName && <p className="text-xs text-muted-foreground truncate">{p.clientName}</p>}
+                    <div className="flex items-center gap-3 mt-1.5 text-xs text-muted-foreground">
+                      {p.phaseCount > 0 && <span>{p.phaseCount} etape</span>}
+                      {p.memberCount > 0 && <span>{p.memberCount} membri</span>}
+                    </div>
                   </div>
                   {p.driveId && (
                     <a
