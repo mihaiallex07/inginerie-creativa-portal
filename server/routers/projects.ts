@@ -183,12 +183,22 @@ export const projectsRouter = router({
       driveId: z.string().optional().nullable(),
       managerId: z.number().optional().nullable(),
     }))
-    .mutation(async ({ ctx, input }) => {
+     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
       const { id, ...data } = input;
-      return updateProject(id, data);
+      // Normalize dates to YYYY-MM-DD format (in case browser sends locale strings)
+      const normalizeDate = (d: string | null | undefined) => {
+        if (!d) return null;
+        const parsed = new Date(d);
+        if (isNaN(parsed.getTime())) return null;
+        return parsed.toISOString().slice(0, 10);
+      };
+      return updateProject(id, {
+        ...data,
+        startDate: normalizeDate(data.startDate),
+        endDate: normalizeDate(data.endDate),
+      });
     }),
-
   delete: protectedProcedure
     .input(z.object({ id: z.number(), confirmName: z.string() }))
     .mutation(async ({ ctx, input }) => {

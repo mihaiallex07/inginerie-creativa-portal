@@ -214,9 +214,9 @@ export default function Proiecte() {
                     {showEmojiPicker && (
                       <div className="mt-2 p-3 border border-gray-200 rounded-lg bg-white shadow-sm">
                         <div className="grid grid-cols-8 gap-1">
-                          {PROJECT_EMOJIS.map(emoji => (
+                          {PROJECT_EMOJIS.map((emoji, idx) => (
                             <button
-                              key={emoji}
+                              key={idx}
                               type="button"
                               className={`w-8 h-8 text-lg rounded hover:bg-yellow-50 flex items-center justify-center transition-colors ${form.emoji === emoji ? "bg-yellow-100 ring-2 ring-[#FFCB09]" : ""}`}
                               onClick={() => { setForm(f => ({ ...f, emoji })); setShowEmojiPicker(false); }}

@@ -859,8 +859,8 @@ export default function ProiectDetaliu() {
               <div>
                 <Label className="text-xs">Emoji proiect</Label>
                 <div className="mt-1 flex flex-wrap gap-1 border rounded-md p-2 max-h-28 overflow-y-auto">
-                  {["🏗️","🏢","🏠","🏡","🏘️","🏰","🏛️","🏟️","🏪","🏬","🏭","🌆","🌇","🌃","🌉","🌁","🗺️","🗼","🗽","⛩️","🏗️","🔧","🔨","⚙️","🔩","🛠️","📐","📏","🖥️","💡","🌿","🌱","🌳","🌲","🌊","⛰️","🏔️","🌄","🌅","🎯","📊","📈","💼","🎨","✏️","📝","🔬","🧪","🚀","⭐","💫","🔥","💧","🌍"].map(em => (
-                    <button key={em} type="button"
+                  {["🏗️","🏢","🏠","🏡","🏘️","🏰","🏛️","🏟️","🏪","🏬","🏭","🌆","🌇","🌃","🌉","🌁","🗺️","🗼","🗽","⛩️","🔧","🔨","⚙️","🔩","🛠️","📐","📏","🖥️","💡","🌿","🌱","🌳","🌲","🌊","⛰️","🏔️","🌄","🌅","🎯","📊","📈","💼","🎨","✏️","📝","🔬","🧪","🚀","⭐","💫","🔥","💧","🌍"].map((em, idx) => (
+                    <button key={idx} type="button"
                       className={`text-xl w-9 h-9 flex items-center justify-center rounded transition-colors ${editForm.emoji === em ? 'bg-[#FFCB09] ring-2 ring-[#FFCB09]' : 'hover:bg-gray-100'}`}
                       onClick={() => setEditForm(f => ({ ...f, emoji: f.emoji === em ? "" : em }))}>
                       {em}
@@ -906,7 +906,14 @@ export default function ProiectDetaliu() {
               <ColorPalette value={editForm.color} onChange={color => setEditForm(f => ({ ...f, color }))} className="mt-2" />
             </div>
             <Button className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"
-              onClick={() => updateProject.mutate({ id: projectId, ...editForm, abbreviation: editForm.abbreviation || null, emoji: editForm.emoji || null })}
+              onClick={() => updateProject.mutate({
+                id: projectId,
+                ...editForm,
+                abbreviation: editForm.abbreviation || null,
+                emoji: editForm.emoji || null,
+                startDate: editForm.startDate ? editForm.startDate : null,
+                endDate: editForm.endDate ? editForm.endDate : null,
+              })}
               disabled={updateProject.isPending || !editForm.name}>
               Salvează modificările
             </Button>
