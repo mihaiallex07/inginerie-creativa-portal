@@ -623,6 +623,7 @@ export const projectsRouter = router({
     const rows = await db.execute(
       sql`SELECT DISTINCT
               p.id AS projectId, p.name AS projectName, p.color AS projectColor, p.emoji AS projectEmoji,
+              p.code AS projectCode, p.abbreviation AS projectAbbreviation,
               pp.id AS phaseId, pp.name AS phaseName, pp.code AS phaseCode, pp.displayOrder AS phaseOrder,
               pt.id AS taskId, pt.name AS taskName, pt.budgetHours, pt.minutesWorked, pt.status AS taskStatus, pt.displayOrder AS taskOrder
            FROM project_tasks pt
@@ -636,6 +637,32 @@ export const projectsRouter = router({
              AND p.status = 'activ'
            ORDER BY p.name, phaseOrder, taskOrder`
     );
-    return ((rows as any)[0] ?? []) as any[];
+    const flat = ((rows as any)[0] ?? []) as any[];
+    // Group by project
+    const projectMap = new Map<number, any>();
+    for (const row of flat) {
+      if (!projectMap.has(row.projectId)) {
+        projectMap.set(row.projectId, {
+          projectId: row.projectId,
+          projectName: row.projectName,
+          projectColor: row.projectColor,
+          projectEmoji: row.projectEmoji,
+          projectCode: (row as any).projectCode ?? null,
+          projectAbbreviation: (row as any).projectAbbreviation ?? null,
+          tasks: [],
+        });
+      }
+      projectMap.get(row.projectId)!.tasks.push({
+        taskId: row.taskId,
+        taskName: row.taskName,
+        phaseId: row.phaseId,
+        phaseName: row.phaseName,
+        phaseCode: row.phaseCode,
+        budgetHours: row.budgetHours,
+        minutesWorked: row.minutesWorked,
+        taskStatus: row.taskStatus,
+      });
+    }
+    return Array.from(projectMap.values());
   }),
 });

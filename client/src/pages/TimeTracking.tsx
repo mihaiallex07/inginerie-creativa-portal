@@ -638,8 +638,10 @@ export default function TimeTracking() {
   };
 
   const handleSave = () => {
+    // enrolledTasks is now grouped: [{projectId, projectName, tasks:[{taskId,taskName,...}]}]
+    const allTasksFlat = (enrolledTasks as any[]).flatMap((p: any) => p.tasks ?? []);
     const selectedTask = formProjectTaskId && formProjectTaskId !== "none"
-      ? (enrolledTasks as any[]).find((t: any) => t.taskId === Number(formProjectTaskId))
+      ? allTasksFlat.find((t: any) => t.taskId === Number(formProjectTaskId))
       : null;
     const payload = {
       date: formDate, startHour: formStart.h, startMin: formStart.m,
@@ -1188,15 +1190,18 @@ export default function TimeTracking() {
                 <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selectează proiect" /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none" className="text-xs italic text-gray-400">Diverse (fără proiect specific)</SelectItem>
-                  {Array.from(new Map((enrolledTasks as any[]).map((t: any) => [t.projectId, { id: t.projectId, name: t.projectName }])).values()).map((p: any) => (
-                    <SelectItem key={p.id} value={String(p.id)} className="text-xs">{p.name}</SelectItem>
+                  {(enrolledTasks as any[]).map((p: any) => (
+                    <SelectItem key={p.projectId} value={String(p.projectId)} className="text-xs">
+                      {p.projectCode ? `${p.projectCode}` : ""}{p.projectAbbreviation ? ` · ${p.projectAbbreviation}` : ""}{p.projectName ? ` — ${p.projectName}` : ""}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
             {/* Task picker — shown only when a real project is selected */}
             {formProject && formProject !== "none" && (() => {
-              const tasksForProject = (enrolledTasks as any[]).filter((t: any) => String(t.projectId) === formProject);
+              const selectedProjectGroup = (enrolledTasks as any[]).find((p: any) => String(p.projectId) === formProject);
+              const tasksForProject = selectedProjectGroup?.tasks ?? [];
               return (
                 <div>
                   <Label className="text-xs">Task</Label>
