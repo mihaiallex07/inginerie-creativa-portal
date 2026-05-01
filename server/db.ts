@@ -1675,7 +1675,14 @@ export async function listProjects(opts?: { status?: string; userId?: number; is
   if (!db) return [];
   if (opts?.isAdmin) {
     const rows = await db.execute(
-      sql`SELECT p.*, u.name AS managerName,
+      sql`SELECT p.id, ANY_VALUE(p.name) AS name, ANY_VALUE(p.code) AS code,
+          ANY_VALUE(p.description) AS description, ANY_VALUE(p.clientName) AS clientName,
+          ANY_VALUE(p.status) AS status, ANY_VALUE(p.managerId) AS managerId,
+          ANY_VALUE(p.driveId) AS driveId, ANY_VALUE(p.color) AS color,
+          ANY_VALUE(p.startDate) AS startDate, ANY_VALUE(p.endDate) AS endDate,
+          ANY_VALUE(p.isGeneral) AS isGeneral, ANY_VALUE(p.createdAt) AS createdAt,
+          ANY_VALUE(p.updatedAt) AS updatedAt,
+          ANY_VALUE(u.name) AS managerName,
           COUNT(DISTINCT pm.userId) AS memberCount,
           COUNT(DISTINCT ph.id) AS phaseCount
           FROM projects p
@@ -1684,19 +1691,26 @@ export async function listProjects(opts?: { status?: string; userId?: number; is
           LEFT JOIN project_phases ph ON ph.projectId = p.id
           ${opts.status ? sql`WHERE p.status = ${opts.status}` : sql``}
           GROUP BY p.id
-          ORDER BY p.isGeneral DESC, p.name`
+          ORDER BY ANY_VALUE(p.isGeneral) DESC, ANY_VALUE(p.name)`
     );
     return (rows as any)[0] ?? [];
   } else {
     const rows = await db.execute(
-      sql`SELECT p.*, pm.projectRole AS myRole,
+      sql`SELECT p.id, ANY_VALUE(p.name) AS name, ANY_VALUE(p.code) AS code,
+          ANY_VALUE(p.description) AS description, ANY_VALUE(p.clientName) AS clientName,
+          ANY_VALUE(p.status) AS status, ANY_VALUE(p.managerId) AS managerId,
+          ANY_VALUE(p.driveId) AS driveId, ANY_VALUE(p.color) AS color,
+          ANY_VALUE(p.startDate) AS startDate, ANY_VALUE(p.endDate) AS endDate,
+          ANY_VALUE(p.isGeneral) AS isGeneral, ANY_VALUE(p.createdAt) AS createdAt,
+          ANY_VALUE(p.updatedAt) AS updatedAt,
+          pm.projectRole AS myRole,
           COUNT(DISTINCT ph.id) AS phaseCount
           FROM projects p
           JOIN project_members pm ON pm.projectId = p.id AND pm.userId = ${opts?.userId ?? 0}
           LEFT JOIN project_phases ph ON ph.projectId = p.id
           ${opts?.status ? sql`WHERE p.status = ${opts.status}` : sql``}
           GROUP BY p.id, pm.projectRole
-          ORDER BY p.isGeneral DESC, p.name`
+          ORDER BY ANY_VALUE(p.isGeneral) DESC, ANY_VALUE(p.name)`
     );
     return (rows as any)[0] ?? [];
   }
