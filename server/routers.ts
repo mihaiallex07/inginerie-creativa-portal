@@ -125,9 +125,8 @@ import {
 
 // ─── PEOPLE (BIRTHDAYS + ORG CHART) ────────────────────────────────────────
 const peopleRouter = router({
-  // List all active users (for audience targeting in events) — admin + coordonator
-  list: protectedProcedure.query(async ({ ctx }) => {
-    if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
+  // List all active users (for task assignment and audience targeting)
+  list: protectedProcedure.query(async () => {
     return getAllUsers();
   }),
   upcomingBirthdays: protectedProcedure

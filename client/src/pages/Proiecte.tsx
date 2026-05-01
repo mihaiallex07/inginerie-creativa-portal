@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { FolderOpen, Plus, ExternalLink, Search } from "lucide-react";
+import { ColorPalette } from "@/components/ColorPalette";
 import { useLocation } from "wouter";
 import { toast } from "sonner";
 
@@ -133,11 +134,9 @@ export default function Proiecte() {
                   <Label className="text-xs">Descriere</Label>
                   <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} rows={2} className="mt-1" />
                 </div>
-                <div className="flex items-center gap-3">
-                  <div>
-                    <Label className="text-xs">Culoare</Label>
-                    <input type="color" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className="mt-1 h-8 w-16 rounded cursor-pointer" />
-                  </div>
+                <div>
+                  <Label className="text-xs">Culoare</Label>
+                  <ColorPalette value={form.color} onChange={color => setForm(f => ({ ...f, color }))} className="mt-2" />
                 </div>
                 <Button
                   className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold"

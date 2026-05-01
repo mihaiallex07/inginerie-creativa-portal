@@ -632,3 +632,12 @@
 
 ### Teste
 - [x] 89/89 teste trec (projects.test.ts + portal.test.ts + auth.logout.test.ts)
+
+## Sprint 54 — Redesign pagina proiecte + template faze A-F
+
+- [x] Componentă ColorPalette (6-7 culori fixe) înlocuiește color picker liber peste tot
+- [x] Template implicit A-F cu toate task-urile la crearea proiectului (seed DB + router)
+- [x] Pagina proiect: tab Prezentare generală (stats, donut chart, activitate recentă)
+- [x] Pagina proiect: tab Faze & Task-uri (folder expandabil, buget/lucrat/rămas/progres/responsabili)
+- [x] Alocare angajați per task (add/remove assignees)
+- [x] Fix color picker în modal Proiect nou

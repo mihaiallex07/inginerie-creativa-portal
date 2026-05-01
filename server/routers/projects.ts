@@ -70,8 +70,10 @@ export const projectsRouter = router({
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
       const { templateId, ...rest } = input;
-      if (templateId) {
-        return createProjectFromTemplate({ ...rest, managerId: ctx.user.id, templateId });
+      // Always apply template 1 (Standard IC) unless explicitly overridden or set to null
+      const effectiveTemplateId = templateId !== undefined ? templateId : 1;
+      if (effectiveTemplateId) {
+        return createProjectFromTemplate({ ...rest, managerId: ctx.user.id, templateId: effectiveTemplateId });
       }
       return createProject({ ...rest, managerId: ctx.user.id });
     }),
