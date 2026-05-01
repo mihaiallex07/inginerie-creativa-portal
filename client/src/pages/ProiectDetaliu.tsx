@@ -386,7 +386,7 @@ export default function ProiectDetaliu() {
   const [showEdit, setShowEdit] = useState(false);
   const [editForm, setEditForm] = useState({
     name: "", code: "", clientName: "", status: "activ" as any,
-    color: "#FFCB09", startDate: "", endDate: "", description: ""
+    color: "#FFCB09", startDate: "", endDate: "", description: "", managerId: null as number | null
   });
   useEffect(() => {
     if (project) setEditForm({
@@ -398,6 +398,7 @@ export default function ProiectDetaliu() {
       startDate: (project as any).startDate ? String((project as any).startDate).slice(0, 10) : "",
       endDate: (project as any).endDate ? String((project as any).endDate).slice(0, 10) : "",
       description: (project as any).description || "",
+      managerId: (project as any).managerId ?? null,
     });
   }, [project]);
 
@@ -523,8 +524,8 @@ export default function ProiectDetaliu() {
                 {(project as any).clientName && <span>• Client: <span className="font-medium text-gray-700">{(project as any).clientName}</span></span>}
                 {(project as any).startDate && (
                   <span>• Perioadă: <span className="font-medium text-gray-700">
-                    {String((project as any).startDate).slice(0, 10)}
-                    {(project as any).endDate ? ` – ${String((project as any).endDate).slice(0, 10)}` : ""}
+                    {new Date(String((project as any).startDate)).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                    {(project as any).endDate ? ` – ${new Date(String((project as any).endDate)).toLocaleDateString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric' })}` : ""}
                   </span></span>
                 )}
               </div>
@@ -755,6 +756,17 @@ export default function ProiectDetaliu() {
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs">Cod intern</Label><Input value={editForm.code} onChange={e => setEditForm(f => ({ ...f, code: e.target.value }))} className="mt-1" /></div>
               <div><Label className="text-xs">Client</Label><Input value={editForm.clientName} onChange={e => setEditForm(f => ({ ...f, clientName: e.target.value }))} className="mt-1" /></div>
+            </div>
+            <div>
+              <Label className="text-xs">Manager proiect</Label>
+              <Select value={editForm.managerId ? String(editForm.managerId) : ""} onValueChange={v => setEditForm(f => ({ ...f, managerId: v ? Number(v) : null }))}>
+                <SelectTrigger className="mt-1"><SelectValue placeholder="Selectează manager" /></SelectTrigger>
+                <SelectContent>
+                  {(allUsers as any[]).filter((u: any) => u.isActive !== false).map((u: any) => (
+                    <SelectItem key={u.id} value={String(u.id)}>{u.name} {u.jobTitle ? `— ${u.jobTitle}` : ""}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div><Label className="text-xs">Data start</Label><Input type="date" value={editForm.startDate} onChange={e => setEditForm(f => ({ ...f, startDate: e.target.value }))} className="mt-1" /></div>

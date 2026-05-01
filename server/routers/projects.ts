@@ -91,6 +91,7 @@ export const projectsRouter = router({
       description: z.string().optional().nullable(),
       color: z.string().optional().nullable(),
       driveId: z.string().optional().nullable(),
+      managerId: z.number().optional().nullable(),
     }))
     .mutation(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin" && ctx.user.role !== "coordonator") throw new Error("Acces interzis");
