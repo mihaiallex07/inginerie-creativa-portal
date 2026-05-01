@@ -704,3 +704,7 @@
 - [x] Fix: Process Overview Gantt — un angajat apare cu toate proiectele la care este înrolat (bare stivuite vertical, înlățimea rândului se adaptează la numărul de proiecte)
 - [x] Fix: Timer task activ pornește cu +3h offset — datele UTC din DB erau interpretate ca oră locală (fix: adaugă 'Z' la string dacă lipsește)
 - [x] Fix: Timer task activ se resetează la 0 când dai pauză — aceeași cauză UTC, fix aplicat în DashboardLayout și ProiectDetaliu
+
+## Sprint 61 — Gantt: bare proiecte stivuite în celulă (rând fix per angajat)
+
+- [x] Fix: Process Overview Gantt — rând fix per angajat, bare proiecte mici stivuite vertical în interiorul celulei (ca un calendar cu evenimente colorate), coloana stângă arată doar angajatul
