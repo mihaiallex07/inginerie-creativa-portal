@@ -114,6 +114,7 @@ import {
   upsertDriveSnapshot,
   markDriveSnapshotDeleted,
   getAllActiveDriveSnapshots,
+  checkBudgetAlertsExternal,
 } from "./db";
 import {
   listFilesInFolder,
@@ -633,6 +634,7 @@ export const appRouter = router({
     addCalendarEntry: protectedProcedure
       .input(z.object({
         projectId: z.number().optional(),
+        projectTaskId: z.number().optional().nullable(),
         date: z.string(),       // "YYYY-MM-DD"
         startHour: z.number(),  // 0-23
         startMin: z.number(),   // 0-59
@@ -645,7 +647,6 @@ export const appRouter = router({
       }))
       .mutation(async ({ ctx, input }) => {
         // Deduplication: skip if entry with same date + taskName + startHour + startMin already exists.
-        // Including start time ensures two events with the same title at different hours are both imported.
         if (input.taskName) {
           const exists = await checkTimeEntryExists(
             ctx.user.id,
@@ -656,8 +657,8 @@ export const appRouter = router({
           );
           if (exists) return { success: true, id: null, skipped: true };
         }
-        // Store hours as plain integers — NO Date/timezone conversion
         const durationMinutes = (input.endHour * 60 + input.endMin) - (input.startHour * 60 + input.startMin);
+        const safeDuration = Math.max(0, durationMinutes);
         const id = await createTimeEntry({
           userId: ctx.user.id,
           projectId: input.projectId,
@@ -666,7 +667,7 @@ export const appRouter = router({
           startMin: input.startMin,
           endHour: input.endHour,
           endMin: input.endMin,
-          durationMinutes: Math.max(0, durationMinutes),
+          durationMinutes: safeDuration,
           activityType: input.activityType ?? "proiectare",
           taskName: input.taskName,
           description: input.description,
@@ -674,6 +675,26 @@ export const appRouter = router({
           isRunning: false,
           status: "salvat",
         });
+        // If linked to a project task, update its minutesWorked and save projectTaskId
+        if (input.projectTaskId && safeDuration > 0) {
+          const db = await getDb();
+          if (db) {
+            await db.execute(
+              sql`UPDATE project_tasks SET minutesWorked = minutesWorked + ${safeDuration} WHERE id = ${input.projectTaskId}`
+            );
+            await db.execute(
+              sql`UPDATE time_entries SET projectTaskId = ${input.projectTaskId} WHERE id = ${id}`
+            );
+            // Fetch updated task to check budget alerts
+            const [updatedTask] = await db.execute(
+              sql`SELECT minutesWorked, projectId FROM project_tasks WHERE id = ${input.projectTaskId}`
+            );
+            const taskRow = ((updatedTask as any)[0] ?? [])[0];
+            if (taskRow) {
+              await checkBudgetAlertsExternal(input.projectTaskId, taskRow.projectId, taskRow.minutesWorked);
+            }
+          }
+        }
         return { success: true, id, skipped: false };
       }),
 

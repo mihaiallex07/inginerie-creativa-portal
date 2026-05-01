@@ -429,8 +429,16 @@ export default function ProiectDetaliu() {
   const [elapsed, setElapsed] = useState(0);
   useEffect(() => {
     if (!activeSession) { setElapsed(0); return; }
-    const startMs = new Date((activeSession as any).startedAt).getTime();
-    const update = () => setElapsed(Math.floor((Date.now() - startMs) / 1000));
+    const s = activeSession as any;
+    const totalAccumulatedSeconds = (s.totalMinutes ?? 0) * 60;
+    if (s.status === "in_pauza") {
+      setElapsed(totalAccumulatedSeconds);
+      return;
+    }
+    const resumeBase = s.resumedAt
+      ? new Date(s.resumedAt).getTime()
+      : new Date(s.startedAt).getTime();
+    const update = () => setElapsed(totalAccumulatedSeconds + Math.floor((Date.now() - resumeBase) / 1000));
     update();
     const t = setInterval(update, 1000);
     return () => clearInterval(t);

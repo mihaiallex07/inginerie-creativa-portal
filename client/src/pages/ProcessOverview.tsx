@@ -1,465 +1,470 @@
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import { useState, useMemo, useRef, useEffect } from "react";
+import {
+  ChevronLeft, ChevronRight, ZoomIn, ZoomOut,
+  Users, Clock, ChevronDown, ChevronRight as ChevronRightIcon,
+  AlertTriangle,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { useState, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronRight, Download, CalendarDays, ArrowUp, ArrowDown, GripVertical, Settings2, Video, Pencil, ExternalLink } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-// Romanian public holidays 2026
-const PUBLIC_HOLIDAYS_2026: Record<string, string> = {
-  "2026-01-01": "Anul Nou",
-  "2026-01-02": "Anul Nou",
-  "2026-01-24": "Ziua Unirii",
-  "2026-04-13": "Paștele Ortodox",
-  "2026-04-14": "Paștele Ortodox",
-  "2026-05-01": "Ziua Muncii",
-  "2026-06-01": "Ziua Copilului",
-  "2026-06-02": "Rusalii",
-  "2026-08-15": "Adormirea Maicii Domnului",
-  "2026-11-30": "Sfântul Andrei",
-  "2026-12-01": "Ziua Națională",
-  "2026-12-25": "Crăciunul",
-  "2026-12-26": "Crăciunul",
-};
-
-const LEAVE_LABELS: Record<string, string> = {
-  concediu_odihna: "CO",
-  concediu_medical: "CM",
-  concediu_fara_plata: "CFP",
-  liber_legal: "LL",
-  recuperare: "REC",
-  alt: "ALT",
-};
-
-const LEAVE_COLORS: Record<string, string> = {
-  concediu_odihna: "bg-green-200 text-green-900",
-  concediu_medical: "bg-red-200 text-red-900",
-  concediu_fara_plata: "bg-orange-200 text-orange-900",
-  liber_legal: "bg-blue-200 text-blue-900",
-  recuperare: "bg-teal-200 text-teal-900",
-  alt: "bg-gray-200 text-gray-900",
-};
-
+// ─── helpers ──────────────────────────────────────────────────────────────────
 const MONTH_NAMES = [
-  "Ianuarie", "Februarie", "Martie", "Aprilie", "Mai", "Iunie",
-  "Iulie", "August", "Septembrie", "Octombrie", "Noiembrie", "Decembrie",
+  "Ian", "Feb", "Mar", "Apr", "Mai", "Iun",
+  "Iul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+const MONTH_FULL = [
+  "Ianuarie","Februarie","Martie","Aprilie","Mai","Iunie",
+  "Iulie","August","Septembrie","Octombrie","Noiembrie","Decembrie",
 ];
 
-const DAY_NAMES_SHORT = ["Du", "Lu", "Ma", "Mi", "Jo", "Vi", "Sa"];
+function isLeapYear(y: number) {
+  return (y % 4 === 0 && y % 100 !== 0) || y % 400 === 0;
+}
+function daysInYear(y: number) { return isLeapYear(y) ? 366 : 365; }
+function daysInMonth(y: number, m: number) { return new Date(y, m + 1, 0).getDate(); }
 
-function formatDateKey(d: Date): string {
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+/** 1-indexed day-of-year */
+function doy(date: Date) {
+  const start = new Date(date.getFullYear(), 0, 0);
+  return Math.floor((date.getTime() - start.getTime()) / 86400000);
 }
 
-function getFirstName(name: string | null): string {
-  if (!name) return "?";
-  const parts = name.trim().split(" ");
-  return parts[0];
+function clampDoy(date: Date | null | undefined, year: number, fallback: "start" | "end"): number {
+  if (!date) return fallback === "start" ? 1 : daysInYear(year);
+  const d = new Date(date);
+  if (d.getFullYear() < year) return 1;
+  if (d.getFullYear() > year) return daysInYear(year);
+  return doy(d);
 }
 
-// Generate a stable color for a project code
-function projectColor(code: string): { bg: string; text: string } {
-  let hash = 0;
-  for (let i = 0; i < code.length; i++) hash = code.charCodeAt(i) + ((hash << 5) - hash);
-  const hue = Math.abs(hash) % 360;
-  return { bg: `hsl(${hue}, 55%, 88%)`, text: `hsl(${hue}, 60%, 25%)` };
+function fmtDate(date: any) {
+  if (!date) return "—";
+  return new Date(date).toLocaleDateString("ro-RO", { day: "2-digit", month: "2-digit", year: "numeric" });
 }
 
+function initials(name: string) {
+  return name.split(" ").map(p => p[0]).join("").slice(0, 2).toUpperCase();
+}
+
+// ─── zoom levels: pixels per day ──────────────────────────────────────────────
+const ZOOM_PX = [2, 3, 4, 6, 8, 12, 16];
+const DEFAULT_ZOOM = 3; // index → 6px/day
+
+// ─── row heights ──────────────────────────────────────────────────────────────
+const ROW_PROJECT = 40;
+const ROW_TASK = 32;
+const HEADER_H = 52;
+const LABEL_W = 300;
+
+// ─── status colours ───────────────────────────────────────────────────────────
+const PROJECT_STATUS: Record<string, string> = {
+  activ: "bg-green-100 text-green-800",
+  suspendat: "bg-amber-100 text-amber-800",
+  finalizat: "bg-gray-100 text-gray-600",
+  intern: "bg-blue-100 text-blue-800",
+};
+const TASK_STATUS_HEX: Record<string, string> = {
+  de_facut: "#94a3b8",
+  in_lucru: "#3b82f6",
+  in_pauza: "#f59e0b",
+  finalizata: "#22c55e",
+};
+
+// ─── component ────────────────────────────────────────────────────────────────
 export default function ProcessOverview() {
   const { user } = useAuth();
+  const today = new Date();
+
+  const [year, setYear] = useState(today.getFullYear());
+  const [zoomIdx, setZoomIdx] = useState(DEFAULT_ZOOM);
+  const [collapsed, setCollapsed] = useState<Set<number>>(new Set());
+
+  const pxPerDay = ZOOM_PX[zoomIdx];
+  const totalDays = daysInYear(year);
+  const totalWidth = totalDays * pxPerDay;
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Current month navigation
-  const [year, setYear] = useState(() => new Date().getFullYear());
-  const [month, setMonth] = useState(() => new Date().getMonth()); // 0-indexed
+  const { data: ganttProjects = [], isLoading } = trpc.projects.ganttData.useQuery({});
 
-  // Generate date range for the month
-  const { dateFrom, dateTo, days } = useMemo(() => {
-    const first = new Date(year, month, 1);
-    const last = new Date(year, month + 1, 0);
-    const daysArr: Date[] = [];
-    for (let d = new Date(first); d <= last; d.setDate(d.getDate() + 1)) {
-      daysArr.push(new Date(d));
+  // scroll to today on first load
+  useEffect(() => {
+    if (!scrollRef.current || isLoading) return;
+    const todayDoy = doy(today);
+    const x = (todayDoy - 1) * pxPerDay - scrollRef.current.clientWidth / 2;
+    scrollRef.current.scrollLeft = Math.max(0, x);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading]);
+
+  // month header data
+  const monthHeaders = useMemo(() => {
+    const out = [];
+    let offset = 0;
+    for (let m = 0; m < 12; m++) {
+      const days = daysInMonth(year, m);
+      out.push({ m, days, offset });
+      offset += days;
     }
-    return {
-      dateFrom: formatDateKey(first),
-      dateTo: formatDateKey(last),
-      days: daysArr,
-    };
-  }, [year, month]);
+    return out;
+  }, [year]);
 
-  const { data, isLoading } = trpc.processOverview.getData.useQuery({ dateFrom, dateTo });
+  const todayDoy = today.getFullYear() === year ? doy(today) : -1;
+  const todayX = todayDoy > 0 ? (todayDoy - 1) * pxPerDay : -1;
 
-  // Build lookup maps from project assignments (not time entries)
-  const { userProjectMap, leaveMap } = useMemo(() => {
-    if (!data) return { userProjectMap: new Map(), leaveMap: new Map() };
+  // build flat rows
+  type Row =
+    | { kind: "project"; p: any; rowIdx: number }
+    | { kind: "task"; p: any; t: any; rowIdx: number };
 
-    // Project assignments: userId -> array of { label, projectName, projectStart, projectEnd }
-    const upm = new Map<number, Array<{ label: string; projectName: string; projectStart: string | null; projectEnd: string | null }>>(); 
-    for (const pa of data.projectAssignments) {
-      if (!upm.has(pa.userId)) upm.set(pa.userId, []);
-      const code = pa.projectCode || "";
-      const abbr = pa.projectAbbreviation || "";
-      const label = code && abbr ? `${code} ${abbr}` : code || abbr || pa.projectName || "—";
-      upm.get(pa.userId)!.push({
-        label,
-        projectName: pa.projectName || "—",
-        projectStart: pa.projectStart ? String(pa.projectStart).substring(0, 10) : null,
-        projectEnd: pa.projectEnd ? String(pa.projectEnd).substring(0, 10) : null,
-      });
-    }
-
-    // Leave requests: userId -> dateKey -> leaveType
-    const lm = new Map<number, Map<string, string>>();
-    for (const lr of data.leaveRequests) {
-      const start = new Date(lr.startDate);
-      const end = new Date(lr.endDate);
-      for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dk = formatDateKey(d);
-        if (!lm.has(lr.userId)) lm.set(lr.userId, new Map());
-        lm.get(lr.userId)!.set(dk, lr.type);
+  const rows = useMemo<Row[]>(() => {
+    const out: Row[] = [];
+    for (const p of ganttProjects as any[]) {
+      out.push({ kind: "project", p, rowIdx: out.length });
+      if (!collapsed.has(p.id)) {
+        for (const t of p.tasks ?? []) {
+          out.push({ kind: "task", p, t, rowIdx: out.length });
+        }
       }
     }
+    return out;
+  }, [ganttProjects, collapsed]);
 
-    return { userProjectMap: upm, leaveMap: lm };
-  }, [data]);
+  const totalHeight = HEADER_H + rows.length * ROW_PROJECT + 40;
 
-  // Helper: get active projects for a user on a specific date
-  function getUserProjectsForDate(userId: number, dateKey: string): { labels: string[]; names: string[] } {
-    const projects = userProjectMap.get(userId);
-    if (!projects || projects.length === 0) return { labels: [], names: [] };
-    const labels: string[] = [];
-    const names: string[] = [];
-    for (const p of projects) {
-      // Check if the date falls within the project's date range
-      const inRange = (!p.projectStart || dateKey >= p.projectStart) && (!p.projectEnd || dateKey <= p.projectEnd);
-      if (inRange) {
-        labels.push(p.label);
-        names.push(p.projectName);
-      }
-    }
-    return { labels, names };
+  function toggleProject(id: number) {
+    setCollapsed(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   }
 
-  const prevMonth = () => {
-    if (month === 0) { setMonth(11); setYear(y => y - 1); }
-    else setMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (month === 11) { setMonth(0); setYear(y => y + 1); }
-    else setMonth(m => m + 1);
-  };
-
-  const today = formatDateKey(new Date());
-  const users = data?.users ?? [];
-  const isAdmin = user?.role === "admin";
-
-  // Reorder state
-  const [reorderOpen, setReorderOpen] = useState(false);
-  const [reorderList, setReorderList] = useState<Array<{ id: number; name: string; department: string | null }>>([]);
-  const utils = trpc.useUtils();
-  const reorderMutation = trpc.adminUsers.reorderUsers.useMutation({
-    onSuccess: () => {
-      toast.success("Ordine salvată!");
-      setReorderOpen(false);
-      utils.processOverview.getData.invalidate();
-    },
-    onError: () => toast.error("Eroare la salvare"),
-  });
-
-  function openReorder() {
-    setReorderList(users.map(u => ({ id: u.id, name: u.name || "?", department: u.department })));
-    setReorderOpen(true);
+  function scrollToToday() {
+    if (!scrollRef.current) return;
+    const x = (doy(today) - 1) * pxPerDay - scrollRef.current.clientWidth / 2;
+    scrollRef.current.scrollLeft = Math.max(0, x);
   }
 
-  function moveUser(index: number, direction: -1 | 1) {
-    const newList = [...reorderList];
-    const targetIndex = index + direction;
-    if (targetIndex < 0 || targetIndex >= newList.length) return;
-    [newList[index], newList[targetIndex]] = [newList[targetIndex], newList[index]];
-    setReorderList(newList);
+  // bar geometry helper
+  function bar(startDate: any, endDate: any) {
+    const s = clampDoy(startDate ? new Date(startDate) : null, year, "start");
+    const e = clampDoy(endDate ? new Date(endDate) : null, year, "end");
+    return { x: (s - 1) * pxPerDay, w: Math.max(pxPerDay, (e - s + 1) * pxPerDay) };
   }
-
-  function saveReorder() {
-    const orderList = reorderList.map((u, i) => ({ userId: u.id, displayOrder: (i + 1) * 10 }));
-    reorderMutation.mutate({ orderList });
-  }
-
-  // Meet link
-  const { data: meetLinkData } = trpc.settings.get.useQuery({ key: "daily_meet_link" });
-  const [meetEditOpen, setMeetEditOpen] = useState(false);
-  const [meetLinkInput, setMeetLinkInput] = useState("");
-  const setMeetLink = trpc.settings.set.useMutation({
-    onSuccess: () => {
-      toast.success("Link meet actualizat!");
-      setMeetEditOpen(false);
-      utils.settings.get.invalidate({ key: "daily_meet_link" });
-    },
-    onError: (err) => toast.error(err.message),
-  });
-
-  function openMeetEdit() {
-    setMeetLinkInput(meetLinkData?.value ?? "");
-    setMeetEditOpen(true);
-  }
-
-  const meetLink = meetLinkData?.value;
 
   return (
-    <div className="h-[calc(100vh-72px)] flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between px-2 py-2 border-b border-border shrink-0">
-        <div className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-[#FFCB09]" />
-          <h1 className="text-lg font-bold text-foreground">Process Overview</h1>
-          {/* Meet link button */}
-          {meetLink ? (
-            <a
-              href={meetLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="ml-3 inline-flex items-center gap-1.5 px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-md transition-colors"
-            >
-              <Video className="h-3.5 w-3.5" />
-              Meet zilnic
-              <ExternalLink className="h-3 w-3 opacity-70" />
-            </a>
-          ) : isAdmin ? (
-            <Button variant="outline" size="sm" className="ml-3 h-7 text-xs gap-1" onClick={openMeetEdit}>
-              <Video className="h-3.5 w-3.5" /> Adaugă link meet
+    <TooltipProvider>
+      <div className="flex flex-col h-full bg-white select-none">
+
+        {/* ── toolbar ── */}
+        <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-200 bg-white z-10 flex-shrink-0 gap-3">
+          <div className="flex items-center gap-3">
+            <h1 className="text-base font-bold text-[#221F1F]">Process Overview</h1>
+            <Badge variant="outline" className="text-xs font-medium">
+              {(ganttProjects as any[]).length} proiecte
+            </Badge>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* year nav */}
+            <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg px-1.5 py-1">
+              <button onClick={() => setYear(y => y - 1)} className="p-0.5 rounded hover:bg-gray-100 transition-colors">
+                <ChevronLeft className="h-3.5 w-3.5 text-gray-600" />
+              </button>
+              <span className="text-sm font-semibold w-11 text-center">{year}</span>
+              <button onClick={() => setYear(y => y + 1)} className="p-0.5 rounded hover:bg-gray-100 transition-colors">
+                <ChevronRight className="h-3.5 w-3.5 text-gray-600" />
+              </button>
+            </div>
+
+            {/* zoom */}
+            <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg px-1.5 py-1">
+              <button onClick={() => setZoomIdx(z => Math.max(0, z - 1))} disabled={zoomIdx === 0}
+                className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors">
+                <ZoomOut className="h-3.5 w-3.5 text-gray-600" />
+              </button>
+              <span className="text-[11px] text-gray-500 w-10 text-center">{pxPerDay}px/zi</span>
+              <button onClick={() => setZoomIdx(z => Math.min(ZOOM_PX.length - 1, z + 1))} disabled={zoomIdx === ZOOM_PX.length - 1}
+                className="p-0.5 rounded hover:bg-gray-100 disabled:opacity-30 transition-colors">
+                <ZoomIn className="h-3.5 w-3.5 text-gray-600" />
+              </button>
+            </div>
+
+            <Button variant="outline" size="sm" className="h-7 text-xs" onClick={scrollToToday}>
+              Azi
             </Button>
-          ) : null}
-          {isAdmin && meetLink && (
-            <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" onClick={openMeetEdit} title="Editează link meet">
-              <Pencil className="h-3 w-3 text-muted-foreground" />
-            </Button>
-          )}
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={prevMonth} className="h-8 w-8">
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-semibold min-w-[140px] text-center">
-            {MONTH_NAMES[month]} {year}
-          </span>
-          <Button variant="outline" size="icon" onClick={nextMonth} className="h-8 w-8">
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-        <div className="flex items-center gap-3 text-[10px]">
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-green-200 border border-green-300" /> CO</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-amber-100 border border-amber-300" /> Weekend</span>
-          <span className="flex items-center gap-1"><span className="w-3 h-3 rounded bg-rose-100 border border-rose-300" /> Liber stat</span>
-          {isAdmin && (
-            <Button variant="outline" size="sm" className="h-6 text-[10px] ml-2" onClick={openReorder}>
-              <Settings2 className="h-3 w-3 mr-1" /> Reordonează
-            </Button>
-          )}
-        </div>
-      </div>
+          </div>
 
-      {/* Table */}
-      {isLoading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <div className="animate-pulse text-muted-foreground text-sm">Se încarcă...</div>
-        </div>
-      ) : (
-        <div className="flex-1 overflow-auto" ref={scrollRef}>
-          <TooltipProvider delayDuration={200}>
-            <table className="border-collapse text-[10px] leading-tight w-full" style={{ minWidth: `${120 + users.length * 90}px` }}>
-              <thead className="sticky top-0 z-10 bg-background">
-                <tr className="border-b border-border">
-                  <th className="sticky left-0 z-20 bg-[#221F1F] text-white px-1 py-1.5 text-left font-semibold w-[40px]">Luna</th>
-                  <th className="sticky left-[40px] z-20 bg-[#221F1F] text-white px-1 py-1.5 text-left font-semibold w-[28px]">Zi</th>
-                  <th className="sticky left-[68px] z-20 bg-[#221F1F] text-white px-1 py-1.5 text-left font-semibold w-[24px]">D</th>
-                  {users.map(u => (
-                    <th key={u.id} className="bg-[#221F1F] text-white px-1 py-1.5 text-center font-semibold min-w-[80px] max-w-[100px] truncate">
-                      {getFirstName(u.name)}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {days.map((day, idx) => {
-                  const dateKey = formatDateKey(day);
-                  const dow = day.getDay();
-                  const isWeekend = dow === 0 || dow === 6;
-                  const isHoliday = PUBLIC_HOLIDAYS_2026[dateKey];
-                  const isToday = dateKey === today;
-                  const showMonth = idx === 0 || day.getDate() === 1;
-
-                  return (
-                    <tr
-                      key={dateKey}
-                      className={`border-b border-border/50 ${isToday ? "ring-2 ring-[#FFCB09] ring-inset" : ""} ${isWeekend ? "bg-amber-50/60" : isHoliday ? "bg-rose-50/60" : ""}`}
-                    >
-                      {/* Month */}
-                      <td className={`sticky left-0 z-10 px-1 py-0.5 font-semibold text-[10px] ${isWeekend ? "bg-amber-50" : isHoliday ? "bg-rose-50" : "bg-background"} border-r border-border/30`}>
-                        {showMonth ? MONTH_NAMES[day.getMonth()].substring(0, 3).toUpperCase() : ""}
-                      </td>
-                      {/* Day number */}
-                      <td className={`sticky left-[40px] z-10 px-1 py-0.5 font-bold text-center ${isWeekend ? "bg-amber-50 text-amber-600" : isHoliday ? "bg-rose-50 text-rose-600" : "bg-background"} border-r border-border/30`}>
-                        {day.getDate()}
-                      </td>
-                      {/* Day name */}
-                      <td className={`sticky left-[68px] z-10 px-1 py-0.5 text-center ${isWeekend ? "bg-amber-50 text-amber-600" : isHoliday ? "bg-rose-50 text-rose-600" : "bg-background"} border-r border-border/30`}>
-                        {DAY_NAMES_SHORT[dow]}
-                      </td>
-                      {/* User cells */}
-                      {users.map(u => {
-                        const leave = leaveMap.get(u.id)?.get(dateKey);
-
-                        // Weekend - empty cell
-                        if (isWeekend && !leave) {
-                          return <td key={u.id} className="px-0.5 py-0.5 text-center bg-amber-50/60 border-r border-border/20" />;
-                        }
-                        // Public holiday
-                        if (isHoliday && !leave) {
-                          return (
-                            <Tooltip key={u.id}>
-                              <TooltipTrigger asChild>
-                                <td className="px-0.5 py-0.5 text-center bg-rose-50/60 border-r border-border/20 cursor-default">
-                                  <span className="text-[9px] text-rose-400">LL</span>
-                                </td>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="text-xs max-w-[200px]">
-                                {isHoliday}
-                              </TooltipContent>
-                            </Tooltip>
-                          );
-                        }
-                        // Leave (CO, CM, etc.)
-                        if (leave) {
-                          const leaveLabel = LEAVE_LABELS[leave] || leave;
-                          const leaveColor = LEAVE_COLORS[leave] || "bg-gray-100 text-gray-700";
-                          return (
-                            <td key={u.id} className={`px-0.5 py-0.5 text-center border-r border-border/20 ${leaveColor}`}>
-                              <span className="font-bold text-[10px]">{leaveLabel}</span>
-                            </td>
-                          );
-                        }
-                        // Working day - show enrolled projects
-                        const { labels, names } = getUserProjectsForDate(u.id, dateKey);
-                        if (labels.length > 0) {
-                          const displayLabel = labels.join(" / ");
-                          const colors = projectColor(labels[0]);
-                          return (
-                            <Tooltip key={u.id}>
-                              <TooltipTrigger asChild>
-                                <td
-                                  className="px-0.5 py-0.5 text-center border-r border-border/20 cursor-default"
-                                  style={{ backgroundColor: colors.bg, color: colors.text }}
-                                >
-                                  <span className="font-semibold text-[8px] leading-tight block truncate">
-                                    {displayLabel}
-                                  </span>
-                                </td>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="text-xs max-w-[300px]">
-                                <div className="space-y-0.5">
-                                  <p className="font-semibold">{u.name} — {dateKey}</p>
-                                  {names.map((n, i) => <p key={i}>{labels[i]} — {n}</p>)}
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          );
-                        }
-                        return <td key={u.id} className="px-0.5 py-0.5 text-center border-r border-border/20" />;
-                      })}
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </TooltipProvider>
-        </div>
-      )}
-
-      {/* Reorder Dialog */}
-      <Dialog open={reorderOpen} onOpenChange={setReorderOpen}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-hidden flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <GripVertical className="h-5 w-5 text-[#FFCB09]" /> Reordonare angajați
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex-1 overflow-y-auto space-y-1 mt-2">
-            {reorderList.map((u, idx) => (
-              <div key={u.id} className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card hover:bg-accent/50 transition-colors">
-                <span className="text-xs text-muted-foreground font-mono w-5 text-right">{idx + 1}.</span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{u.name}</p>
-                  {u.department && <p className="text-[10px] text-muted-foreground truncate">{u.department}</p>}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => moveUser(idx, -1)}
-                    disabled={idx === 0}
-                  >
-                    <ArrowUp className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => moveUser(idx, 1)}
-                    disabled={idx === reorderList.length - 1}
-                  >
-                    <ArrowDown className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
+          {/* legend */}
+          <div className="hidden lg:flex items-center gap-3 text-[10px] text-gray-500">
+            {Object.entries(TASK_STATUS_HEX).map(([s, c]) => (
+              <span key={s} className="flex items-center gap-1">
+                <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: c }} />
+                {s.replace("_", " ")}
+              </span>
             ))}
           </div>
-          <div className="flex justify-end gap-2 pt-3 border-t border-border">
-            <Button variant="outline" onClick={() => setReorderOpen(false)}>Anulează</Button>
-            <Button className="bg-[#FFCB09] text-black hover:bg-[#e6b800]" onClick={saveReorder} disabled={reorderMutation.isPending}>
-              {reorderMutation.isPending ? "Se salvează..." : "Salvează ordinea"}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
+        </div>
 
-      {/* Meet Link Edit Dialog */}
-      <Dialog open={meetEditOpen} onOpenChange={setMeetEditOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Video className="h-5 w-5 text-blue-600" /> Link meet zilnic
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 mt-2">
-            <div>
-              <Label className="text-xs font-semibold">Link Google Meet / Zoom / Teams</Label>
-              <Input
-                value={meetLinkInput}
-                onChange={e => setMeetLinkInput(e.target.value)}
-                placeholder="https://meet.google.com/xxx-xxxx-xxx"
-                className="mt-1"
-              />
-              <p className="text-[10px] text-muted-foreground mt-1">Introdu link-ul complet al întâlnirii zilnice. Lasă gol pentru a șterge.</p>
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" size="sm" onClick={() => setMeetEditOpen(false)}>Anulează</Button>
-              <Button
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white"
-                onClick={() => setMeetLink.mutate({ key: "daily_meet_link", value: meetLinkInput.trim() })}
-                disabled={setMeetLink.isPending}
-              >
-                {setMeetLink.isPending ? "Se salvează..." : "Salvează"}
-              </Button>
+        {/* ── loading / empty ── */}
+        {isLoading && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center">
+              <div className="w-7 h-7 border-2 border-[#FFCB09] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+              <p className="text-sm text-gray-400">Se încarcă Gantt-ul...</p>
             </div>
           </div>
-        </DialogContent>
-      </Dialog>
-    </div>
+        )}
+        {!isLoading && (ganttProjects as any[]).length === 0 && (
+          <div className="flex-1 flex items-center justify-center">
+            <div className="text-center text-gray-400">
+              <AlertTriangle className="h-10 w-10 mx-auto mb-3 text-gray-200" />
+              <p className="text-sm font-medium">Niciun proiect activ</p>
+              <p className="text-xs mt-1">Proiectele active vor apărea automat</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── main gantt ── */}
+        {!isLoading && (ganttProjects as any[]).length > 0 && (
+          <div className="flex flex-1 overflow-hidden">
+
+            {/* label column (fixed) */}
+            <div className="flex-shrink-0 border-r border-gray-200 bg-white z-10 flex flex-col" style={{ width: LABEL_W }}>
+              {/* header spacer */}
+              <div style={{ height: HEADER_H }} className="border-b border-gray-200 flex items-end px-3 pb-2 flex-shrink-0">
+                <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Proiect / Task</span>
+              </div>
+              {/* rows */}
+              <div className="overflow-y-hidden flex-1">
+                {rows.map(row => {
+                  const key = row.kind === "project" ? `lp-${row.p.id}` : `lt-${row.t.taskId}`;
+                  const h = row.kind === "project" ? ROW_PROJECT : ROW_TASK;
+                  if (row.kind === "project") {
+                    const isOpen = !collapsed.has(row.p.id);
+                    const taskCount = (row.p.tasks ?? []).length;
+                    return (
+                      <div key={key} style={{ height: h }}
+                        className="flex items-center gap-2 px-2 border-b border-gray-100 bg-gray-50 cursor-pointer hover:bg-gray-100 transition-colors"
+                        onClick={() => toggleProject(row.p.id)}>
+                        {/* color square */}
+                        <div className="w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 text-sm font-bold shadow-sm"
+                          style={{ background: row.p.color || "#FFCB09" }}>
+                          {row.p.emoji || (row.p.abbreviation || row.p.code || "?").slice(0, 2)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-[#221F1F] truncate leading-tight">{row.p.name}</p>
+                          <p className="text-[10px] text-gray-400 truncate">{row.p.clientName} · {taskCount} task-uri</p>
+                        </div>
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <span className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${PROJECT_STATUS[row.p.status] || "bg-gray-100 text-gray-600"}`}>
+                            {row.p.status}
+                          </span>
+                          {isOpen
+                            ? <ChevronDown className="h-3 w-3 text-gray-400" />
+                            : <ChevronRightIcon className="h-3 w-3 text-gray-400" />}
+                        </div>
+                      </div>
+                    );
+                  } else {
+                    const assignees = row.t.assigneeNames
+                      ? row.t.assigneeNames.split(", ").filter(Boolean)
+                      : [];
+                    return (
+                      <div key={key} style={{ height: h }}
+                        className="flex items-center gap-2 pl-8 pr-2 border-b border-gray-100 bg-white">
+                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                          style={{ background: TASK_STATUS_HEX[row.t.taskStatus] || "#94a3b8" }} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] text-gray-700 truncate leading-tight">{row.t.taskName}</p>
+                          <p className="text-[9px] text-gray-400 truncate">{row.t.phaseCode} · {row.t.phaseName}</p>
+                        </div>
+                        {assignees.length > 0 && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex -space-x-1 flex-shrink-0">
+                                {assignees.slice(0, 3).map((name: string, i: number) => (
+                                  <div key={i}
+                                    className="w-5 h-5 rounded-full bg-[#FFCB09] flex items-center justify-center text-[8px] font-bold text-[#221F1F] border border-white"
+                                    title={name}>
+                                    {initials(name)}
+                                  </div>
+                                ))}
+                                {assignees.length > 3 && (
+                                  <div className="w-5 h-5 rounded-full bg-gray-200 flex items-center justify-center text-[8px] font-bold text-gray-600 border border-white">
+                                    +{assignees.length - 3}
+                                  </div>
+                                )}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent side="right" className="text-xs">
+                              {assignees.join(", ")}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
+                    );
+                  }
+                })}
+              </div>
+            </div>
+
+            {/* scrollable gantt canvas */}
+            <div ref={scrollRef} className="flex-1 overflow-x-auto overflow-y-hidden relative">
+              <div style={{ width: totalWidth, minHeight: totalHeight, position: "relative" }}>
+
+                {/* ── month/day header (sticky) ── */}
+                <div style={{ height: HEADER_H, position: "sticky", top: 0, zIndex: 5, background: "white", borderBottom: "1px solid #e5e7eb" }}>
+                  {/* month row */}
+                  <div style={{ height: 28, display: "flex", borderBottom: "1px solid #e5e7eb" }}>
+                    {monthHeaders.map(mh => (
+                      <div key={mh.m} style={{ width: mh.days * pxPerDay, flexShrink: 0, borderRight: "1px solid #e5e7eb" }}
+                        className="flex items-center justify-center">
+                        <span className="text-[11px] font-semibold text-gray-600 truncate px-1">
+                          {pxPerDay >= 4 ? MONTH_FULL[mh.m] : MONTH_NAMES[mh.m]}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  {/* day row */}
+                  <div style={{ height: 24, display: "flex", position: "relative" }}>
+                    {monthHeaders.map(mh =>
+                      Array.from({ length: mh.days }, (_, d) => {
+                        const date = new Date(year, mh.m, d + 1);
+                        const isWknd = date.getDay() === 0 || date.getDay() === 6;
+                        const dayDoy = mh.offset + d + 1;
+                        const isToday = dayDoy === todayDoy;
+                        return (
+                          <div key={`${mh.m}-${d}`} style={{ width: pxPerDay, flexShrink: 0 }}
+                            className={`flex items-center justify-center text-[9px] border-r border-gray-100 h-full
+                              ${isToday ? "bg-[#FFCB09] font-bold text-[#221F1F]" : isWknd ? "bg-gray-50 text-gray-300" : "text-gray-400"}`}>
+                            {pxPerDay >= 8 ? d + 1 : ""}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
+                </div>
+
+                {/* ── background grid ── */}
+                <div style={{ position: "absolute", top: HEADER_H, left: 0, right: 0, bottom: 0, pointerEvents: "none" }}>
+                  {/* weekend shading */}
+                  {monthHeaders.map(mh =>
+                    Array.from({ length: mh.days }, (_, d) => {
+                      const date = new Date(year, mh.m, d + 1);
+                      const isWknd = date.getDay() === 0 || date.getDay() === 6;
+                      if (!isWknd) return null;
+                      const dayDoy = mh.offset + d;
+                      return (
+                        <div key={`wk-${mh.m}-${d}`}
+                          style={{ position: "absolute", left: dayDoy * pxPerDay, top: 0, bottom: 0, width: pxPerDay, background: "rgba(0,0,0,0.025)" }} />
+                      );
+                    })
+                  )}
+                  {/* month dividers */}
+                  {monthHeaders.map(mh => (
+                    <div key={`div-${mh.m}`}
+                      style={{ position: "absolute", left: mh.offset * pxPerDay, top: 0, bottom: 0, width: 1, background: "#e5e7eb" }} />
+                  ))}
+                  {/* today line */}
+                  {todayX >= 0 && (
+                    <div style={{ position: "absolute", left: todayX + pxPerDay / 2, top: 0, bottom: 0, width: 2, background: "#FFCB09", opacity: 0.9 }} />
+                  )}
+                </div>
+
+                {/* ── bars ── */}
+                <div style={{ position: "absolute", top: HEADER_H, left: 0, right: 0 }}>
+                  {rows.map(row => {
+                    const rowTop = row.rowIdx * ROW_PROJECT;
+                    const h = row.kind === "project" ? ROW_PROJECT : ROW_TASK;
+
+                    if (row.kind === "project") {
+                      const b = bar(row.p.startDate, row.p.endDate);
+                      return (
+                        <div key={`bp-${row.p.id}`}
+                          style={{ position: "absolute", top: rowTop, left: 0, right: 0, height: h }}
+                          className="border-b border-gray-100 bg-gray-50/40">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div style={{ position: "absolute", left: b.x, width: b.w, top: 8, height: h - 16, background: row.p.color || "#FFCB09", borderRadius: 5, opacity: 0.85, cursor: "default" }}
+                                className="flex items-center px-2 overflow-hidden">
+                                <span className="text-[10px] font-bold text-white truncate" style={{ textShadow: "0 1px 2px rgba(0,0,0,0.4)" }}>
+                                  {row.p.emoji ? `${row.p.emoji} ` : ""}{row.p.name}
+                                </span>
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="text-xs max-w-[220px]">
+                              <p className="font-semibold">{row.p.name}</p>
+                              <p className="text-gray-400">{row.p.clientName}</p>
+                              <p>Start: {fmtDate(row.p.startDate)} · Final: {fmtDate(row.p.endDate)}</p>
+                              <p>Manager: {row.p.managerName || "—"}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      );
+                    } else {
+                      // task bar — spans project dates, fill = progress
+                      const b = bar(row.p.startDate, row.p.endDate);
+                      const pct = row.t.budgetHours > 0
+                        ? Math.min(100, (row.t.minutesWorked / (Number(row.t.budgetHours) * 60)) * 100)
+                        : 0;
+                      const taskColor = TASK_STATUS_HEX[row.t.taskStatus] || "#94a3b8";
+                      const assignees = row.t.assigneeNames
+                        ? row.t.assigneeNames.split(", ").filter(Boolean)
+                        : [];
+                      return (
+                        <div key={`bt-${row.t.taskId}`}
+                          style={{ position: "absolute", top: rowTop, left: 0, right: 0, height: h }}
+                          className="border-b border-gray-100">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div style={{ position: "absolute", left: b.x, width: b.w, top: 10, height: h - 20, background: "#e5e7eb", borderRadius: 3, overflow: "hidden", cursor: "default" }}>
+                                {/* progress fill */}
+                                <div style={{ width: `${pct}%`, height: "100%", background: taskColor, opacity: 0.85 }} />
+                                {/* assignee avatars overlay */}
+                                {pxPerDay >= 4 && assignees.length > 0 && b.w > 40 && (
+                                  <div style={{ position: "absolute", top: 0, right: 4, height: "100%", display: "flex", alignItems: "center", gap: 1 }}>
+                                    {assignees.slice(0, 3).map((name: string, i: number) => (
+                                      <div key={i}
+                                        className="w-4 h-4 rounded-full bg-white flex items-center justify-center text-[7px] font-bold border"
+                                        style={{ borderColor: taskColor, color: taskColor }}>
+                                        {initials(name)}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            </TooltipTrigger>
+                            <TooltipContent className="text-xs max-w-[240px]">
+                              <p className="font-semibold">{row.t.taskName}</p>
+                              <p className="text-gray-400">{row.t.phaseCode} · {row.t.phaseName}</p>
+                              {assignees.length > 0 && (
+                                <p className="flex items-center gap-1 mt-1">
+                                  <Users className="h-3 w-3" />{assignees.join(", ")}
+                                </p>
+                              )}
+                              <p className="flex items-center gap-1 mt-1">
+                                <Clock className="h-3 w-3" />
+                                {(row.t.minutesWorked / 60).toFixed(1)}h / {row.t.budgetHours}h ({Math.round(pct)}%)
+                              </p>
+                              <p className="mt-1">Status: <span className="font-medium">{row.t.taskStatus}</span></p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      );
+                    }
+                  })}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }

@@ -2278,3 +2278,6 @@ export async function getProjectDetail(projectId: number, userId?: number, isAdm
   );
   return { ...project, phases: phasesWithTasks, members: (members as any)[0] ?? [] };
 }
+
+// Export for use in routers.ts
+export { checkBudgetAlerts as checkBudgetAlertsExternal };

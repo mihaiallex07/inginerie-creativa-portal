@@ -674,3 +674,13 @@
 - [x] Feature: "Task activ" în header DashboardLayout (lângă clopoțel), vizibil pe toate paginile
 - [x] Fix: starea expand/collapse etape se resetează la schimbarea tab-ului (state mutat în ProiectDetaliu)
 - [x] Fix: notificările de buget (≥25%) nu apar în header (fix myBudgetAlerts + checkBudgetAlerts)
+
+## Sprint 57 — Timer task activ + Time-Tracking + Process Overview Gantt
+
+- [x] Fix: Timer task activ porneste cu 3h în loc de 0 (calcul elapsed time incorect)
+- [x] Fix: Pauza nu opreste timer-ul vizual în header
+- [x] Fix: Reluare task nu reia de la momentul pauzei
+- [x] Fix: eliminare buton flotant "Timer rapid" din dreapta jos
+- [x] Feature: Time-Tracking dialog — 2 dropdown-uri: Proiect + Task (doar task-urile la care esti înrolat)
+- [x] Feature: sincronizare bidirectionala TT ↔ task sessions (minutesWorked actualizat la stop)
+- [x] Feature: Process Overview redesenat complet ca Gantt chart (bare proiecte + task-uri, avatare angajati, zoom, azi)

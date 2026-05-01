@@ -264,6 +264,7 @@ export default function TimeTracking() {
   const [formTask, setFormTask] = useState("");
   const [formType, setFormType] = useState<string>("proiectare");
   const [formProject, setFormProject] = useState<string>("");
+  const [formProjectTaskId, setFormProjectTaskId] = useState<string>("");
   const [formDesc, setFormDesc] = useState("");
 
   // ── Admin event dialog ──
@@ -375,6 +376,7 @@ export default function TimeTracking() {
   const dateTo = format(weekEnd, "yyyy-MM-dd");
   const { data: entries = [], refetch: refetchEntries } = trpc.timeTracking.myEntries.useQuery({});
   const { data: projects = [] } = trpc.projects.list.useQuery({});
+  const { data: enrolledTasks = [] } = trpc.projects.myEnrolledTasks.useQuery();
   const { data: companyEvents = [], refetch: refetchEvents } = trpc.companyEvents.list.useQuery({ dateFrom, dateTo });
   const { data: birthdays = [] } = trpc.people.upcomingBirthdays.useQuery({ daysAhead: 14 });
   const isAdmin = user?.role === "admin";
@@ -618,7 +620,7 @@ export default function TimeTracking() {
     setInviteSearch("");
     setFormDate(format(weekDays[dayIdx], "yyyy-MM-dd"));
     setFormStart({ h, m }); setFormEnd({ h: Math.min(h + 1, HOUR_END), m });
-    setFormTask(""); setFormType("proiectare"); setFormProject(""); setFormDesc("");
+    setFormTask(""); setFormType("proiectare"); setFormProject(""); setFormProjectTaskId(""); setFormDesc("");
     setDialogOpen(true);
   };
 
@@ -629,16 +631,23 @@ export default function TimeTracking() {
     setFormDate(format(new Date(entry.date), "yyyy-MM-dd"));
     setFormStart(st); setFormEnd(en);
     setFormTask(entry.taskName || ""); setFormType(entry.activityType || "proiectare");
-    setFormProject(entry.projectId ? String(entry.projectId) : ""); setFormDesc(entry.description || "");
+    setFormProject(entry.projectId ? String(entry.projectId) : "");
+    setFormProjectTaskId(entry.projectTaskId ? String(entry.projectTaskId) : "");
+    setFormDesc(entry.description || "");
     setDialogOpen(true);
   };
 
   const handleSave = () => {
+    const selectedTask = formProjectTaskId && formProjectTaskId !== "none"
+      ? (enrolledTasks as any[]).find((t: any) => t.taskId === Number(formProjectTaskId))
+      : null;
     const payload = {
       date: formDate, startHour: formStart.h, startMin: formStart.m,
       endHour: formEnd.h, endMin: formEnd.m, activityType: formType as any,
-      taskName: formTask || undefined, description: formDesc || undefined,
-      projectId: formProject && formProject !== "none" ? Number(formProject) : undefined,
+      taskName: formTask || (selectedTask ? selectedTask.taskName : undefined) || undefined,
+      description: formDesc || undefined,
+      projectId: formProject && formProject !== "none" ? Number(formProject) : (selectedTask ? selectedTask.projectId : undefined),
+      projectTaskId: selectedTask ? selectedTask.taskId : undefined,
     };
     if (editingEntry) {
       updateEntry.mutate({ id: editingEntry.id, ...payload }, {
@@ -837,10 +846,7 @@ export default function TimeTracking() {
           <div className="w-full bg-gray-700 rounded-full h-1">
             <div className="bg-[#FFCB09] h-1 rounded-full transition-all" style={{ width: `${Math.min(100, (weekMins / 2400) * 100)}%` }} />
           </div>
-          {/* Timer rapid — buton sub TIME INSIGHTS */}
-          <div className="mt-2 pt-2 border-t border-white/10">
-            <TimerQuickButton />
-          </div>
+
         </div>
 
         {/* Recurring Activities Card */}
@@ -1188,17 +1194,42 @@ export default function TimeTracking() {
               </div>
               <div className="flex-1">
                 <Label className="text-xs">Proiect (opțional)</Label>
-                <Select value={formProject} onValueChange={setFormProject}>
+                <Select value={formProject} onValueChange={v => { setFormProject(v); setFormProjectTaskId(""); }}>
                   <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Fără proiect" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none" className="text-xs">Fără proiect</SelectItem>
-                    {(projects as any[]).map((p: any) => (
+                    {Array.from(new Map((enrolledTasks as any[]).map((t: any) => [t.projectId, { id: t.projectId, name: t.projectName }])).values()).map((p: any) => (
                       <SelectItem key={p.id} value={String(p.id)} className="text-xs">{p.name}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
+            {/* Task picker — shown only when a project is selected */}
+            {formProject && formProject !== "none" && (() => {
+              const tasksForProject = (enrolledTasks as any[]).filter((t: any) => String(t.projectId) === formProject);
+              if (tasksForProject.length === 0) return null;
+              return (
+                <div>
+                  <Label className="text-xs">Task (opțional)</Label>
+                  <Select value={formProjectTaskId} onValueChange={v => {
+                    setFormProjectTaskId(v);
+                    const t = tasksForProject.find((t: any) => String(t.taskId) === v);
+                    if (t && !formTask) setFormTask(t.taskName);
+                  }}>
+                    <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Selectează task" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-xs">Fără task specific</SelectItem>
+                      {tasksForProject.map((t: any) => (
+                        <SelectItem key={t.taskId} value={String(t.taskId)} className="text-xs">
+                          <span className="text-gray-400 mr-1">{t.phaseCode}</span>{t.taskName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              );
+            })()}
             <div>
               <Label className="text-xs">Descriere (opțional)</Label>
               <Textarea value={formDesc} onChange={e => setFormDesc(e.target.value)} placeholder="Detalii..." rows={2} className="text-xs" />

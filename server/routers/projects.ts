@@ -533,4 +533,80 @@ export const projectsRouter = router({
     );
     return ((rows as any)[0] ?? []) as any[];
   }),
+
+  // ─── GANTT DATA (for Process Overview) ───────────────────────────────────────────
+  ganttData: protectedProcedure
+    .input(z.object({ year: z.number().optional(), month: z.number().optional() }).optional())
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const isAdmin = ctx.user.role === "admin" || ctx.user.role === "coordonator";
+      // Get all active projects (admin sees all, user sees their own)
+      const projectsRows = await db.execute(
+        isAdmin
+          ? sql`SELECT p.id, p.name, p.code, p.color, p.emoji, p.abbreviation, p.startDate, p.endDate, p.status,
+                       p.clientName, pm_mgr.name AS managerName
+                FROM projects p
+                LEFT JOIN users pm_mgr ON pm_mgr.id = p.managerId
+                WHERE p.status IN ('activ', 'suspendat')
+                ORDER BY p.startDate, p.name`
+          : sql`SELECT p.id, p.name, p.code, p.color, p.emoji, p.abbreviation, p.startDate, p.endDate, p.status,
+                       p.clientName, pm_mgr.name AS managerName
+                FROM projects p
+                LEFT JOIN users pm_mgr ON pm_mgr.id = p.managerId
+                WHERE p.status IN ('activ', 'suspendat')
+                  AND p.id IN (SELECT projectId FROM project_members WHERE userId = ${ctx.user.id})
+                ORDER BY p.startDate, p.name`
+      );
+      const projects = (projectsRows as any)[0] ?? [];
+      if (projects.length === 0) return [];
+      const projectIds = projects.map((p: any) => p.id);
+      // Get tasks with assignees for these projects
+      const tasksRows = await db.execute(
+        sql`SELECT pt.id AS taskId, pt.name AS taskName, pt.projectId, pt.phaseId,
+                   pt.status AS taskStatus, pt.budgetHours, pt.minutesWorked,
+                   pp.name AS phaseName, pp.code AS phaseCode, pp.color AS phaseColor,
+                   MIN(pp.displayOrder) AS phaseOrder, MIN(pt.displayOrder) AS taskOrder,
+                   GROUP_CONCAT(DISTINCT u.name ORDER BY u.name SEPARATOR ', ') AS assigneeNames,
+                   GROUP_CONCAT(DISTINCT u.id ORDER BY u.id SEPARATOR ',') AS assigneeIds
+            FROM project_tasks pt
+            JOIN project_phases pp ON pp.id = pt.phaseId
+            LEFT JOIN task_assignees ta ON ta.taskId = pt.id
+            LEFT JOIN users u ON u.id = ta.userId
+            WHERE pt.projectId IN (${sql.raw(projectIds.join(','))})
+              AND pt.status != 'finalizata'
+            GROUP BY pt.id, pt.name, pt.projectId, pt.phaseId, pt.status, pt.budgetHours, pt.minutesWorked, pp.name, pp.code, pp.color
+            ORDER BY phaseOrder, taskOrder`
+      );
+      const tasks = (tasksRows as any)[0] ?? [];
+      // Group tasks by project
+      return projects.map((p: any) => ({
+        ...p,
+        tasks: tasks.filter((t: any) => t.projectId === p.id),
+      }));
+    }),
+
+  // ─── ENROLLED TASKS (for Time-Tracking picker) ─────────────────────────────
+  myEnrolledTasks: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return [];
+    const rows = await db.execute(
+      sql`SELECT DISTINCT
+              p.id AS projectId, p.name AS projectName, p.color AS projectColor, p.emoji AS projectEmoji,
+              pp.id AS phaseId, pp.name AS phaseName, pp.code AS phaseCode, pp.displayOrder AS phaseOrder,
+              pt.id AS taskId, pt.name AS taskName, pt.budgetHours, pt.minutesWorked, pt.status AS taskStatus, pt.displayOrder AS taskOrder
+           FROM project_tasks pt
+           JOIN project_phases pp ON pp.id = pt.phaseId
+           JOIN projects p ON p.id = pt.projectId
+           WHERE (
+             pt.id IN (SELECT taskId FROM task_assignees WHERE userId = ${ctx.user.id})
+             OR pt.assignedUserId = ${ctx.user.id}
+             OR p.id IN (SELECT projectId FROM project_members WHERE userId = ${ctx.user.id})
+           )
+             AND pt.status != 'finalizata'
+             AND p.status = 'activ'
+           ORDER BY p.name, phaseOrder, taskOrder`
+    );
+    return ((rows as any)[0] ?? []) as any[];
+  }),
 });
