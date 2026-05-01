@@ -1765,6 +1765,8 @@ export async function updateProject(id: number, data: Partial<{
   endDate: string | null;
   description: string | null;
   color: string | null;
+  abbreviation: string | null;
+  emoji: string | null;
   driveId: string | null;
 }>) {
   const db = await getDb();

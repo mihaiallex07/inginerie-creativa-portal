@@ -98,6 +98,8 @@ export const projects = mysqlTable("projects", {
   endDate: date("endDate"),
   description: text("description"),
   color: varchar("color", { length: 16 }).default("#FFCB09"),
+  abbreviation: varchar("abbreviation", { length: 16 }),
+  emoji: varchar("emoji", { length: 8 }),
   driveId: varchar("driveId", { length: 128 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
