@@ -12,6 +12,7 @@
     "@opennextjs/cloudflare": "^1.19.8",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.105.4",
+    "@trpc/client": "^11.17.0",
     "date-fns": "^4.1.0",
     "next": "16.2.6",
     "react": "19.2.4",
