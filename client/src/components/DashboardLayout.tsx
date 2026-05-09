@@ -21,7 +21,7 @@ import {
   SidebarTrigger,
   useSidebar,
 } from "@/components/ui/sidebar";
-import { getLoginUrl } from "@/const";
+import { redirectToLogin } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
 import {
   AlertTriangle,
@@ -170,7 +170,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             )}
           </div>
           <Button
-            onClick={() => { window.location.href = getLoginUrl(); }}
+            onClick={() => { redirectToLogin(); }}
             size="lg"
             className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold shadow-lg"
           >

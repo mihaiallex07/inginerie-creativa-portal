@@ -1,2 +1,0 @@
-ALTER TABLE `company_events` ADD `activityType` enum('proiectare','consultanta','sedinta','documentare','deplasare','administrativ','verificare','executie');--> statement-breakpoint
-ALTER TABLE `company_events` ADD `projectId` int;
