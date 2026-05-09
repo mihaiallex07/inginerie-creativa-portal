@@ -1,5 +1,6 @@
 import { and, asc, desc, eq, gte, isNotNull, isNull, lte, or, sql, ne, inArray } from "drizzle-orm";
-import { drizzle } from "drizzle-orm/mysql2";
+import { drizzle } from "drizzle-orm/postgres-js";
+import postgres from "postgres";
 import {
   companyEvents,
   documentAuditLog,
@@ -71,7 +72,8 @@ export async function setAppSetting(key: string, value: string, updatedBy: numbe
 export async function getDb() {
   if (!_db && process.env.DATABASE_URL) {
     try {
-      _db = drizzle(process.env.DATABASE_URL);
+      const client = postgres(process.env.DATABASE_URL!);
+      _db = drizzle(client);
     } catch (error) {
       console.warn("[Database] Failed to connect:", error);
       _db = null;
@@ -112,7 +114,7 @@ export async function upsertUser(user: InsertUser): Promise<void> {
   if (!values.lastSignedIn) values.lastSignedIn = new Date();
   if (Object.keys(updateSet).length === 0) updateSet.lastSignedIn = new Date();
 
-  await db.insert(users).values(values).onDuplicateKeyUpdate({ set: updateSet });
+  await db.insert(users).values(values).onConflictDoUpdate({ target: users.openId, set: updateSet });
 }
 
 export async function getUserByOpenId(openId: string) {
@@ -155,8 +157,8 @@ export async function upsertPontaj(data: typeof pontaj.$inferInsert) {
     await db.update(pontaj).set(data).where(eq(pontaj.id, existing.id));
     return existing.id;
   } else {
-    const result = await db.insert(pontaj).values(data);
-    return (result[0] as any).insertId;
+    const result = await db.insert(pontaj).values(data).returning({ id: pontaj.id });
+    return result[0].id;
   }
 }
 
@@ -220,7 +222,7 @@ export async function upsertProject(data: typeof projects.$inferInsert) {
   if (data.id) {
     await db.update(projects).set(data).where(eq(projects.id, data.id));
   } else {
-    await db.insert(projects).values(data);
+    await db.insert(projects).values(data).returning({ id: projects.id });
   }
 }
 
@@ -277,8 +279,8 @@ export async function checkTimeEntryExists(
 export async function createTimeEntry(data: typeof timeEntries.$inferInsert) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(timeEntries).values(data);
-  return (result[0] as any).insertId;
+  const result = await db.insert(timeEntries).values(data).returning({ id: timeEntries.id });
+  return result[0].id;
 }
 
 export async function updateTimeEntry(id: number, data: Partial<typeof timeEntries.$inferInsert>) {
@@ -327,8 +329,8 @@ export async function getNewsById(id: number) {
 export async function createNews(data: typeof news.$inferInsert) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(news).values(data);
-  return (result[0] as any).insertId;
+  const result = await db.insert(news).values(data).returning({ id: news.id });
+  return result[0].id;
 }
 
 export async function updateNews(id: number, data: Partial<typeof news.$inferInsert>) {
@@ -382,8 +384,8 @@ export async function getDocumentsForUser(userId: number) {
 export async function createDocument(data: typeof documents.$inferInsert) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(documents).values(data);
-  return (result[0] as any).insertId;
+  const result = await db.insert(documents).values(data).returning({ id: documents.id });
+  return result[0].id;
 }
 
 export async function logDocumentAccess(documentId: number, userId: number, action: string, ipAddress?: string) {
@@ -470,8 +472,8 @@ export async function getProposalById(id: number) {
 export async function createProposal(data: typeof proposals.$inferInsert) {
   const db = await getDb();
   if (!db) return null;
-  const result = await db.insert(proposals).values(data);
-  return (result[0] as any).insertId;
+  const result = await db.insert(proposals).values(data).returning({ id: proposals.id });
+  return result[0].id;
 }
 
 export async function voteProposal(proposalId: number, userId: number) {
@@ -691,7 +693,7 @@ import { leaveRequests, type InsertLeaveRequest } from "../drizzle/schema";
 export async function createLeaveRequest(data: InsertLeaveRequest) {
   const db = await getDb();
   if (!db) throw new Error("DB unavailable");
-  const [result] = await db.insert(leaveRequests).values(data);
+  const [result] = await db.insert(leaveRequests).values(data).returning({ id: leaveRequests.id });
   return result;
 }
 
@@ -1452,8 +1454,8 @@ export async function upsertRecurringException(data: {
       overrideStartMin: data.overrideStartMin ?? null,
       overrideDuration: data.overrideDuration ?? null,
       isDeleted: data.isDeleted ?? false,
-    });
-    return (res as any).insertId;
+    }).returning({ id: recurringExceptions.id });
+    return res[0].id;
   }
 }
 
@@ -1469,8 +1471,8 @@ export async function createActivityInvitation(data: {
     hostUserId: data.hostUserId,
     inviteeUserId: data.inviteeUserId,
     status: "pending",
-  });
-  return (res as any).insertId as number;
+  }).returning({ id: activityInvitations.id });
+  return res[0].id;
 }
 
 export async function getPendingInvitationsForUser(userId: number) {
@@ -1552,8 +1554,8 @@ export async function respondToInvitation(id: number, inviteeUserId: number, acc
     description: he.description,
     isBillable: he.isBillable,
     status: "salvat",
-  });
-  const newEntryId = (ins as any).insertId as number;
+  }).returning({ id: timeEntries.id });
+  const newEntryId = ins[0].id;
   await db.update(activityInvitations)
     .set({ status: "accepted", respondedAt: new Date(), inviteeEntryId: newEntryId })
     .where(eq(activityInvitations.id, id));
@@ -1756,8 +1758,8 @@ export async function createProject(data: {
     description: data.description ?? null,
     color: data.color ?? "#FFCB09",
     driveId: data.driveId ?? null,
-  });
-  return { success: true, id: (result as any)[0]?.insertId };
+  }).returning({ id: projects.id });
+  return { success: true, id: result[0].id };
 }
 
 export async function updateProject(id: number, data: Partial<{
@@ -1805,8 +1807,8 @@ export async function createProjectFromTemplate(data: {
     endDate: data.endDate ? (data.endDate as any) : null,
     description: data.description ?? null,
     color: data.color ?? "#FFCB09",
-  });
-  const projectId = (result as any)[0]?.insertId;
+  }).returning({ id: projects.id });
+  const projectId = result[0].id;
 
   if (data.templateId) {
     const phases = await db.select().from(templatePhases)
@@ -1822,8 +1824,8 @@ export async function createProjectFromTemplate(data: {
         budgetHours: "0",
         color: phase.color,
         status: "activa",
-      });
-      const phaseId = (phResult as any)[0]?.insertId;
+      }).returning({ id: projectPhases.id });
+      const phaseId = phResult[0].id;
 
       const tasks = await db.select().from(templateTasks)
         .where(eq(templateTasks.templatePhaseId, phase.id))
@@ -1838,7 +1840,7 @@ export async function createProjectFromTemplate(data: {
           budgetHours: "0",
           minutesWorked: 0,
           status: "neinceputa",
-        });
+        }).returning({ id: projectTasks.id });
       }
     }
   }
@@ -1874,8 +1876,8 @@ export async function createPhase(data: {
     budgetHours: data.budgetHours ?? "0",
     color: data.color ?? "#FFCB09",
     status: "activa",
-  });
-  return { success: true, id: (result as any)[0]?.insertId };
+  }).returning({ id: projectPhases.id });
+  return { success: true, id: result[0].id };
 }
 
 export async function updatePhase(id: number, data: Partial<{
@@ -1968,8 +1970,8 @@ export async function createTask(data: {
     minutesWorked: 0,
     status: "neinceputa",
     assignedUserId: data.assignedUserId ?? null,
-  });
-  return { success: true, id: (result as any)[0]?.insertId };
+  }).returning({ id: projectTasks.id });
+  return { success: true, id: result[0].id };
 }
 
 export async function updateTask(id: number, data: Partial<{
@@ -2026,8 +2028,8 @@ export async function startTaskSession(userId: number, taskId: number, projectId
     startedAt: new Date(),
     status: "activa",
     totalMinutes: 0,
-  });
-  const sessionId = (result as any)[0]?.insertId;
+  }).returning({ id: taskSessions.id });
+  const sessionId = result[0].id;
   await db.update(projectTasks).set({ status: "in_lucru" }).where(eq(projectTasks.id, taskId));
   return { success: true, sessionId };
 }
@@ -2178,7 +2180,7 @@ export async function createHourRequest(data: {
     justification: data.justification,
     status: "in_asteptare",
   });
-  return { success: true, id: (result as any)[0]?.insertId };
+  return { success: true, id: result[0].id };
 }
 
 export async function getHourRequestsForProject(projectId: number) {

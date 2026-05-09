@@ -1,82 +1,12 @@
 {
   "version": "7",
-  "dialect": "mysql",
+  "dialect": "postgresql",
   "entries": [
     {
       "idx": 0,
-      "version": "5",
-      "when": 1773846187677,
-      "tag": "0000_conscious_virginia_dare",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "5",
-      "when": 1773846613289,
-      "tag": "0001_marvelous_mercury",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "5",
-      "when": 1773918827758,
-      "tag": "0002_massive_wild_child",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "5",
-      "when": 1774622171192,
-      "tag": "0003_supreme_lockheed",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "5",
-      "when": 1775041889707,
-      "tag": "0004_cynical_bloodaxe",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "5",
-      "when": 1775046591180,
-      "tag": "0005_burly_korvac",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "5",
-      "when": 1777383580816,
-      "tag": "0006_new_menace",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "5",
-      "when": 1777455018667,
-      "tag": "0007_new_morph",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "5",
-      "when": 1777467685303,
-      "tag": "0008_legal_garia",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "5",
-      "when": 1777541062486,
-      "tag": "0009_many_wiccan",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "5",
-      "when": 1777550427015,
-      "tag": "0010_optimal_scream",
+      "version": "7",
+      "when": 1778351845465,
+      "tag": "0000_condemned_jasper_sitwell",
       "breakpoints": true
     }
   ]
