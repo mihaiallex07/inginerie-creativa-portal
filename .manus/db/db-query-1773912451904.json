@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE proposals MODIFY COLUMN `status` enum('deschisa','in_evaluare','acceptata','amanata','respinsa') NOT NULL DEFAULT 'deschisa';\nALTER TABLE proposals MODIFY COLUMN `referenceNumber` varchar(32) NOT NULL;\nALTER TABLE proposals MODIFY COLUMN `title` varchar(512) NOT NULL;\nALTER TABLE proposals DROP COLUMN `category`;\nALTER TABLE proposals DROP COLUMN `managerApproval`;\nALTER TABLE proposals DROP COLUMN `committeeApproval`;\nALTER TABLE proposals DROP COLUMN `managerNotes`;\nALTER TABLE proposals DROP COLUMN `committeeNotes`;\nALTER TABLE proposals DROP COLUMN `voteCount`;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \nALTER TABLE proposals MODIFY COLUMN `status` enum('deschisa','in_evaluare','acceptata','amanata','respinsa') NOT NULL DEFAULT 'deschisa';\nALTER TABLE proposals MODIFY COLUMN `referenceNumber` varchar(32) NOT NULL;\nALTER TABLE proposals MODIFY COLUMN `title` varchar(512) NOT NULL;\nALTER TABLE proposals DROP COLUMN `category`;\nALTER TABLE proposals DROP COLUMN `managerApproval`;\nALTER TABLE proposals DROP COLUMN `committeeApproval`;\nALTER TABLE proposals DROP COLUMN `managerNotes`;\nALTER TABLE proposals DROP COLUMN `committeeNotes`;\nALTER TABLE proposals DROP COLUMN `voteCount`;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3599
+}

@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE time_entries MODIFY COLUMN `status` enum('draft','salvat','aprobat','blocat') NOT NULL DEFAULT 'salvat';\nALTER TABLE time_entries MODIFY COLUMN `taskName` varchar(256);\nALTER TABLE time_entries MODIFY COLUMN `durationMinutes` int DEFAULT 0;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \nALTER TABLE time_entries MODIFY COLUMN `status` enum('draft','salvat','aprobat','blocat') NOT NULL DEFAULT 'salvat';\nALTER TABLE time_entries MODIFY COLUMN `taskName` varchar(256);\nALTER TABLE time_entries MODIFY COLUMN `durationMinutes` int DEFAULT 0;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 383
+}

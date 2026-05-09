@@ -1,0 +1,603 @@
+import {
+  int,
+  mysqlEnum,
+  mysqlTable,
+  text,
+  timestamp,
+  varchar,
+  boolean,
+  date,
+  time,
+  decimal,
+  json,
+} from "drizzle-orm/mysql-core";
+
+// ─── USERS ───────────────────────────────────────────────────────────────────
+export const users = mysqlTable("users", {
+  id: int("id").autoincrement().primaryKey(),
+  openId: varchar("openId", { length: 64 }).notNull().unique(),
+  name: text("name"),
+  email: varchar("email", { length: 320 }),
+  loginMethod: varchar("loginMethod", { length: 64 }),
+  role: mysqlEnum("role", ["admin", "coordonator", "angajat", "colaborator"]).default("angajat").notNull(),
+  department: varchar("department", { length: 128 }),
+  jobTitle: varchar("jobTitle", { length: 128 }),
+  avatarUrl: text("avatarUrl"),
+  phone: varchar("phone", { length: 32 }),
+  phoneMobile: varchar("phoneMobile", { length: 32 }),
+  isActive: boolean("isActive").default(true).notNull(),
+  workHoursPerDay: decimal("workHoursPerDay", { precision: 4, scale: 2 }).default("8.00"),
+  // ── Profil personal ──
+  birthDate: date("birthDate"),
+  hireDate: date("hireDate"),
+  // ── Adrese ──
+  addressBuletin: text("addressBuletin"),
+  addressSecondary: text("addressSecondary"),
+  city: varchar("city", { length: 128 }),
+  // ── Date CI (sensibile) ──
+  cnp: varchar("cnp", { length: 13 }),
+  ciSeries: varchar("ciSeries", { length: 4 }),
+  ciNumber: varchar("ciNumber", { length: 10 }),
+  ciExpiry: date("ciExpiry"),
+  ciIssuedBy: varchar("ciIssuedBy", { length: 128 }),
+  // ── Date financiare (sensibile) ──
+  iban: varchar("iban", { length: 34 }),
+  bankName: varchar("bankName", { length: 128 }),
+  // ── Contact urgență ──
+  emergencyContact: varchar("emergencyContact", { length: 128 }),
+  emergencyPhone: varchar("emergencyPhone", { length: 32 }),
+  emergencyRelation: varchar("emergencyRelation", { length: 64 }),
+  // ── Medical ──
+  bloodType: mysqlEnum("bloodType", ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"]),
+  allergies: text("allergies"),
+  // ── Note interne ──
+  profileNotes: text("profileNotes"),
+  displayOrder: int("displayOrder").default(999),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+});
+
+export type User = typeof users.$inferSelect;
+export type InsertUser = typeof users.$inferInsert;
+
+// ─── PONTAJ ──────────────────────────────────────────────────────────────────
+export const pontaj = mysqlTable("pontaj", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  date: date("date").notNull(),
+  checkIn: timestamp("checkIn"),
+  checkOut: timestamp("checkOut"),
+  breakMinutes: int("breakMinutes").default(0),
+  totalMinutes: int("totalMinutes").default(0),
+  type: mysqlEnum("type", ["bucuresti", "cluj", "miercurea_ciuc", "brasov", "eveniment", "deplasare", "vizita_santier", "telemunca", "concediu", "medical", "liber_legal", "absent", "recuperare"]).default("bucuresti").notNull(),
+  projectId: int("projectId"),
+  notes: text("notes"),
+  isApproved: boolean("isApproved").default(false),
+  approvedBy: int("approvedBy"),
+  correctionRequested: boolean("correctionRequested").default(false),
+  correctionNote: text("correctionNote"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Pontaj = typeof pontaj.$inferSelect;
+export type InsertPontaj = typeof pontaj.$inferInsert;
+
+// ─── PROJECTS ────────────────────────────────────────────────────────────────
+export const projects = mysqlTable("projects", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  code: varchar("code", { length: 64 }),
+  clientName: varchar("clientName", { length: 256 }),
+  status: mysqlEnum("status", ["activ", "suspendat", "finalizat", "intern"]).default("activ").notNull(),
+  // isGeneral = true for "Activități Generale" (Social Media, Administrativ etc.)
+  isGeneral: boolean("isGeneral").default(false).notNull(),
+  managerId: int("managerId"),
+  startDate: date("startDate"),
+  endDate: date("endDate"),
+  description: text("description"),
+  color: varchar("color", { length: 16 }).default("#FFCB09"),
+  abbreviation: varchar("abbreviation", { length: 16 }),
+  emoji: varchar("emoji", { length: 8 }),
+  driveId: varchar("driveId", { length: 128 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Project = typeof projects.$inferSelect;
+export type InsertProject = typeof projects.$inferInsert;
+
+// ─── PROJECT PHASES ──────────────────────────────────────────────────────────
+export const projectPhases = mysqlTable("project_phases", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  code: varchar("code", { length: 16 }), // e.g. "A", "B", "C"
+  displayOrder: int("displayOrder").default(0).notNull(),
+  budgetHours: decimal("budgetHours", { precision: 8, scale: 2 }).default("0").notNull(),
+  color: varchar("color", { length: 16 }).default("#FFCB09"),
+  status: mysqlEnum("status", ["activa", "suspendata", "finalizata"]).default("activa").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProjectPhase = typeof projectPhases.$inferSelect;
+export type InsertProjectPhase = typeof projectPhases.$inferInsert;
+
+// ─── PROJECT TASKS ───────────────────────────────────────────────────────────
+export const projectTasks = mysqlTable("project_tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  phaseId: int("phaseId").notNull(),
+  projectId: int("projectId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  displayOrder: int("displayOrder").default(0).notNull(),
+  budgetHours: decimal("budgetHours", { precision: 8, scale: 2 }).default("0").notNull(),
+  // minutesWorked is computed from task_sessions, stored for performance
+  minutesWorked: int("minutesWorked").default(0).notNull(),
+  status: mysqlEnum("status", ["neinceputa", "in_lucru", "in_pauza", "finalizata", "blocata"]).default("neinceputa").notNull(),
+  assignedUserId: int("assignedUserId"), // primary assignee
+  alertSent25: boolean("alertSent25").default(false).notNull(),
+  alertSent50: boolean("alertSent50").default(false).notNull(),
+  alertSent75: boolean("alertSent75").default(false).notNull(),
+  alertSent90: boolean("alertSent90").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type ProjectTask = typeof projectTasks.$inferSelect;
+export type InsertProjectTask = typeof projectTasks.$inferInsert;
+
+// ─── TASK SESSIONS (Start/Pause/Resume/Stop) ─────────────────────────────────
+export const taskSessions = mysqlTable("task_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull(),
+  projectId: int("projectId").notNull(),
+  userId: int("userId").notNull(),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  pausedAt: timestamp("pausedAt"),
+  resumedAt: timestamp("resumedAt"),
+  endedAt: timestamp("endedAt"),
+  // Total active minutes (excluding pauses), updated on stop
+  totalMinutes: int("totalMinutes").default(0).notNull(),
+  status: mysqlEnum("status", ["activa", "in_pauza", "finalizata"]).default("activa").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TaskSession = typeof taskSessions.$inferSelect;
+export type InsertTaskSession = typeof taskSessions.$inferInsert;
+
+// ─── HOUR BANK ───────────────────────────────────────────────────────────────
+// Daily summary of minutes worked per user (aggregated from task_sessions)
+export const hourBank = mysqlTable("hour_bank", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  date: date("date").notNull(),
+  minutesWorked: int("minutesWorked").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type HourBank = typeof hourBank.$inferSelect;
+export type InsertHourBank = typeof hourBank.$inferInsert;
+
+// ─── TASK HOUR REQUESTS ──────────────────────────────────────────────────────
+// Employee requests additional hours for a task with justification
+export const taskHourRequests = mysqlTable("task_hour_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: int("taskId").notNull(),
+  projectId: int("projectId").notNull(),
+  userId: int("userId").notNull(),
+  requestedHours: decimal("requestedHours", { precision: 6, scale: 2 }).notNull(),
+  justification: text("justification").notNull(),
+  status: mysqlEnum("status", ["in_asteptare", "aprobata", "respinsa"]).default("in_asteptare").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewNote: text("reviewNote"),
+  reviewedAt: timestamp("reviewedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TaskHourRequest = typeof taskHourRequests.$inferSelect;
+export type InsertTaskHourRequest = typeof taskHourRequests.$inferInsert;
+
+// ─── PROJECT TEMPLATES ───────────────────────────────────────────────────────
+export const projectTemplates = mysqlTable("project_templates", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  isDefault: boolean("isDefault").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ProjectTemplate = typeof projectTemplates.$inferSelect;
+
+export const templatePhases = mysqlTable("template_phases", {
+  id: int("id").autoincrement().primaryKey(),
+  templateId: int("templateId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  code: varchar("code", { length: 16 }),
+  displayOrder: int("displayOrder").default(0).notNull(),
+  color: varchar("color", { length: 16 }).default("#FFCB09"),
+});
+
+export type TemplatePhase = typeof templatePhases.$inferSelect;
+
+export const templateTasks = mysqlTable("template_tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  templatePhaseId: int("templatePhaseId").notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  displayOrder: int("displayOrder").default(0).notNull(),
+});
+
+export type TemplateTask = typeof templateTasks.$inferSelect;
+
+// ─── TIME TRACKING ───────────────────────────────────────────────────────────
+export const timeEntries = mysqlTable("time_entries", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  projectId: int("projectId"),
+  date: date("date").notNull(),
+  startTime: timestamp("startTime"),
+  endTime: timestamp("endTime"),
+  startHour: int("startHour"),
+  startMin: int("startMin"),
+  endHour: int("endHour"),
+  endMin: int("endMin"),
+  durationMinutes: int("durationMinutes").default(0),
+  activityType: mysqlEnum("activityType", ["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).default("proiectare").notNull(),
+  taskName: varchar("taskName", { length: 256 }),
+  description: text("description"),
+  isBillable: boolean("isBillable").default(true),
+  isRunning: boolean("isRunning").default(false),
+  status: mysqlEnum("status", ["draft", "salvat", "aprobat", "blocat"]).default("salvat").notNull(),
+  approvedBy: int("approvedBy"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TimeEntry = typeof timeEntries.$inferSelect;
+export type InsertTimeEntry = typeof timeEntries.$inferInsert;
+
+// ─── NEWS ────────────────────────────────────────────────────────────────────
+export const news = mysqlTable("news", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 512 }).notNull(),
+  content: text("content").notNull(),
+  excerpt: text("excerpt"),
+  category: mysqlEnum("category", ["companie", "proiecte", "hr", "it", "evenimente", "realizari"]).default("companie").notNull(),
+  tags: json("tags").$type<string[]>().default([]),
+  authorId: int("authorId").notNull(),
+  isPinned: boolean("isPinned").default(false),
+  isImportant: boolean("isImportant").default(false),
+  imageUrl: text("imageUrl"),
+  publishedAt: timestamp("publishedAt").defaultNow(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type News = typeof news.$inferSelect;
+export type InsertNews = typeof news.$inferInsert;
+
+export const newsReactions = mysqlTable("news_reactions", {
+  id: int("id").autoincrement().primaryKey(),
+  newsId: int("newsId").notNull(),
+  userId: int("userId").notNull(),
+  reaction: varchar("reaction", { length: 16 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const newsComments = mysqlTable("news_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  newsId: int("newsId").notNull(),
+  userId: int("userId").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+// ─── DOCUMENTS ───────────────────────────────────────────────────────────────
+export const documents = mysqlTable("documents", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  uploadedBy: int("uploadedBy").notNull(),
+  type: mysqlEnum("type", ["contract", "fisa_post", "evaluare", "certificat", "salariu", "concediu", "medical", "alt"]).default("alt").notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  description: text("description"),
+  fileUrl: text("fileUrl"),
+  fileKey: varchar("fileKey", { length: 512 }),
+  mimeType: varchar("mimeType", { length: 128 }),
+  fileSize: int("fileSize"),
+  isConfidential: boolean("isConfidential").default(true),
+  year: int("year"),
+  month: int("month"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = typeof documents.$inferInsert;
+
+export const documentAuditLog = mysqlTable("document_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  documentId: int("documentId").notNull(),
+  userId: int("userId").notNull(),
+  action: mysqlEnum("action", ["view", "download", "upload", "delete", "update"]).notNull(),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── PROCESSES ───────────────────────────────────────────────────────────────
+export const processes = mysqlTable("processes", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 512 }).notNull(),
+  code: varchar("code", { length: 64 }),
+  department: varchar("department", { length: 128 }).notNull(),
+  category: mysqlEnum("category", ["proiectare", "management", "financiar", "hr", "it", "achizitii", "comunicare", "alt"]).default("alt").notNull(),
+  version: varchar("version", { length: 32 }).default("1.0"),
+  ownerId: int("ownerId"),
+  content: text("content"),
+  status: mysqlEnum("status", ["activ", "in_revizuire", "arhivat"]).default("activ").notNull(),
+  isMandatoryRead: boolean("isMandatoryRead").default(false),
+  targetRoles: json("targetRoles").$type<string[]>().default([]),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Process = typeof processes.$inferSelect;
+export type InsertProcess = typeof processes.$inferInsert;
+
+export const processReadConfirmations = mysqlTable("process_read_confirmations", {
+  id: int("id").autoincrement().primaryKey(),
+  processId: int("processId").notNull(),
+  userId: int("userId").notNull(),
+  confirmedAt: timestamp("confirmedAt").defaultNow().notNull(),
+});
+
+// ─── PROPOSALS ───────────────────────────────────────────────────────────────
+export const proposals = mysqlTable("proposals", {
+  id: int("id").autoincrement().primaryKey(),
+  referenceNumber: varchar("referenceNumber", { length: 32 }).notNull().unique(),
+  title: varchar("title", { length: 512 }).notNull(),
+  description: text("description").notNull(),
+  benefits: text("benefits"),
+  departments: json("departments").$type<string[]>().default([]),
+  authorId: int("authorId").notNull(),
+  isAnonymous: boolean("isAnonymous").default(false),
+  status: mysqlEnum("status", ["deschisa", "in_evaluare", "acceptata", "amanata", "respinsa"]).default("deschisa").notNull(),
+  managerId: int("managerId"),
+  managerDecision: text("managerDecision"),
+  committeeDecision: text("committeeDecision"),
+  votesCount: int("votesCount").default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Proposal = typeof proposals.$inferSelect;
+export type InsertProposal = typeof proposals.$inferInsert;
+
+export const proposalVotes = mysqlTable("proposal_votes", {
+  id: int("id").autoincrement().primaryKey(),
+  proposalId: int("proposalId").notNull(),
+  userId: int("userId").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export const proposalComments = mysqlTable("proposal_comments", {
+  id: int("id").autoincrement().primaryKey(),
+  proposalId: int("proposalId").notNull(),
+  userId: int("userId").notNull(),
+  content: text("content").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+// ─── NOTIFICATIONS ───────────────────────────────────────────────────────────
+export const notifications = mysqlTable("notifications", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  type: varchar("type", { length: 64 }).notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  message: text("message"),
+  link: varchar("link", { length: 512 }),
+  isRead: boolean("isRead").default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Notification = typeof notifications.$inferSelect;
+
+// ─── LEAVE REQUESTS (Cereri Concediu) ────────────────────────────────────────────────
+export const leaveRequests = mysqlTable("leave_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  type: mysqlEnum("type", ["concediu_odihna", "concediu_medical", "concediu_fara_plata", "liber_legal", "recuperare", "alt"]).default("concediu_odihna").notNull(),
+  startDate: date("startDate").notNull(),
+  endDate: date("endDate").notNull(),
+  totalDays: int("totalDays").notNull(),
+  reason: text("reason"),
+  status: mysqlEnum("status", ["in_asteptare", "aprobata", "respinsa", "anulata"]).default("in_asteptare").notNull(),
+  reviewedBy: int("reviewedBy"),
+  reviewNote: text("reviewNote"),
+  reviewedAt: timestamp("reviewedAt"),
+  substituteUserId: int("substituteUserId"),
+  attachmentUrl: text("attachmentUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type LeaveRequest = typeof leaveRequests.$inferSelect;
+export type InsertLeaveRequest = typeof leaveRequests.$inferInsert;
+
+// ─── COMPANY EVENTS (admin-managed, non-editable by employees) ────────────────────
+export const companyEvents = mysqlTable("company_events", {
+  id: int("id").autoincrement().primaryKey(),
+  title: varchar("title", { length: 256 }).notNull(),
+  description: text("description"),
+  link: text("link"),                          // zoom / address / etc.
+  startTime: timestamp("startTime").notNull(),
+  endTime: timestamp("endTime").notNull(),
+  isRecurring: boolean("isRecurring").default(false),
+  recurringRule: varchar("recurringRule", { length: 128 }), // 'daily','weekly','RRULE:...'
+  recurringUntil: date("recurringUntil"),
+  color: varchar("color", { length: 16 }).default("#FFCB09"),
+  targetType: mysqlEnum("targetType", ["all", "department", "users"]).default("all").notNull(),
+  targetDepartment: varchar("targetDepartment", { length: 128 }),
+  targetUserIds: json("targetUserIds").$type<number[]>().default([]),
+  activityType: mysqlEnum("activityType", ["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]),
+  projectId: int("projectId"),
+  createdBy: int("createdBy").notNull(),
+  isActive: boolean("isActive").default(true),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CompanyEvent = typeof companyEvents.$inferSelect;
+export type InsertCompanyEvent = typeof companyEvents.$inferInsert;
+
+// ─── PROJECT MEMBERS (echipă proiect) ──────────────────────────────────────────────
+// Multiple coordinators per project/phase are supported via projectRole
+export const projectMembers = mysqlTable("project_members", {
+  id: int("id").autoincrement().primaryKey(),
+  projectId: int("projectId").notNull(),
+  userId: int("userId").notNull(),
+  // phaseId: if set, coordinator is scoped to this phase only
+  phaseId: int("phaseId"),
+  projectRole: mysqlEnum("projectRole", ["coordonator", "membru", "consultant"]).default("membru").notNull(),
+  joinedAt: timestamp("joinedAt").defaultNow().notNull(),
+});
+
+export type ProjectMember = typeof projectMembers.$inferSelect;
+export type InsertProjectMember = typeof projectMembers.$inferInsert;
+
+// ─── APP SETTINGS (key-value store for admin-managed settings) ──────────────
+export const appSettings = mysqlTable("app_settings", {
+  id: int("id").autoincrement().primaryKey(),
+  key: varchar("key", { length: 128 }).notNull().unique(),
+  value: text("value"),
+  updatedBy: int("updatedBy"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AppSetting = typeof appSettings.$inferSelect;
+
+// ─── GOOGLE CALENDAR TOKENS ──────────────────────────────────────────────────
+export const googleCalendarTokens = mysqlTable("google_calendar_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  accessToken: text("accessToken").notNull(),
+  refreshToken: text("refreshToken"),
+  expiresAt: timestamp("expiresAt"),
+  scope: text("scope"),
+  calendarId: varchar("calendarId", { length: 256 }).default("primary"),
+  syncEnabled: boolean("syncEnabled").default(true).notNull(),
+  lastSyncedAt: timestamp("lastSyncedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type GoogleCalendarToken = typeof googleCalendarTokens.$inferSelect;
+export type InsertGoogleCalendarToken = typeof googleCalendarTokens.$inferInsert;
+
+// ─── GOOGLE CALENDAR SYNC MAP ─────────────────────────────────────────────────
+// Maps time entries to Google Calendar event IDs for bidirectional sync
+export const gcalSyncMap = mysqlTable("gcal_sync_map", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  timeEntryId: int("timeEntryId"),
+  gcalEventId: varchar("gcalEventId", { length: 256 }).notNull(),
+  direction: mysqlEnum("direction", ["gcal_to_portal", "portal_to_gcal", "both"]).default("both").notNull(),
+  lastSyncedAt: timestamp("lastSyncedAt").defaultNow().notNull(),
+});
+export type GcalSyncMap = typeof gcalSyncMap.$inferSelect;
+
+// ─── RECURRING ACTIVITIES ────────────────────────────────────────────────────
+// Per-user recurring activity templates (e.g. "Pauză de masă" daily at 13:00)
+export const recurringActivities = mysqlTable("recurring_activities", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  taskName: varchar("taskName", { length: 256 }).notNull(),
+  activityType: mysqlEnum("activityType", ["proiectare", "consultanta", "sedinta", "documentare", "deplasare", "administrativ", "verificare", "executie"]).default("administrativ").notNull(),
+  projectId: int("projectId"),
+  startHour: int("startHour").notNull(),
+  startMin: int("startMin").notNull().default(0),
+  durationMinutes: int("durationMinutes").notNull(),
+  countInTime: boolean("countInTime").default(true).notNull(), // if false: shown with hourglass icon, excluded from Time Insights
+  startDate: date("startDate").notNull(),   // first day it applies
+  endDate: date("endDate"),                 // null = indefinite
+  isActive: boolean("isActive").default(true).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type RecurringActivity = typeof recurringActivities.$inferSelect;
+export type InsertRecurringActivity = typeof recurringActivities.$inferInsert;
+
+// ─── RECURRING EXCEPTIONS ────────────────────────────────────────────────────
+// Per-day overrides for a recurring activity (drag/edit creates an exception)
+export const recurringExceptions = mysqlTable("recurring_exceptions", {
+  id: int("id").autoincrement().primaryKey(),
+  recurringId: int("recurringId").notNull(),
+  userId: int("userId").notNull(),
+  exceptionDate: date("exceptionDate").notNull(), // the specific day being overridden
+  overrideStartHour: int("overrideStartHour"),    // null = use parent values
+  overrideStartMin: int("overrideStartMin"),
+  overrideDuration: int("overrideDuration"),
+  isDeleted: boolean("isDeleted").default(false).notNull(), // true = hidden on this day
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type RecurringException = typeof recurringExceptions.$inferSelect;
+export type InsertRecurringException = typeof recurringExceptions.$inferInsert;
+
+// ─── ACTIVITY INVITATIONS ────────────────────────────────────────────────────
+// Invitations from one user to another for a shared time entry (meeting/session)
+export const activityInvitations = mysqlTable("activity_invitations", {
+  id: int("id").autoincrement().primaryKey(),
+  timeEntryId: int("timeEntryId").notNull(),   // the host's time_entries row
+  hostUserId: int("hostUserId").notNull(),
+  inviteeUserId: int("inviteeUserId").notNull(),
+  status: mysqlEnum("status", ["pending", "accepted", "declined"]).default("pending").notNull(),
+  inviteeEntryId: int("inviteeEntryId"),        // set after acceptance (cloned entry id)
+  notifiedAt: timestamp("notifiedAt"),
+  respondedAt: timestamp("respondedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type ActivityInvitation = typeof activityInvitations.$inferSelect;
+export type InsertActivityInvitation = typeof activityInvitations.$inferInsert;
+
+// ─── EMPLOYEE DRIVE FOLDERS ──────────────────────────────────────────────────
+// Maps each employee (userId) to their Google Drive folder ID
+// Admin sets this mapping; employees can only see their own folder
+export const employeeDriveFolders = mysqlTable("employee_drive_folders", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(),
+  folderId: varchar("folderId", { length: 256 }).notNull(),
+  folderName: varchar("folderName", { length: 256 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EmployeeDriveFolder = typeof employeeDriveFolders.$inferSelect;
+export type InsertEmployeeDriveFolder = typeof employeeDriveFolders.$inferInsert;
+
+// ─── DRIVE FILE SNAPSHOTS ────────────────────────────────────────────────────
+// Stores the last known state of files in Drive folders for change detection.
+// Used to detect new, modified, or deleted files and trigger notifications.
+export const driveFileSnapshots = mysqlTable("drive_file_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  fileId: varchar("fileId", { length: 256 }).notNull(),
+  fileName: varchar("fileName", { length: 512 }).notNull(),
+  folderId: varchar("folderId", { length: 256 }).notNull(),
+  // "personal" = employee folder, "company" = company subfolder
+  folderType: varchar("folderType", { length: 32 }).notNull().default("company"),
+  // For personal folders: the userId of the employee owner
+  ownerUserId: int("ownerUserId"),
+  // For company folders: the subfolder name (e.g. "Regulament intern")
+  subfolderName: varchar("subfolderName", { length: 256 }),
+  modifiedTime: varchar("modifiedTime", { length: 64 }),
+  size: varchar("size", { length: 32 }),
+  mimeType: varchar("mimeType", { length: 128 }),
+  deletedAt: timestamp("deletedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type DriveFileSnapshot = typeof driveFileSnapshots.$inferSelect;
+export type InsertDriveFileSnapshot = typeof driveFileSnapshots.$inferInsert;

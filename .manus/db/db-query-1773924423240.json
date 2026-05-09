@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE users\n  ADD COLUMN birthDate DATE,\n  ADD COLUMN hireDate DATE,\n  ADD COLUMN addressBuletin TEXT,\n  ADD COLUMN addressSecondary TEXT,\n  ADD COLUMN city VARCHAR(128),\n  ADD COLUMN cnp VARCHAR(13),\n  ADD COLUMN ciSeries VARCHAR(4),\n  ADD COLUMN ciNumber VARCHAR(10),\n  ADD COLUMN ciExpiry DATE,\n  ADD COLUMN ciIssuedBy VARCHAR(128),\n  ADD COLUMN iban VARCHAR(34),\n  ADD COLUMN bankName VARCHAR(128),\n  ADD COLUMN emergencyContact VARCHAR(128),\n  ADD COLUMN emergencyPhone VARCHAR(32),\n  ADD COLUMN emergencyRelation VARCHAR(64),\n  ADD COLUMN bloodType ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-'),\n  ADD COLUMN allergies TEXT,\n  ADD COLUMN profileNotes TEXT;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \nALTER TABLE users\n  ADD COLUMN birthDate DATE,\n  ADD COLUMN hireDate DATE,\n  ADD COLUMN addressBuletin TEXT,\n  ADD COLUMN addressSecondary TEXT,\n  ADD COLUMN city VARCHAR(128),\n  ADD COLUMN cnp VARCHAR(13),\n  ADD COLUMN ciSeries VARCHAR(4),\n  ADD COLUMN ciNumber VARCHAR(10),\n  ADD COLUMN ciExpiry DATE,\n  ADD COLUMN ciIssuedBy VARCHAR(128),\n  ADD COLUMN iban VARCHAR(34),\n  ADD COLUMN bankName VARCHAR(128),\n  ADD COLUMN emergencyContact VARCHAR(128),\n  ADD COLUMN emergencyPhone VARCHAR(32),\n  ADD COLUMN emergencyRelation VARCHAR(64),\n  ADD COLUMN bloodType ENUM('A+','A-','B+','B-','AB+','AB-','O+','O-'),\n  ADD COLUMN allergies TEXT,\n  ADD COLUMN profileNotes TEXT;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 13349
+}
