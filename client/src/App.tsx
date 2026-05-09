@@ -68,15 +68,9 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        
-          <Toaster
-            richColors
-            position="top-right"
-            offset={{ top: 56, right: 16 }}
-            toastOptions={{ style: { maxWidth: '340px', fontSize: '13px' } }}
-          />
-          <Router />
-        
+      
+              <Router />
+       
       </ThemeProvider>
     </ErrorBoundary>
   );
