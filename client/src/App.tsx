@@ -1,4 +1,3 @@
-import { TooltipProvider } from "@/components/ui/tooltip";
 import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
@@ -69,7 +68,7 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider defaultTheme="light">
-        <TooltipProvider>
+        
           <Toaster
             richColors
             position="top-right"
@@ -77,7 +76,7 @@ function App() {
             toastOptions={{ style: { maxWidth: '340px', fontSize: '13px' } }}
           />
           <Router />
-        </TooltipProvider>
+        
       </ThemeProvider>
     </ErrorBoundary>
   );
