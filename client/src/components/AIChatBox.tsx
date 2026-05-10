@@ -311,7 +311,7 @@ export function AIChatBox({
         <Textarea
           ref={textareaRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className="flex-1 max-h-32 resize-none min-h-9"
