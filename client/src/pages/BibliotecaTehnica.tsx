@@ -1,5 +1,5 @@
 import { useMemo } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "../lib/trpc";
 import DriveDocViewer from "@/components/DriveDocViewer";
 import { BookOpen } from "lucide-react";
 

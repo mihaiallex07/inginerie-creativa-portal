@@ -2612,7 +2612,7 @@
 [2026-03-27T14:41:49.061Z] 30 |  import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Flag, Lock } from "lucide-react";
 [2026-03-27T14:41:49.061Z] 31 |  import { useAuth } from "@/hooks/useAuth";
 [2026-03-27T14:41:49.061Z] |                           ^
-[2026-03-27T14:41:49.062Z] 32 |  import { cn } from "@/lib/utils";
+[2026-03-27T14:41:49.062Z] 32 |  import { cn } from "../lib/utils";
 [2026-03-27T14:41:49.062Z] 33 |  const START_HOUR = 6;
 [2026-03-27T14:41:49.062Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.1.9_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.30.1_tsx@4.20.6/node_modules/vite/dist/node/chunks/dep-Chhhsdoe.js:31219:43)
 [2026-03-27T14:41:49.062Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.1.9_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.30.1_tsx@4.20.6/node_modules/vite/dist/node/chunks/dep-Chhhsdoe.js:31216:14)
@@ -2630,7 +2630,7 @@
 [2026-03-27T14:41:49.066Z] 30 |  import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Flag, Lock } from "lucide-react";
 [2026-03-27T14:41:49.067Z] 31 |  import { useAuth } from "@/hooks/useAuth";
 [2026-03-27T14:41:49.067Z] |                           ^
-[2026-03-27T14:41:49.067Z] 32 |  import { cn } from "@/lib/utils";
+[2026-03-27T14:41:49.067Z] 32 |  import { cn } from "../lib/utils";
 [2026-03-27T14:41:49.068Z] 33 |  const START_HOUR = 6;
 [2026-03-27T14:41:49.068Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.1.9_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.30.1_tsx@4.20.6/node_modules/vite/dist/node/chunks/dep-Chhhsdoe.js:31219:43)
 [2026-03-27T14:41:49.068Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.1.9_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.30.1_tsx@4.20.6/node_modules/vite/dist/node/chunks/dep-Chhhsdoe.js:31216:14)
@@ -2648,7 +2648,7 @@
 [2026-03-27T14:41:49.339Z] 30 |  import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Flag, Lock } from "lucide-react";
 [2026-03-27T14:41:49.339Z] 31 |  import { useAuth } from "@/hooks/useAuth";
 [2026-03-27T14:41:49.339Z] |                           ^
-[2026-03-27T14:41:49.340Z] 32 |  import { cn } from "@/lib/utils";
+[2026-03-27T14:41:49.340Z] 32 |  import { cn } from "../lib/utils";
 [2026-03-27T14:41:49.340Z] 33 |  const START_HOUR = 6;
 [2026-03-27T14:41:53.604Z] 10:41:53 AM [vite] Internal server error: Failed to resolve import "@/hooks/useAuth" from "client/src/pages/TimeTracking.tsx". Does the file exist?
 [2026-03-27T14:41:53.605Z] Plugin: vite:import-analysis
@@ -2657,7 +2657,7 @@
 [2026-03-27T14:41:53.606Z] 30 |  import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Flag, Lock } from "lucide-react";
 [2026-03-27T14:41:53.607Z] 31 |  import { useAuth } from "@/hooks/useAuth";
 [2026-03-27T14:41:53.607Z] |                           ^
-[2026-03-27T14:41:53.607Z] 32 |  import { cn } from "@/lib/utils";
+[2026-03-27T14:41:53.607Z] 32 |  import { cn } from "../lib/utils";
 [2026-03-27T14:41:53.608Z] 33 |  const START_HOUR = 6;
 [2026-03-27T14:41:53.608Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.1.9_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.30.1_tsx@4.20.6/node_modules/vite/dist/node/chunks/dep-Chhhsdoe.js:31219:43)
 [2026-03-27T14:41:53.609Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.1.9_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.30.1_tsx@4.20.6/node_modules/vite/dist/node/chunks/dep-Chhhsdoe.js:31216:14)
@@ -3653,7 +3653,7 @@
 [2026-04-30T09:28:31.989Z] Plugin: vite:import-analysis
 [2026-04-30T09:28:31.990Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/pages/AdminDocumente.tsx:3:24
 [2026-04-30T09:28:31.990Z] 3  |  import { useState } from "react";
-[2026-04-30T09:28:31.991Z] 4  |  import { trpc } from "@/lib/trpc";
+[2026-04-30T09:28:31.991Z] 4  |  import { trpc } from "../lib/trpc";
 [2026-04-30T09:28:31.991Z] 5  |  import { useAuth } from "@/contexts/AuthContext";
 [2026-04-30T09:28:31.992Z] |                           ^
 [2026-04-30T09:28:31.992Z] 6  |  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -3662,7 +3662,7 @@
 [2026-04-30T09:28:32.310Z] Plugin: vite:import-analysis
 [2026-04-30T09:28:32.310Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/pages/AdminDocumente.tsx:3:24
 [2026-04-30T09:28:32.311Z] 3  |  import { useState } from "react";
-[2026-04-30T09:28:32.311Z] 4  |  import { trpc } from "@/lib/trpc";
+[2026-04-30T09:28:32.311Z] 4  |  import { trpc } from "../lib/trpc";
 [2026-04-30T09:28:32.312Z] 5  |  import { useAuth } from "@/contexts/AuthContext";
 [2026-04-30T09:28:32.312Z] |                           ^
 [2026-04-30T09:28:32.312Z] 6  |  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -3681,7 +3681,7 @@
 [2026-04-30T09:28:47.949Z] Plugin: vite:import-analysis
 [2026-04-30T09:28:47.950Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/pages/AdminDocumente.tsx:3:24
 [2026-04-30T09:28:47.950Z] 3  |  import { useState } from "react";
-[2026-04-30T09:28:47.950Z] 4  |  import { trpc } from "@/lib/trpc";
+[2026-04-30T09:28:47.950Z] 4  |  import { trpc } from "../lib/trpc";
 [2026-04-30T09:28:47.951Z] 5  |  import { useAuth } from "@/contexts/AuthContext";
 [2026-04-30T09:28:47.951Z] |                           ^
 [2026-04-30T09:28:47.951Z] 6  |  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -3700,7 +3700,7 @@
 [2026-04-30T09:28:52.036Z] Plugin: vite:import-analysis
 [2026-04-30T09:28:52.036Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/pages/AdminDocumente.tsx:3:24
 [2026-04-30T09:28:52.037Z] 3  |  import { useState } from "react";
-[2026-04-30T09:28:52.037Z] 4  |  import { trpc } from "@/lib/trpc";
+[2026-04-30T09:28:52.037Z] 4  |  import { trpc } from "../lib/trpc";
 [2026-04-30T09:28:52.037Z] 5  |  import { useAuth } from "@/contexts/AuthContext";
 [2026-04-30T09:28:52.038Z] |                           ^
 [2026-04-30T09:28:52.038Z] 6  |  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -3719,7 +3719,7 @@
 [2026-04-30T09:29:13.445Z] Plugin: vite:import-analysis
 [2026-04-30T09:29:13.445Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/pages/AdminDocumente.tsx:3:24
 [2026-04-30T09:29:13.446Z] 3  |  import { useState } from "react";
-[2026-04-30T09:29:13.446Z] 4  |  import { trpc } from "@/lib/trpc";
+[2026-04-30T09:29:13.446Z] 4  |  import { trpc } from "../lib/trpc";
 [2026-04-30T09:29:13.446Z] 5  |  import { useAuth } from "@/contexts/AuthContext";
 [2026-04-30T09:29:13.447Z] |                           ^
 [2026-04-30T09:29:13.447Z] 6  |  import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

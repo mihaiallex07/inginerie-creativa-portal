@@ -11,7 +11,7 @@ import {
   MapPin, CreditCard, Heart, AlertCircle, Calendar, Lock, Eye, EyeOff,
   ShieldCheck, Home, Banknote, UserCheck, ArrowLeft, Crown, Users, Handshake,
 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "../lib/trpc";
 import { toast } from "sonner";
 import { useLocation, useParams } from "wouter";
 import { useState, useEffect } from "react";
