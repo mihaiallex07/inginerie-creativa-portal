@@ -64,4 +64,6 @@ function Textarea({
   );
 }
 
-export { Textarea };
+export function Textarea(props: any) {
+  return <textarea {...props} />;
+}

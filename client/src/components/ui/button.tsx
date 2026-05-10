@@ -57,4 +57,6 @@ function Button({
   );
 }
 
-export { Button, buttonVariants };
+export function Button(props: any) {
+  return <button {...props} />;
+}

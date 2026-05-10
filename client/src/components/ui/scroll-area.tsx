@@ -53,4 +53,6 @@ function ScrollBar({
   );
 }
 
-export { ScrollArea, ScrollBar };
+export function ScrollArea(props: any) {
+  return <div {...props} />;
+}
