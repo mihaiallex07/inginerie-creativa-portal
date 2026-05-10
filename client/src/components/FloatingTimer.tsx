@@ -61,7 +61,7 @@ export default function FloatingTimer() {
   });
 
   const stopMutation = trpc.timeTracking.stopTimer.useMutation({
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       refetchTimer();
       utils.timeTracking.runningTimer.invalidate();
       utils.timeTracking.myEntries.invalidate();
