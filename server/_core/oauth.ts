@@ -1,4 +1,4 @@
-import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
+import { COOKIE_NAME, ONE_YEAR_MS } from "from "../shared/const"const";
 import type { Express, Request, Response } from "express";
 import { google } from "googleapis";
 import { SignJWT } from "jose";
