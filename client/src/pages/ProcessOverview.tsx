@@ -1,4 +1,4 @@
-import { trpc } from "../lib/trpc";
+import { trpc } from "@/lib/trpc";
 import { useState, useMemo, useRef } from "react";
 import { ChevronLeft, ChevronRight, ZoomIn, ZoomOut, X } from "lucide-react";
 import { Button } from "@/components/ui/button";

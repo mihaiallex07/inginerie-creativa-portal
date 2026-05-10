@@ -7229,3 +7229,1941 @@
 [2026-05-10T19:09:06.500Z] |                      ^
 [2026-05-10T19:09:06.501Z] 4  |  import * as DialogPrimitive from "@radix-ui/react-dialog";
 [2026-05-10T19:09:06.501Z] 5  |  import { XIcon } from "lucide-react";
+[2026-05-10T19:09:15.953Z] 10:09:15 PM [vite] Internal server error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:09:15.953Z] 
+[2026-05-10T19:09:15.954Z] 58 | }
+[2026-05-10T19:09:15.954Z] 59 |
+[2026-05-10T19:09:15.954Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:09:15.955Z] |                 ^
+[2026-05-10T19:09:15.955Z] 61 |   return <button {...props} />;
+[2026-05-10T19:09:15.955Z] 62 | }
+[2026-05-10T19:09:15.956Z] Plugin: vite:react-babel
+[2026-05-10T19:09:15.956Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:09:15.956Z] 58 |  }
+[2026-05-10T19:09:15.956Z] 59 |
+[2026-05-10T19:09:15.957Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:09:15.957Z] |                  ^
+[2026-05-10T19:09:15.957Z] 61 |    return <button {...props} />;
+[2026-05-10T19:09:15.958Z] 62 |  }
+[2026-05-10T19:09:15.958Z] at toParseError (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-05-10T19:09:15.959Z] at raise (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+[2026-05-10T19:09:15.959Z] at checkRedeclarationInScope (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:164:19)
+[2026-05-10T19:09:15.959Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:118:12)
+[2026-05-10T19:09:15.960Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+[2026-05-10T19:09:15.960Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1745:16)
+[2026-05-10T19:09:15.960Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:2618:15)
+[2026-05-10T19:09:15.961Z] at parseFunction (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1708:12)
+[2026-05-10T19:09:15.961Z] at parseFunctionStatement (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+[2026-05-10T19:09:15.962Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+[2026-05-10T19:09:15.962Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:09:15.963Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:09:15.963Z] at parseStatementListItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+[2026-05-10T19:09:15.964Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2635:17)
+[2026-05-10T19:09:15.964Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3447:15)
+[2026-05-10T19:09:15.964Z] at maybeParseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2551:31)
+[2026-05-10T19:09:15.965Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2432:29)
+[2026-05-10T19:09:15.965Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3046:22)
+[2026-05-10T19:09:15.965Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:649:25)
+[2026-05-10T19:09:15.966Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:09:15.966Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:09:15.966Z] at parseModuleItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+[2026-05-10T19:09:15.967Z] at parseBlockOrModuleBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+[2026-05-10T19:09:15.967Z] at parseBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+[2026-05-10T19:09:15.967Z] at parseProgram (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-05-10T19:09:15.968Z] at parseTopLevel (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-05-10T19:09:15.968Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/index.ts:83:25)
+[2026-05-10T19:09:15.968Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+[2026-05-10T19:09:15.969Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/index.ts:86:38)
+[2026-05-10T19:09:15.970Z] at parser (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/parser/index.ts:29:19)
+[2026-05-10T19:09:15.970Z] at parser.next (<anonymous>)
+[2026-05-10T19:09:15.970Z] at normalizeFile (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+[2026-05-10T19:09:15.971Z] at normalizeFile.next (<anonymous>)
+[2026-05-10T19:09:15.971Z] at run (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[2026-05-10T19:09:15.971Z] at run.next (<anonymous>)
+[2026-05-10T19:09:15.972Z] at transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-05-10T19:09:15.972Z] at transform.next (<anonymous>)
+[2026-05-10T19:09:15.972Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-05-10T19:09:15.973Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:09:15.973Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:09:15.973Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-05-10T19:09:15.974Z] at <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-05-10T19:09:15.974Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-05-10T19:09:15.975Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-05-10T19:09:15.975Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:09:15.976Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:09:16.113Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/card.tsx". Does the file exist?
+[2026-05-10T19:09:16.114Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.114Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/card.tsx:3:19
+[2026-05-10T19:09:16.114Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.115Z] 2  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.115Z] |                      ^
+[2026-05-10T19:09:16.116Z] 3  |  function Card({ className, ...props }) {
+[2026-05-10T19:09:16.116Z] 4  |    return /* @__PURE__ */ jsxDEV(
+[2026-05-10T19:09:16.117Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.117Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.117Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.118Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.118Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.118Z] at async Promise.all (index 1)
+[2026-05-10T19:09:16.119Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.119Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.120Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.120Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.186Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/avatar.tsx". Does the file exist?
+[2026-05-10T19:09:16.187Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.187Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/avatar.tsx:4:19
+[2026-05-10T19:09:16.188Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.188Z] 2  |  import * as AvatarPrimitive from "@radix-ui/react-avatar";
+[2026-05-10T19:09:16.189Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.189Z] |                      ^
+[2026-05-10T19:09:16.189Z] 4  |  function Avatar({
+[2026-05-10T19:09:16.190Z] 5  |    className,
+[2026-05-10T19:09:16.190Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.190Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.191Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.192Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.192Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.193Z] at async Promise.all (index 2)
+[2026-05-10T19:09:16.193Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.194Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.194Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.195Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.195Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/dropdown-menu.tsx". Does the file exist?
+[2026-05-10T19:09:16.196Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.196Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/dropdown-menu.tsx:5:19
+[2026-05-10T19:09:16.196Z] 2  |  import * as DropdownMenuPrimitive from "@radix-ui/react-dropdown-menu";
+[2026-05-10T19:09:16.197Z] 3  |  import { CheckIcon, ChevronRightIcon, CircleIcon } from "lucide-react";
+[2026-05-10T19:09:16.197Z] 4  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.197Z] |                      ^
+[2026-05-10T19:09:16.198Z] 5  |  function DropdownMenu({
+[2026-05-10T19:09:16.198Z] 6  |    ...props
+[2026-05-10T19:09:16.199Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.199Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.200Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.200Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.201Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.201Z] at async Promise.all (index 3)
+[2026-05-10T19:09:16.202Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.203Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.203Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.204Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.204Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/sidebar.tsx". Does the file exist?
+[2026-05-10T19:09:16.205Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.205Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/sidebar.tsx:21:19
+[2026-05-10T19:09:16.206Z] 20 |  } from "@/components/ui/tooltip";
+[2026-05-10T19:09:16.206Z] 21 |  import { useIsMobile } from "@/hooks/useMobile";
+[2026-05-10T19:09:16.207Z] 22 |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.207Z] |                      ^
+[2026-05-10T19:09:16.208Z] 23 |  import { Slot } from "@radix-ui/react-slot";
+[2026-05-10T19:09:16.208Z] 24 |  import { cva } from "class-variance-authority";
+[2026-05-10T19:09:16.209Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.210Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.210Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.211Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.211Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.214Z] at async Promise.all (index 8)
+[2026-05-10T19:09:16.218Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.219Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.219Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.220Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.228Z] 10:09:16 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:09:16.229Z] 
+[2026-05-10T19:09:16.229Z] 58 | }
+[2026-05-10T19:09:16.230Z] 59 |
+[2026-05-10T19:09:16.230Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:09:16.230Z] |                 ^
+[2026-05-10T19:09:16.231Z] 61 |   return <button {...props} />;
+[2026-05-10T19:09:16.231Z] 62 | }
+[2026-05-10T19:09:16.231Z] Plugin: vite:react-babel
+[2026-05-10T19:09:16.231Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:09:16.232Z] 58 |  }
+[2026-05-10T19:09:16.232Z] 59 |
+[2026-05-10T19:09:16.232Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:09:16.233Z] |                  ^
+[2026-05-10T19:09:16.233Z] 61 |    return <button {...props} />;
+[2026-05-10T19:09:16.233Z] 62 |  }
+[2026-05-10T19:09:16.276Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/input.tsx". Does the file exist?
+[2026-05-10T19:09:16.277Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.277Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/input.tsx:3:19
+[2026-05-10T19:09:16.277Z] 3  |  import { useDialogComposition } from "@/components/ui/dialog";
+[2026-05-10T19:09:16.278Z] 4  |  import { useComposition } from "@/hooks/useComposition";
+[2026-05-10T19:09:16.278Z] 5  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.279Z] |                      ^
+[2026-05-10T19:09:16.279Z] 6  |  function Input({
+[2026-05-10T19:09:16.279Z] 7  |    className,
+[2026-05-10T19:09:16.280Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.280Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.281Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.281Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.282Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.282Z] at async Promise.all (index 3)
+[2026-05-10T19:09:16.283Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.283Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.284Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.284Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/popover.tsx". Does the file exist?
+[2026-05-10T19:09:16.285Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.286Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/popover.tsx:4:19
+[2026-05-10T19:09:16.286Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.287Z] 2  |  import * as PopoverPrimitive from "@radix-ui/react-popover";
+[2026-05-10T19:09:16.289Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.290Z] |                      ^
+[2026-05-10T19:09:16.290Z] 4  |  function Popover({
+[2026-05-10T19:09:16.290Z] 5  |    ...props
+[2026-05-10T19:09:16.291Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.292Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.292Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.293Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.293Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.294Z] at async Promise.all (index 2)
+[2026-05-10T19:09:16.294Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.295Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.295Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.295Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.296Z] 10:09:16 PM [vite] (client) Pre-transform error: Failed to resolve import "../lib/utils" from "client/src/components/ui/input.tsx". Does the file exist?
+[2026-05-10T19:09:16.299Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.299Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/input.tsx:3:19
+[2026-05-10T19:09:16.300Z] 3  |  import { useDialogComposition } from "@/components/ui/dialog";
+[2026-05-10T19:09:16.301Z] 4  |  import { useComposition } from "@/hooks/useComposition";
+[2026-05-10T19:09:16.301Z] 5  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.302Z] |                      ^
+[2026-05-10T19:09:16.302Z] 6  |  function Input({
+[2026-05-10T19:09:16.302Z] 7  |    className,
+[2026-05-10T19:09:16.302Z] 10:09:16 PM [vite] (client) Pre-transform error: Failed to resolve import "../lib/utils" from "client/src/components/ui/separator.tsx". Does the file exist?
+[2026-05-10T19:09:16.303Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.303Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/separator.tsx:4:19
+[2026-05-10T19:09:16.303Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.304Z] 2  |  import * as SeparatorPrimitive from "@radix-ui/react-separator";
+[2026-05-10T19:09:16.304Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.305Z] |                      ^
+[2026-05-10T19:09:16.305Z] 4  |  function Separator({
+[2026-05-10T19:09:16.305Z] 5  |    className,
+[2026-05-10T19:09:16.305Z] 10:09:16 PM [vite] (client) Pre-transform error: Failed to resolve import "../lib/utils" from "client/src/components/ui/skeleton.tsx". Does the file exist?
+[2026-05-10T19:09:16.306Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.306Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/skeleton.tsx:1:19
+[2026-05-10T19:09:16.306Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.307Z] 2  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.307Z] |                      ^
+[2026-05-10T19:09:16.308Z] 3  |  function Skeleton({ className, ...props }) {
+[2026-05-10T19:09:16.308Z] 4  |    return /* @__PURE__ */ jsxDEV(
+[2026-05-10T19:09:16.309Z] 10:09:16 PM [vite] (client) Pre-transform error: Failed to resolve import "../lib/utils" from "client/src/components/ui/tooltip.tsx". Does the file exist?
+[2026-05-10T19:09:16.309Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.310Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/tooltip.tsx:4:19
+[2026-05-10T19:09:16.311Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.311Z] 2  |  import * as TooltipPrimitive from "@radix-ui/react-tooltip";
+[2026-05-10T19:09:16.312Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.312Z] |                      ^
+[2026-05-10T19:09:16.313Z] 4  |  function TooltipProvider({
+[2026-05-10T19:09:16.314Z] 5  |    delayDuration = 0,
+[2026-05-10T19:09:16.314Z] 10:09:16 PM [vite] (client) Pre-transform error: Failed to resolve import "../lib/utils" from "client/src/components/ui/sheet.tsx". Does the file exist?
+[2026-05-10T19:09:16.314Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.315Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/sheet.tsx:7:19
+[2026-05-10T19:09:16.315Z] 3  |  import * as SheetPrimitive from "@radix-ui/react-dialog";
+[2026-05-10T19:09:16.315Z] 4  |  import { XIcon } from "lucide-react";
+[2026-05-10T19:09:16.316Z] 5  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.316Z] |                      ^
+[2026-05-10T19:09:16.316Z] 6  |  function Sheet({ ...props }) {
+[2026-05-10T19:09:16.317Z] 7  |    return /* @__PURE__ */ jsxDEV(SheetPrimitive.Root, { "data-loc": "client/src/components/ui/sheet.tsx:10", "data-slo...
+[2026-05-10T19:09:16.374Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/dialog.tsx". Does the file exist?
+[2026-05-10T19:09:16.375Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.375Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/dialog.tsx:1:19
+[2026-05-10T19:09:16.375Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.376Z] 2  |  var _s = $RefreshSig$(), _s2 = $RefreshSig$(), _s3 = $RefreshSig$();
+[2026-05-10T19:09:16.376Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.376Z] |                      ^
+[2026-05-10T19:09:16.377Z] 4  |  import * as DialogPrimitive from "@radix-ui/react-dialog";
+[2026-05-10T19:09:16.377Z] 5  |  import { XIcon } from "lucide-react";
+[2026-05-10T19:09:16.378Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.378Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.379Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.379Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.379Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.380Z] at async Promise.all (index 1)
+[2026-05-10T19:09:16.380Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.381Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.381Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.382Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/select.tsx". Does the file exist?
+[2026-05-10T19:09:16.382Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.382Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/select.tsx:5:19
+[2026-05-10T19:09:16.383Z] 2  |  import * as SelectPrimitive from "@radix-ui/react-select";
+[2026-05-10T19:09:16.384Z] 3  |  import { CheckIcon, ChevronDownIcon, ChevronUpIcon } from "lucide-react";
+[2026-05-10T19:09:16.384Z] 4  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.384Z] |                      ^
+[2026-05-10T19:09:16.385Z] 5  |  function Select({
+[2026-05-10T19:09:16.385Z] 6  |    ...props
+[2026-05-10T19:09:16.385Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.386Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.386Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.386Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.387Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.387Z] at async Promise.all (index 3)
+[2026-05-10T19:09:16.387Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.388Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.388Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.388Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.389Z] 10:09:16 PM [vite] (client) Pre-transform error: Failed to resolve import "../lib/utils" from "client/src/components/ui/dialog.tsx". Does the file exist?
+[2026-05-10T19:09:16.389Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.389Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/dialog.tsx:1:19
+[2026-05-10T19:09:16.390Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.390Z] 2  |  var _s = $RefreshSig$(), _s2 = $RefreshSig$(), _s3 = $RefreshSig$();
+[2026-05-10T19:09:16.390Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.391Z] |                      ^
+[2026-05-10T19:09:16.391Z] 4  |  import * as DialogPrimitive from "@radix-ui/react-dialog";
+[2026-05-10T19:09:16.392Z] 5  |  import { XIcon } from "lucide-react";
+[2026-05-10T19:09:16.392Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/badge.tsx". Does the file exist?
+[2026-05-10T19:09:16.393Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.393Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/badge.tsx:5:19
+[2026-05-10T19:09:16.394Z] 2  |  import { Slot } from "@radix-ui/react-slot";
+[2026-05-10T19:09:16.395Z] 3  |  import { cva } from "class-variance-authority";
+[2026-05-10T19:09:16.395Z] 4  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.396Z] |                      ^
+[2026-05-10T19:09:16.396Z] 5  |  const badgeVariants = cva(
+[2026-05-10T19:09:16.396Z] 6  |    "inline-flex items-center justify-center rounded-md border px-2 py-0.5 text-xs font-medium w-fit whitespace-nowrap ...
+[2026-05-10T19:09:16.397Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.397Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.398Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.398Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.399Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.399Z] at async Promise.all (index 3)
+[2026-05-10T19:09:16.400Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.400Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.400Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.401Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.407Z] 10:09:16 PM [vite] Internal server error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:09:16.407Z] 
+[2026-05-10T19:09:16.408Z] 65 | }
+[2026-05-10T19:09:16.408Z] 66 |
+[2026-05-10T19:09:16.408Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:09:16.409Z] |                 ^
+[2026-05-10T19:09:16.409Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:09:16.410Z] 69 | }
+[2026-05-10T19:09:16.410Z] 70 |
+[2026-05-10T19:09:16.411Z] Plugin: vite:react-babel
+[2026-05-10T19:09:16.411Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:09:16.411Z] 65 |  }
+[2026-05-10T19:09:16.412Z] 66 |
+[2026-05-10T19:09:16.412Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:09:16.412Z] |                  ^
+[2026-05-10T19:09:16.413Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:09:16.413Z] 69 |  }
+[2026-05-10T19:09:16.413Z] at toParseError (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-05-10T19:09:16.413Z] at raise (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+[2026-05-10T19:09:16.414Z] at checkRedeclarationInScope (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:164:19)
+[2026-05-10T19:09:16.414Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:118:12)
+[2026-05-10T19:09:16.415Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+[2026-05-10T19:09:16.415Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1745:16)
+[2026-05-10T19:09:16.416Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:2618:15)
+[2026-05-10T19:09:16.416Z] at parseFunction (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1708:12)
+[2026-05-10T19:09:16.417Z] at parseFunctionStatement (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+[2026-05-10T19:09:16.418Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+[2026-05-10T19:09:16.418Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:09:16.420Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:09:16.420Z] at parseStatementListItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+[2026-05-10T19:09:16.421Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2635:17)
+[2026-05-10T19:09:16.422Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3447:15)
+[2026-05-10T19:09:16.422Z] at maybeParseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2551:31)
+[2026-05-10T19:09:16.423Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2432:29)
+[2026-05-10T19:09:16.424Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3046:22)
+[2026-05-10T19:09:16.425Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:649:25)
+[2026-05-10T19:09:16.425Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:09:16.426Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:09:16.426Z] at parseModuleItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+[2026-05-10T19:09:16.427Z] at parseBlockOrModuleBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+[2026-05-10T19:09:16.427Z] at parseBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+[2026-05-10T19:09:16.428Z] at parseProgram (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-05-10T19:09:16.428Z] at parseTopLevel (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-05-10T19:09:16.429Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/index.ts:83:25)
+[2026-05-10T19:09:16.429Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+[2026-05-10T19:09:16.430Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/index.ts:86:38)
+[2026-05-10T19:09:16.431Z] at parser (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/parser/index.ts:29:19)
+[2026-05-10T19:09:16.432Z] at parser.next (<anonymous>)
+[2026-05-10T19:09:16.432Z] at normalizeFile (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+[2026-05-10T19:09:16.433Z] at normalizeFile.next (<anonymous>)
+[2026-05-10T19:09:16.433Z] at run (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[2026-05-10T19:09:16.434Z] at run.next (<anonymous>)
+[2026-05-10T19:09:16.434Z] at transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-05-10T19:09:16.435Z] at transform.next (<anonymous>)
+[2026-05-10T19:09:16.435Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-05-10T19:09:16.435Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:09:16.436Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:09:16.436Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-05-10T19:09:16.436Z] at <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-05-10T19:09:16.437Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-05-10T19:09:16.437Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-05-10T19:09:16.438Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:09:16.438Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:09:16.439Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/label.tsx". Does the file exist?
+[2026-05-10T19:09:16.439Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.440Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/label.tsx:4:19
+[2026-05-10T19:09:16.440Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.441Z] 2  |  import * as LabelPrimitive from "@radix-ui/react-label";
+[2026-05-10T19:09:16.441Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.442Z] |                      ^
+[2026-05-10T19:09:16.442Z] 4  |  function Label({
+[2026-05-10T19:09:16.443Z] 5  |    className,
+[2026-05-10T19:09:16.443Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.444Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.444Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.444Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.445Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.445Z] at async Promise.all (index 2)
+[2026-05-10T19:09:16.446Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.446Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.447Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.447Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.448Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/switch.tsx". Does the file exist?
+[2026-05-10T19:09:16.448Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.448Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/switch.tsx:4:19
+[2026-05-10T19:09:16.449Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.449Z] 2  |  import * as SwitchPrimitive from "@radix-ui/react-switch";
+[2026-05-10T19:09:16.450Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.450Z] |                      ^
+[2026-05-10T19:09:16.450Z] 4  |  function Switch({
+[2026-05-10T19:09:16.451Z] 5  |    className,
+[2026-05-10T19:09:16.451Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.451Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.452Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.452Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.452Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.452Z] at async Promise.all (index 2)
+[2026-05-10T19:09:16.453Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.453Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.453Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.454Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.502Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/skeleton.tsx". Does the file exist?
+[2026-05-10T19:09:16.503Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.504Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/skeleton.tsx:1:19
+[2026-05-10T19:09:16.504Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.504Z] 2  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.505Z] |                      ^
+[2026-05-10T19:09:16.506Z] 3  |  function Skeleton({ className, ...props }) {
+[2026-05-10T19:09:16.506Z] 4  |    return /* @__PURE__ */ jsxDEV(
+[2026-05-10T19:09:16.507Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.507Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.508Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.508Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.509Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.509Z] at async Promise.all (index 1)
+[2026-05-10T19:09:16.510Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.513Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.513Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.514Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.514Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/checkbox.tsx". Does the file exist?
+[2026-05-10T19:09:16.514Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.515Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/checkbox.tsx:5:19
+[2026-05-10T19:09:16.515Z] 2  |  import * as CheckboxPrimitive from "@radix-ui/react-checkbox";
+[2026-05-10T19:09:16.515Z] 3  |  import { CheckIcon } from "lucide-react";
+[2026-05-10T19:09:16.516Z] 4  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.516Z] |                      ^
+[2026-05-10T19:09:16.516Z] 5  |  function Checkbox({
+[2026-05-10T19:09:16.518Z] 6  |    className,
+[2026-05-10T19:09:16.519Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.519Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.520Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.520Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.521Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.521Z] at async Promise.all (index 3)
+[2026-05-10T19:09:16.522Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.522Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.522Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.523Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.536Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/alert-dialog.tsx". Does the file exist?
+[2026-05-10T19:09:16.537Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.537Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/alert-dialog.tsx:4:19
+[2026-05-10T19:09:16.537Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.538Z] 2  |  import * as AlertDialogPrimitive from "@radix-ui/react-alert-dialog";
+[2026-05-10T19:09:16.538Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.539Z] |                      ^
+[2026-05-10T19:09:16.539Z] 4  |  import { buttonVariants } from "@/components/ui/button";
+[2026-05-10T19:09:16.539Z] 5  |  function AlertDialog({
+[2026-05-10T19:09:16.540Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.540Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.541Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.541Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.542Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.542Z] at async Promise.all (index 2)
+[2026-05-10T19:09:16.543Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.543Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.544Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.544Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.544Z] 10:09:16 PM [vite] Internal server error: Failed to resolve import "../lib/utils" from "client/src/components/ui/tabs.tsx". Does the file exist?
+[2026-05-10T19:09:16.545Z] Plugin: vite:import-analysis
+[2026-05-10T19:09:16.545Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/tabs.tsx:4:19
+[2026-05-10T19:09:16.545Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
+[2026-05-10T19:09:16.546Z] 2  |  import * as TabsPrimitive from "@radix-ui/react-tabs";
+[2026-05-10T19:09:16.546Z] 3  |  import { cn } from "../lib/utils";
+[2026-05-10T19:09:16.547Z] |                      ^
+[2026-05-10T19:09:16.547Z] 4  |  function Tabs({
+[2026-05-10T19:09:16.547Z] 5  |    className,
+[2026-05-10T19:09:16.548Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
+[2026-05-10T19:09:16.548Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
+[2026-05-10T19:09:16.549Z] at normalizeUrl (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27139:18)
+[2026-05-10T19:09:16.549Z] at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+[2026-05-10T19:09:16.550Z] at async <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27197:32)
+[2026-05-10T19:09:16.550Z] at async Promise.all (index 2)
+[2026-05-10T19:09:16.551Z] at async TransformPluginContext.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:27165:4)
+[2026-05-10T19:09:16.551Z] at async EnvironmentPluginContainer.transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:28817:14)
+[2026-05-10T19:09:16.552Z] at async loadAndTransform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:22686:26)
+[2026-05-10T19:09:16.553Z] at async viteTransformMiddleware (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:24562:20)
+[2026-05-10T19:09:16.561Z] 10:09:16 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:09:16.562Z] 
+[2026-05-10T19:09:16.563Z] 58 | }
+[2026-05-10T19:09:16.563Z] 59 |
+[2026-05-10T19:09:16.564Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:09:16.564Z] |                 ^
+[2026-05-10T19:09:16.565Z] 61 |   return <button {...props} />;
+[2026-05-10T19:09:16.565Z] 62 | }
+[2026-05-10T19:09:16.565Z] Plugin: vite:react-babel
+[2026-05-10T19:09:16.566Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:09:16.566Z] 58 |  }
+[2026-05-10T19:09:16.567Z] 59 |
+[2026-05-10T19:09:16.567Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:09:16.567Z] |                  ^
+[2026-05-10T19:09:16.568Z] 61 |    return <button {...props} />;
+[2026-05-10T19:09:16.568Z] 62 |  }
+[2026-05-10T19:09:39.049Z] 10:09:39 PM [vite] (client) hmr update /src/components/DashboardLayout.tsx, /src/index.css
+[2026-05-10T19:09:39.050Z] 10:09:39 PM [vite] (client) hmr update /src/components/DashboardLayoutSkeleton.tsx, /src/index.css
+[2026-05-10T19:09:39.050Z] 10:09:39 PM [vite] (client) hmr update /src/components/ErrorBoundary.tsx, /src/index.css
+[2026-05-10T19:09:39.054Z] 10:09:39 PM [vite] (client) hmr update /src/pages/AdminUtilizatori.tsx, /src/index.css
+[2026-05-10T19:09:39.055Z] 10:09:39 PM [vite] (client) hmr update /src/pages/AdminUtilizatori.tsx, /src/components/DashboardLayout.tsx, /src/index.css
+[2026-05-10T19:09:39.056Z] 10:09:39 PM [vite] (client) hmr update /src/pages/Documente.tsx, /src/pages/ProfilColeg.tsx, /src/pages/Organigrama.tsx, /src/pages/AdminUtilizatori.tsx, /src/pages/Profil.tsx, /src/pages/Dashboard.tsx, /src/pages/Evenimente.tsx, /src/pages/AdminDocumente.tsx, /src/pages/ProcessOverview.tsx, /src/pages/ProiectDetaliu.tsx, /src/index.css
+[2026-05-10T19:09:39.058Z] 10:09:39 PM [vite] (client) hmr update /src/index.css
+[2026-05-10T19:09:39.059Z] 10:09:39 PM [vite] (client) hmr update /src/pages/NotFound.tsx, /src/pages/Stiri.tsx, /src/pages/Documente.tsx, /src/pages/StireNou.tsx, /src/pages/Procese.tsx, /src/pages/ProcesDetaliu.tsx, /src/pages/ProfilColeg.tsx, /src/pages/Proiecte.tsx, /src/pages/StireDetaliu.tsx, /src/pages/Propuneri.tsx, /src/pages/Organigrama.tsx, /src/pages/AdminUtilizatori.tsx, /src/pages/Profil.tsx, /src/pages/Dashboard.tsx, /src/pages/Evenimente.tsx, /src/pages/AdminDocumente.tsx, /src/components/DriveDocViewer.tsx, /src/index.css
+[2026-05-10T19:09:39.060Z] 10:09:39 PM [vite] (client) hmr update /src/pages/Proiecte.tsx, /src/index.css
+[2026-05-10T19:09:39.073Z] 10:09:39 PM [vite] (client) hmr update /src/pages/Proiecte.tsx, /src/pages/StireDetaliu.tsx, /src/pages/Propuneri.tsx, /src/pages/AdminUtilizatori.tsx, /src/pages/Dashboard.tsx, /src/pages/Evenimente.tsx, /src/pages/TimeTracking.tsx, /src/pages/AdminDocumente.tsx, /src/pages/ProiectDetaliu.tsx, /src/index.css
+[2026-05-10T19:09:39.074Z] 10:09:39 PM [vite] (client) hmr update /src/components/DashboardLayout.tsx, /src/index.css
+[2026-05-10T19:09:39.077Z] 10:09:39 PM [vite] (client) hmr update /src/pages/Stiri.tsx, /src/pages/StireNou.tsx, /src/pages/Procese.tsx, /src/pages/ProfilColeg.tsx, /src/pages/Proiecte.tsx, /src/pages/StireDetaliu.tsx, /src/pages/Propuneri.tsx, /src/pages/Organigrama.tsx, /src/pages/AdminUtilizatori.tsx, /src/pages/Profil.tsx, /src/pages/Evenimente.tsx, /src/pages/TimeTracking.tsx, /src/pages/AdminDocumente.tsx, /src/pages/ProiectDetaliu.tsx, /src/components/DriveDocViewer.tsx, /src/index.css
+[2026-05-10T19:09:39.079Z] 10:09:39 PM [vite] (client) hmr update /src/pages/StireNou.tsx, /src/pages/ProfilColeg.tsx, /src/pages/Proiecte.tsx, /src/pages/StireDetaliu.tsx, /src/pages/Propuneri.tsx, /src/pages/AdminUtilizatori.tsx, /src/pages/Profil.tsx, /src/pages/Evenimente.tsx, /src/pages/TimeTracking.tsx, /src/pages/ProiectDetaliu.tsx, /src/index.css
+[2026-05-10T19:09:39.080Z] 10:09:39 PM [vite] (client) hmr update /src/components/DashboardLayout.tsx, /src/index.css
+[2026-05-10T19:09:39.083Z] 10:09:39 PM [vite] (client) hmr update /src/pages/Stiri.tsx, /src/pages/StireNou.tsx, /src/pages/Procese.tsx, /src/pages/ProfilColeg.tsx, /src/pages/Proiecte.tsx, /src/pages/StireDetaliu.tsx, /src/pages/Propuneri.tsx, /src/pages/AdminUtilizatori.tsx, /src/pages/Profil.tsx, /src/pages/TimeTracking.tsx, /src/pages/AdminDocumente.tsx, /src/pages/ProiectDetaliu.tsx, /src/index.css
+[2026-05-10T19:09:39.083Z] 10:09:39 PM [vite] (client) page reload src/components/ui/separator.tsx
+[2026-05-10T19:09:39.084Z] 10:09:39 PM [vite] (client) page reload src/components/ui/sheet.tsx
+[2026-05-10T19:09:39.084Z] 10:09:39 PM [vite] (client) hmr update /src/components/DashboardLayout.tsx, /src/index.css
+[2026-05-10T19:09:39.084Z] 10:09:39 PM [vite] (client) hmr update /src/pages/Documente.tsx, /src/pages/AdminDocumente.tsx, /src/components/DriveDocViewer.tsx, /src/components/DashboardLayoutSkeleton.tsx, /src/index.css
+[2026-05-10T19:09:39.086Z] 10:09:39 PM [vite] (client) hmr update /src/pages/StireNou.tsx, /src/pages/StireDetaliu.tsx, /src/pages/Propuneri.tsx, /src/index.css
+[2026-05-10T19:09:39.086Z] 10:09:39 PM [vite] (client) hmr update /src/pages/ProiectDetaliu.tsx, /src/index.css
+[2026-05-10T19:09:39.087Z] 10:09:39 PM [vite] (client) hmr update /src/index.css
+[2026-05-10T19:09:39.088Z] 10:09:39 PM [vite] (client) page reload src/components/ui/tooltip.tsx
+[2026-05-10T19:09:39.089Z] 10:09:39 PM [vite] (client) hmr update /src/components/DriveDocViewer.tsx, /src/index.css
+[2026-05-10T19:09:39.089Z] 10:09:39 PM [vite] (client) hmr update /src/components/ColorPalette.tsx, /src/index.css
+[2026-05-10T19:09:43.632Z] 10:09:43 PM [vite] (client) hmr update /src/pages/NotFound.tsx, /src/index.css
+[2026-05-10T19:09:43.633Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Dashboard.tsx, /src/index.css
+[2026-05-10T19:09:43.634Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Procese.tsx, /src/index.css
+[2026-05-10T19:09:43.636Z] 10:09:43 PM [vite] (client) hmr update /src/pages/TimeTracking.tsx, /src/index.css
+[2026-05-10T19:09:43.636Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Stiri.tsx, /src/index.css
+[2026-05-10T19:09:43.636Z] 10:09:43 PM [vite] (client) hmr update /src/pages/StireDetaliu.tsx, /src/index.css
+[2026-05-10T19:09:43.637Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Documente.tsx, /src/index.css
+[2026-05-10T19:09:43.637Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Profil.tsx, /src/index.css
+[2026-05-10T19:09:43.637Z] 10:09:43 PM [vite] (client) hmr update /src/pages/ProcesDetaliu.tsx, /src/index.css
+[2026-05-10T19:09:43.637Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Propuneri.tsx, /src/index.css
+[2026-05-10T19:09:43.638Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Proiecte.tsx, /src/index.css
+[2026-05-10T19:09:43.638Z] 10:09:43 PM [vite] (client) hmr update /src/pages/StireNou.tsx, /src/index.css
+[2026-05-10T19:09:43.638Z] 10:09:43 PM [vite] (client) hmr update /src/pages/PlaceholderPage.tsx, /src/index.css
+[2026-05-10T19:09:43.639Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Notificari.tsx, /src/index.css
+[2026-05-10T19:09:43.639Z] 10:09:43 PM [vite] (client) hmr update /src/pages/AdminDocumente.tsx, /src/index.css
+[2026-05-10T19:09:43.639Z] 10:09:43 PM [vite] (client) hmr update /src/pages/RegulamentIntern.tsx, /src/index.css
+[2026-05-10T19:09:43.640Z] 10:09:43 PM [vite] (client) hmr update /src/pages/AdminUtilizatori.tsx, /src/index.css
+[2026-05-10T19:09:43.640Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Evenimente.tsx, /src/index.css
+[2026-05-10T19:09:43.640Z] 10:09:43 PM [vite] (client) hmr update /src/pages/Organigrama.tsx, /src/index.css
+[2026-05-10T19:09:43.641Z] 10:09:43 PM [vite] (client) hmr update /src/pages/ProfilColeg.tsx, /src/index.css
+[2026-05-10T19:09:43.641Z] 10:09:43 PM [vite] (client) hmr update /src/pages/ProiectDetaliu.tsx, /src/index.css
+[2026-05-10T19:09:43.641Z] 10:09:43 PM [vite] (client) hmr update /src/pages/ProcessOverview.tsx, /src/index.css
+[2026-05-10T19:09:43.642Z] 10:09:43 PM [vite] (client) hmr update /src/pages/ViziuneValori.tsx, /src/index.css
+[2026-05-10T19:09:43.642Z] 10:09:43 PM [vite] (client) hmr update /src/pages/ProceseProceduri.tsx, /src/index.css
+[2026-05-10T19:09:43.642Z] 10:09:43 PM [vite] (client) hmr update /src/pages/BibliotecaTehnica.tsx, /src/index.css
+[2026-05-10T19:09:48.521Z] 10:09:48 PM [vite] (client) page reload src/hooks/useComposition.ts
+[2026-05-10T19:09:48.522Z] 10:09:48 PM [vite] (client) hmr update /src/components/DashboardLayout.tsx, /src/index.css
+[2026-05-10T19:09:48.522Z] 10:09:48 PM [vite] (client) page reload src/hooks/usePersistFn.ts
+[2026-05-10T19:09:48.523Z] 10:09:48 PM [vite] (client) hmr update /src/contexts/ThemeContext.tsx, /src/index.css
+[2026-05-10T19:09:48.523Z] 10:09:48 PM [vite] (client) hmr update /src/pages/Stiri.tsx, /src/pages/StireNou.tsx, /src/pages/ProfilColeg.tsx, /src/pages/Proiecte.tsx, /src/pages/StireDetaliu.tsx, /src/pages/Propuneri.tsx, /src/pages/Profil.tsx, /src/pages/Dashboard.tsx, /src/pages/Evenimente.tsx, /src/pages/TimeTracking.tsx, /src/pages/AdminDocumente.tsx, /src/components/DashboardLayout.tsx, /src/pages/ProiectDetaliu.tsx, /src/index.css
+[2026-05-10T19:09:54.694Z] Dev server process group stopped
+[2026-05-10T19:09:54.697Z] ELIFECYCLE  Command failed.
+[2026-05-10T19:09:54.751Z] Dev server exited with code -15
+[2026-05-10T19:09:57.706Z] Starting dev server with command: pnpm run dev
+[2026-05-10T19:09:58.481Z] 
+[2026-05-10T19:09:58.482Z] > inginerie-creativa-portal@1.0.0 dev /home/ubuntu/inginerie-creativa-portal
+[2026-05-10T19:09:58.483Z] > NODE_ENV=development tsx watch server/_core/index.ts
+[2026-05-10T19:09:58.484Z] 
+[2026-05-10T19:10:01.306Z] [OAuth] Initialized with baseURL: https://api.manus.im
+[2026-05-10T19:10:01.938Z] Server running on http://localhost:3000/
+[2026-05-10T19:10:25.642Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.643Z] 
+[2026-05-10T19:10:25.643Z] 58 | }
+[2026-05-10T19:10:25.643Z] 59 |
+[2026-05-10T19:10:25.644Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.644Z] |                 ^
+[2026-05-10T19:10:25.644Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.645Z] 62 | }
+[2026-05-10T19:10:25.645Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.645Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.646Z] 58 |  }
+[2026-05-10T19:10:25.646Z] 59 |
+[2026-05-10T19:10:25.646Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.646Z] |                  ^
+[2026-05-10T19:10:25.647Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.647Z] 62 |  }
+[2026-05-10T19:10:25.647Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.648Z] 
+[2026-05-10T19:10:25.648Z] 58 | }
+[2026-05-10T19:10:25.648Z] 59 |
+[2026-05-10T19:10:25.648Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.649Z] |                 ^
+[2026-05-10T19:10:25.649Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.649Z] 62 | }
+[2026-05-10T19:10:25.650Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.650Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.650Z] 58 |  }
+[2026-05-10T19:10:25.650Z] 59 |
+[2026-05-10T19:10:25.651Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.651Z] |                  ^
+[2026-05-10T19:10:25.651Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.651Z] 62 |  }
+[2026-05-10T19:10:25.652Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.652Z] 
+[2026-05-10T19:10:25.652Z] 58 | }
+[2026-05-10T19:10:25.653Z] 59 |
+[2026-05-10T19:10:25.653Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.653Z] |                 ^
+[2026-05-10T19:10:25.654Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.654Z] 62 | }
+[2026-05-10T19:10:25.654Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.655Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.655Z] 58 |  }
+[2026-05-10T19:10:25.655Z] 59 |
+[2026-05-10T19:10:25.656Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.656Z] |                  ^
+[2026-05-10T19:10:25.656Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.657Z] 62 |  }
+[2026-05-10T19:10:25.658Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.658Z] 
+[2026-05-10T19:10:25.659Z] 58 | }
+[2026-05-10T19:10:25.659Z] 59 |
+[2026-05-10T19:10:25.659Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.659Z] |                 ^
+[2026-05-10T19:10:25.660Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.660Z] 62 | }
+[2026-05-10T19:10:25.660Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.661Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.661Z] 58 |  }
+[2026-05-10T19:10:25.661Z] 59 |
+[2026-05-10T19:10:25.661Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.662Z] |                  ^
+[2026-05-10T19:10:25.662Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.662Z] 62 |  }
+[2026-05-10T19:10:25.663Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.663Z] 
+[2026-05-10T19:10:25.663Z] 58 | }
+[2026-05-10T19:10:25.663Z] 59 |
+[2026-05-10T19:10:25.664Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.664Z] |                 ^
+[2026-05-10T19:10:25.664Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.664Z] 62 | }
+[2026-05-10T19:10:25.665Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.665Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.665Z] 58 |  }
+[2026-05-10T19:10:25.666Z] 59 |
+[2026-05-10T19:10:25.666Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.666Z] |                  ^
+[2026-05-10T19:10:25.666Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.667Z] 62 |  }
+[2026-05-10T19:10:25.667Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.667Z] 
+[2026-05-10T19:10:25.668Z] 58 | }
+[2026-05-10T19:10:25.668Z] 59 |
+[2026-05-10T19:10:25.668Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.668Z] |                 ^
+[2026-05-10T19:10:25.669Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.669Z] 62 | }
+[2026-05-10T19:10:25.669Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.670Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.670Z] 58 |  }
+[2026-05-10T19:10:25.670Z] 59 |
+[2026-05-10T19:10:25.671Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.671Z] |                  ^
+[2026-05-10T19:10:25.671Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.671Z] 62 |  }
+[2026-05-10T19:10:25.672Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.672Z] 
+[2026-05-10T19:10:25.672Z] 58 | }
+[2026-05-10T19:10:25.673Z] 59 |
+[2026-05-10T19:10:25.673Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.673Z] |                 ^
+[2026-05-10T19:10:25.674Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.674Z] 62 | }
+[2026-05-10T19:10:25.674Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.674Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.675Z] 58 |  }
+[2026-05-10T19:10:25.675Z] 59 |
+[2026-05-10T19:10:25.675Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.676Z] |                  ^
+[2026-05-10T19:10:25.676Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.676Z] 62 |  }
+[2026-05-10T19:10:25.676Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.677Z] 
+[2026-05-10T19:10:25.677Z] 58 | }
+[2026-05-10T19:10:25.677Z] 59 |
+[2026-05-10T19:10:25.678Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.678Z] |                 ^
+[2026-05-10T19:10:25.678Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.679Z] 62 | }
+[2026-05-10T19:10:25.679Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.679Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.679Z] 58 |  }
+[2026-05-10T19:10:25.680Z] 59 |
+[2026-05-10T19:10:25.680Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.680Z] |                  ^
+[2026-05-10T19:10:25.680Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.681Z] 62 |  }
+[2026-05-10T19:10:25.681Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.681Z] 
+[2026-05-10T19:10:25.682Z] 58 | }
+[2026-05-10T19:10:25.682Z] 59 |
+[2026-05-10T19:10:25.682Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.682Z] |                 ^
+[2026-05-10T19:10:25.683Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.683Z] 62 | }
+[2026-05-10T19:10:25.683Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.684Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.684Z] 58 |  }
+[2026-05-10T19:10:25.684Z] 59 |
+[2026-05-10T19:10:25.684Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.685Z] |                  ^
+[2026-05-10T19:10:25.685Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.685Z] 62 |  }
+[2026-05-10T19:10:25.685Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.686Z] 
+[2026-05-10T19:10:25.686Z] 58 | }
+[2026-05-10T19:10:25.686Z] 59 |
+[2026-05-10T19:10:25.687Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.687Z] |                 ^
+[2026-05-10T19:10:25.687Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.688Z] 62 | }
+[2026-05-10T19:10:25.688Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.688Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.688Z] 58 |  }
+[2026-05-10T19:10:25.689Z] 59 |
+[2026-05-10T19:10:25.689Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.689Z] |                  ^
+[2026-05-10T19:10:25.690Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.690Z] 62 |  }
+[2026-05-10T19:10:25.690Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.690Z] 
+[2026-05-10T19:10:25.691Z] 58 | }
+[2026-05-10T19:10:25.691Z] 59 |
+[2026-05-10T19:10:25.691Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.692Z] |                 ^
+[2026-05-10T19:10:25.692Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.692Z] 62 | }
+[2026-05-10T19:10:25.692Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.693Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.693Z] 58 |  }
+[2026-05-10T19:10:25.693Z] 59 |
+[2026-05-10T19:10:25.694Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.694Z] |                  ^
+[2026-05-10T19:10:25.694Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.694Z] 62 |  }
+[2026-05-10T19:10:25.695Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.695Z] 
+[2026-05-10T19:10:25.695Z] 58 | }
+[2026-05-10T19:10:25.696Z] 59 |
+[2026-05-10T19:10:25.696Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.696Z] |                 ^
+[2026-05-10T19:10:25.696Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.697Z] 62 | }
+[2026-05-10T19:10:25.697Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.697Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.698Z] 58 |  }
+[2026-05-10T19:10:25.698Z] 59 |
+[2026-05-10T19:10:25.698Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.698Z] |                  ^
+[2026-05-10T19:10:25.699Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.699Z] 62 |  }
+[2026-05-10T19:10:25.699Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.700Z] 
+[2026-05-10T19:10:25.700Z] 58 | }
+[2026-05-10T19:10:25.700Z] 59 |
+[2026-05-10T19:10:25.700Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.701Z] |                 ^
+[2026-05-10T19:10:25.701Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.701Z] 62 | }
+[2026-05-10T19:10:25.702Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.702Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.703Z] 58 |  }
+[2026-05-10T19:10:25.703Z] 59 |
+[2026-05-10T19:10:25.703Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.703Z] |                  ^
+[2026-05-10T19:10:25.704Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.704Z] 62 |  }
+[2026-05-10T19:10:25.704Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.705Z] 
+[2026-05-10T19:10:25.705Z] 58 | }
+[2026-05-10T19:10:25.705Z] 59 |
+[2026-05-10T19:10:25.706Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.706Z] |                 ^
+[2026-05-10T19:10:25.706Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.706Z] 62 | }
+[2026-05-10T19:10:25.707Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.707Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.707Z] 58 |  }
+[2026-05-10T19:10:25.708Z] 59 |
+[2026-05-10T19:10:25.708Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.708Z] |                  ^
+[2026-05-10T19:10:25.709Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.709Z] 62 |  }
+[2026-05-10T19:10:25.709Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.710Z] 
+[2026-05-10T19:10:25.710Z] 58 | }
+[2026-05-10T19:10:25.710Z] 59 |
+[2026-05-10T19:10:25.710Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.711Z] |                 ^
+[2026-05-10T19:10:25.711Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.711Z] 62 | }
+[2026-05-10T19:10:25.711Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.712Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.712Z] 58 |  }
+[2026-05-10T19:10:25.712Z] 59 |
+[2026-05-10T19:10:25.713Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.713Z] |                  ^
+[2026-05-10T19:10:25.713Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.714Z] 62 |  }
+[2026-05-10T19:10:25.714Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.714Z] 
+[2026-05-10T19:10:25.715Z] 58 | }
+[2026-05-10T19:10:25.715Z] 59 |
+[2026-05-10T19:10:25.715Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.715Z] |                 ^
+[2026-05-10T19:10:25.716Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.716Z] 62 | }
+[2026-05-10T19:10:25.716Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.717Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.717Z] 58 |  }
+[2026-05-10T19:10:25.717Z] 59 |
+[2026-05-10T19:10:25.717Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.718Z] |                  ^
+[2026-05-10T19:10:25.718Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.718Z] 62 |  }
+[2026-05-10T19:10:25.719Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:25.719Z] 
+[2026-05-10T19:10:25.719Z] 58 | }
+[2026-05-10T19:10:25.719Z] 59 |
+[2026-05-10T19:10:25.720Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:25.720Z] |                 ^
+[2026-05-10T19:10:25.720Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:25.720Z] 62 | }
+[2026-05-10T19:10:25.721Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.721Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:25.721Z] 58 |  }
+[2026-05-10T19:10:25.722Z] 59 |
+[2026-05-10T19:10:25.722Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:25.722Z] |                  ^
+[2026-05-10T19:10:25.723Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:25.723Z] 62 |  }
+[2026-05-10T19:10:25.723Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:10:25.724Z] 
+[2026-05-10T19:10:25.724Z] 65 | }
+[2026-05-10T19:10:25.724Z] 66 |
+[2026-05-10T19:10:25.724Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:10:25.725Z] |                 ^
+[2026-05-10T19:10:25.725Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:10:25.725Z] 69 | }
+[2026-05-10T19:10:25.726Z] 70 |
+[2026-05-10T19:10:25.726Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.726Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:10:25.726Z] 65 |  }
+[2026-05-10T19:10:25.727Z] 66 |
+[2026-05-10T19:10:25.727Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:10:25.727Z] |                  ^
+[2026-05-10T19:10:25.728Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:10:25.728Z] 69 |  }
+[2026-05-10T19:10:25.728Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:10:25.728Z] 
+[2026-05-10T19:10:25.729Z] 65 | }
+[2026-05-10T19:10:25.729Z] 66 |
+[2026-05-10T19:10:25.729Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:10:25.730Z] |                 ^
+[2026-05-10T19:10:25.730Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:10:25.730Z] 69 | }
+[2026-05-10T19:10:25.730Z] 70 |
+[2026-05-10T19:10:25.731Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.731Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:10:25.731Z] 65 |  }
+[2026-05-10T19:10:25.731Z] 66 |
+[2026-05-10T19:10:25.732Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:10:25.732Z] |                  ^
+[2026-05-10T19:10:25.732Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:10:25.733Z] 69 |  }
+[2026-05-10T19:10:25.733Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:10:25.733Z] 
+[2026-05-10T19:10:25.734Z] 65 | }
+[2026-05-10T19:10:25.734Z] 66 |
+[2026-05-10T19:10:25.734Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:10:25.734Z] |                 ^
+[2026-05-10T19:10:25.735Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:10:25.735Z] 69 | }
+[2026-05-10T19:10:25.735Z] 70 |
+[2026-05-10T19:10:25.735Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.736Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:10:25.736Z] 65 |  }
+[2026-05-10T19:10:25.736Z] 66 |
+[2026-05-10T19:10:25.737Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:10:25.737Z] |                  ^
+[2026-05-10T19:10:25.737Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:10:25.737Z] 69 |  }
+[2026-05-10T19:10:25.738Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:10:25.738Z] 
+[2026-05-10T19:10:25.738Z] 65 | }
+[2026-05-10T19:10:25.739Z] 66 |
+[2026-05-10T19:10:25.739Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:10:25.739Z] |                 ^
+[2026-05-10T19:10:25.739Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:10:25.740Z] 69 | }
+[2026-05-10T19:10:25.740Z] 70 |
+[2026-05-10T19:10:25.740Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.741Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:10:25.741Z] 65 |  }
+[2026-05-10T19:10:25.741Z] 66 |
+[2026-05-10T19:10:25.741Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:10:25.742Z] |                  ^
+[2026-05-10T19:10:25.742Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:10:25.742Z] 69 |  }
+[2026-05-10T19:10:25.743Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:10:25.743Z] 
+[2026-05-10T19:10:25.743Z] 65 | }
+[2026-05-10T19:10:25.744Z] 66 |
+[2026-05-10T19:10:25.744Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:10:25.744Z] |                 ^
+[2026-05-10T19:10:25.744Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:10:25.745Z] 69 | }
+[2026-05-10T19:10:25.745Z] 70 |
+[2026-05-10T19:10:25.745Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.745Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:10:25.746Z] 65 |  }
+[2026-05-10T19:10:25.746Z] 66 |
+[2026-05-10T19:10:25.746Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:10:25.747Z] |                  ^
+[2026-05-10T19:10:25.747Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:10:25.747Z] 69 |  }
+[2026-05-10T19:10:25.747Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:10:25.748Z] 
+[2026-05-10T19:10:25.748Z] 65 | }
+[2026-05-10T19:10:25.748Z] 66 |
+[2026-05-10T19:10:25.748Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:10:25.749Z] |                 ^
+[2026-05-10T19:10:25.749Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:10:25.749Z] 69 | }
+[2026-05-10T19:10:25.750Z] 70 |
+[2026-05-10T19:10:25.750Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.750Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:10:25.751Z] 65 |  }
+[2026-05-10T19:10:25.751Z] 66 |
+[2026-05-10T19:10:25.751Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:10:25.752Z] |                  ^
+[2026-05-10T19:10:25.752Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:10:25.752Z] 69 |  }
+[2026-05-10T19:10:25.753Z] 10:10:25 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:10:25.753Z] 
+[2026-05-10T19:10:25.753Z] 65 | }
+[2026-05-10T19:10:25.753Z] 66 |
+[2026-05-10T19:10:25.754Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:10:25.754Z] |                 ^
+[2026-05-10T19:10:25.754Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:10:25.755Z] 69 | }
+[2026-05-10T19:10:25.755Z] 70 |
+[2026-05-10T19:10:25.755Z] Plugin: vite:react-babel
+[2026-05-10T19:10:25.756Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:10:25.756Z] 65 |  }
+[2026-05-10T19:10:25.756Z] 66 |
+[2026-05-10T19:10:25.756Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:10:25.757Z] |                  ^
+[2026-05-10T19:10:25.757Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:10:25.757Z] 69 |  }
+[2026-05-10T19:10:26.071Z] 10:10:26 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:26.072Z] 
+[2026-05-10T19:10:26.072Z] 58 | }
+[2026-05-10T19:10:26.072Z] 59 |
+[2026-05-10T19:10:26.072Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:26.073Z] |                 ^
+[2026-05-10T19:10:26.073Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:26.073Z] 62 | }
+[2026-05-10T19:10:26.074Z] Plugin: vite:react-babel
+[2026-05-10T19:10:26.074Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:26.074Z] 58 |  }
+[2026-05-10T19:10:26.075Z] 59 |
+[2026-05-10T19:10:26.075Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:26.075Z] |                  ^
+[2026-05-10T19:10:26.075Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:26.076Z] 62 |  }
+[2026-05-10T19:10:26.076Z] 10:10:26 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:26.076Z] 
+[2026-05-10T19:10:26.077Z] 58 | }
+[2026-05-10T19:10:26.077Z] 59 |
+[2026-05-10T19:10:26.078Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:26.078Z] |                 ^
+[2026-05-10T19:10:26.078Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:26.079Z] 62 | }
+[2026-05-10T19:10:26.079Z] Plugin: vite:react-babel
+[2026-05-10T19:10:26.080Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:26.080Z] 58 |  }
+[2026-05-10T19:10:26.081Z] 59 |
+[2026-05-10T19:10:26.081Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:26.082Z] |                  ^
+[2026-05-10T19:10:26.082Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:26.083Z] 62 |  }
+[2026-05-10T19:10:26.083Z] 10:10:26 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:26.084Z] 
+[2026-05-10T19:10:26.084Z] 58 | }
+[2026-05-10T19:10:26.084Z] 59 |
+[2026-05-10T19:10:26.085Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:26.085Z] |                 ^
+[2026-05-10T19:10:26.086Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:26.087Z] 62 | }
+[2026-05-10T19:10:26.087Z] Plugin: vite:react-babel
+[2026-05-10T19:10:26.088Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:26.088Z] 58 |  }
+[2026-05-10T19:10:26.088Z] 59 |
+[2026-05-10T19:10:26.088Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:26.089Z] |                  ^
+[2026-05-10T19:10:26.089Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:26.089Z] 62 |  }
+[2026-05-10T19:10:26.090Z] 10:10:26 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:26.090Z] 
+[2026-05-10T19:10:26.090Z] 58 | }
+[2026-05-10T19:10:26.090Z] 59 |
+[2026-05-10T19:10:26.091Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:26.091Z] |                 ^
+[2026-05-10T19:10:26.091Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:26.092Z] 62 | }
+[2026-05-10T19:10:26.092Z] Plugin: vite:react-babel
+[2026-05-10T19:10:26.092Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:26.092Z] 58 |  }
+[2026-05-10T19:10:26.093Z] 59 |
+[2026-05-10T19:10:26.093Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:26.093Z] |                  ^
+[2026-05-10T19:10:26.094Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:26.094Z] 62 |  }
+[2026-05-10T19:10:26.094Z] 10:10:26 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:10:26.094Z] 
+[2026-05-10T19:10:26.095Z] 65 | }
+[2026-05-10T19:10:26.095Z] 66 |
+[2026-05-10T19:10:26.095Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:10:26.096Z] |                 ^
+[2026-05-10T19:10:26.096Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:10:26.096Z] 69 | }
+[2026-05-10T19:10:26.097Z] 70 |
+[2026-05-10T19:10:26.097Z] Plugin: vite:react-babel
+[2026-05-10T19:10:26.097Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:10:26.098Z] 65 |  }
+[2026-05-10T19:10:26.098Z] 66 |
+[2026-05-10T19:10:26.098Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:10:26.098Z] |                  ^
+[2026-05-10T19:10:26.099Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:10:26.099Z] 69 |  }
+[2026-05-10T19:10:26.217Z] 10:10:26 PM [vite] Internal server error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:26.218Z] 
+[2026-05-10T19:10:26.219Z] 58 | }
+[2026-05-10T19:10:26.219Z] 59 |
+[2026-05-10T19:10:26.219Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:26.241Z] |                 ^
+[2026-05-10T19:10:26.242Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:26.242Z] 62 | }
+[2026-05-10T19:10:26.242Z] Plugin: vite:react-babel
+[2026-05-10T19:10:26.242Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:26.243Z] 58 |  }
+[2026-05-10T19:10:26.244Z] 59 |
+[2026-05-10T19:10:26.244Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:26.245Z] |                  ^
+[2026-05-10T19:10:26.245Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:26.246Z] 62 |  }
+[2026-05-10T19:10:26.246Z] at toParseError (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-05-10T19:10:26.247Z] at raise (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+[2026-05-10T19:10:26.247Z] at checkRedeclarationInScope (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:164:19)
+[2026-05-10T19:10:26.248Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:118:12)
+[2026-05-10T19:10:26.248Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+[2026-05-10T19:10:26.249Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1745:16)
+[2026-05-10T19:10:26.249Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:2618:15)
+[2026-05-10T19:10:26.264Z] at parseFunction (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1708:12)
+[2026-05-10T19:10:26.265Z] at parseFunctionStatement (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+[2026-05-10T19:10:26.265Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+[2026-05-10T19:10:26.266Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:10:26.266Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:10:26.267Z] at parseStatementListItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+[2026-05-10T19:10:26.267Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2635:17)
+[2026-05-10T19:10:26.268Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3447:15)
+[2026-05-10T19:10:26.270Z] at maybeParseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2551:31)
+[2026-05-10T19:10:26.270Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2432:29)
+[2026-05-10T19:10:26.271Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3046:22)
+[2026-05-10T19:10:26.271Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:649:25)
+[2026-05-10T19:10:26.272Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:10:26.273Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:10:26.273Z] at parseModuleItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+[2026-05-10T19:10:26.274Z] at parseBlockOrModuleBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+[2026-05-10T19:10:26.274Z] at parseBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+[2026-05-10T19:10:26.275Z] at parseProgram (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-05-10T19:10:26.275Z] at parseTopLevel (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-05-10T19:10:26.276Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/index.ts:83:25)
+[2026-05-10T19:10:26.276Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+[2026-05-10T19:10:26.277Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/index.ts:86:38)
+[2026-05-10T19:10:26.279Z] at parser (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/parser/index.ts:29:19)
+[2026-05-10T19:10:26.279Z] at parser.next (<anonymous>)
+[2026-05-10T19:10:26.280Z] at normalizeFile (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+[2026-05-10T19:10:26.281Z] at normalizeFile.next (<anonymous>)
+[2026-05-10T19:10:26.281Z] at run (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[2026-05-10T19:10:26.282Z] at run.next (<anonymous>)
+[2026-05-10T19:10:26.283Z] at transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-05-10T19:10:26.283Z] at transform.next (<anonymous>)
+[2026-05-10T19:10:26.284Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-05-10T19:10:26.305Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:10:26.309Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:10:26.309Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-05-10T19:10:26.310Z] at <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-05-10T19:10:26.310Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-05-10T19:10:26.310Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-05-10T19:10:26.311Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:10:26.311Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:10:26.311Z] 10:10:26 PM [vite] Internal server error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx: Identifier 'Textarea' has already been declared. (67:16)
+[2026-05-10T19:10:26.313Z] 
+[2026-05-10T19:10:26.314Z] 65 | }
+[2026-05-10T19:10:26.314Z] 66 |
+[2026-05-10T19:10:26.315Z] > 67 | export function Textarea(props: any) {
+[2026-05-10T19:10:26.315Z] |                 ^
+[2026-05-10T19:10:26.316Z] 68 |   return <textarea {...props} />;
+[2026-05-10T19:10:26.317Z] 69 | }
+[2026-05-10T19:10:26.318Z] 70 |
+[2026-05-10T19:10:26.319Z] Plugin: vite:react-babel
+[2026-05-10T19:10:26.320Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/textarea.tsx:67:16
+[2026-05-10T19:10:26.321Z] 65 |  }
+[2026-05-10T19:10:26.322Z] 66 |
+[2026-05-10T19:10:26.323Z] 67 |  export function Textarea(props: any) {
+[2026-05-10T19:10:26.323Z] |                  ^
+[2026-05-10T19:10:26.324Z] 68 |    return <textarea {...props} />;
+[2026-05-10T19:10:26.324Z] 69 |  }
+[2026-05-10T19:10:26.325Z] at toParseError (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-05-10T19:10:26.325Z] at raise (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+[2026-05-10T19:10:26.326Z] at checkRedeclarationInScope (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:164:19)
+[2026-05-10T19:10:26.326Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:118:12)
+[2026-05-10T19:10:26.327Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+[2026-05-10T19:10:26.327Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1745:16)
+[2026-05-10T19:10:26.328Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:2618:15)
+[2026-05-10T19:10:26.328Z] at parseFunction (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1708:12)
+[2026-05-10T19:10:26.329Z] at parseFunctionStatement (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+[2026-05-10T19:10:26.330Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+[2026-05-10T19:10:26.330Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:10:26.331Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:10:26.331Z] at parseStatementListItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+[2026-05-10T19:10:26.332Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2635:17)
+[2026-05-10T19:10:26.332Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3447:15)
+[2026-05-10T19:10:26.333Z] at maybeParseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2551:31)
+[2026-05-10T19:10:26.333Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2432:29)
+[2026-05-10T19:10:26.334Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3046:22)
+[2026-05-10T19:10:26.335Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:649:25)
+[2026-05-10T19:10:26.335Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:10:26.336Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:10:26.336Z] at parseModuleItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+[2026-05-10T19:10:26.337Z] at parseBlockOrModuleBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+[2026-05-10T19:10:26.338Z] at parseBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+[2026-05-10T19:10:26.338Z] at parseProgram (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-05-10T19:10:26.339Z] at parseTopLevel (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-05-10T19:10:26.339Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/index.ts:83:25)
+[2026-05-10T19:10:26.340Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+[2026-05-10T19:10:26.340Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/index.ts:86:38)
+[2026-05-10T19:10:26.341Z] at parser (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/parser/index.ts:29:19)
+[2026-05-10T19:10:26.342Z] at parser.next (<anonymous>)
+[2026-05-10T19:10:26.342Z] at normalizeFile (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+[2026-05-10T19:10:26.342Z] at normalizeFile.next (<anonymous>)
+[2026-05-10T19:10:26.343Z] at run (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[2026-05-10T19:10:26.344Z] at run.next (<anonymous>)
+[2026-05-10T19:10:26.344Z] at transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-05-10T19:10:26.345Z] at transform.next (<anonymous>)
+[2026-05-10T19:10:26.345Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-05-10T19:10:26.346Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:10:26.346Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:10:26.347Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-05-10T19:10:26.347Z] at <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-05-10T19:10:26.348Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-05-10T19:10:26.348Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-05-10T19:10:26.349Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:10:26.349Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:10:43.622Z] 10:10:43 PM [vite] (client) hmr update /src/index.css
+[2026-05-10T19:10:45.314Z] 10:10:45 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:45.315Z] 
+[2026-05-10T19:10:45.316Z] 58 | }
+[2026-05-10T19:10:45.316Z] 59 |
+[2026-05-10T19:10:45.316Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:45.317Z] |                 ^
+[2026-05-10T19:10:45.317Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:45.318Z] 62 | }
+[2026-05-10T19:10:45.320Z] Plugin: vite:react-babel
+[2026-05-10T19:10:45.320Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:45.321Z] 58 |  }
+[2026-05-10T19:10:45.321Z] 59 |
+[2026-05-10T19:10:45.322Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:45.322Z] |                  ^
+[2026-05-10T19:10:45.323Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:45.323Z] 62 |  }
+[2026-05-10T19:10:45.324Z] 10:10:45 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:45.324Z] 
+[2026-05-10T19:10:45.325Z] 58 | }
+[2026-05-10T19:10:45.325Z] 59 |
+[2026-05-10T19:10:45.325Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:45.326Z] |                 ^
+[2026-05-10T19:10:45.326Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:45.327Z] 62 | }
+[2026-05-10T19:10:45.327Z] Plugin: vite:react-babel
+[2026-05-10T19:10:45.328Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:45.328Z] 58 |  }
+[2026-05-10T19:10:45.329Z] 59 |
+[2026-05-10T19:10:45.329Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:45.329Z] |                  ^
+[2026-05-10T19:10:45.330Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:45.330Z] 62 |  }
+[2026-05-10T19:10:45.331Z] 10:10:45 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:45.332Z] 
+[2026-05-10T19:10:45.333Z] 58 | }
+[2026-05-10T19:10:45.334Z] 59 |
+[2026-05-10T19:10:45.334Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:45.335Z] |                 ^
+[2026-05-10T19:10:45.335Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:45.335Z] 62 | }
+[2026-05-10T19:10:45.336Z] Plugin: vite:react-babel
+[2026-05-10T19:10:45.336Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:45.336Z] 58 |  }
+[2026-05-10T19:10:45.337Z] 59 |
+[2026-05-10T19:10:45.337Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:45.338Z] |                  ^
+[2026-05-10T19:10:45.338Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:45.338Z] 62 |  }
+[2026-05-10T19:10:45.339Z] 10:10:45 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:45.339Z] 
+[2026-05-10T19:10:45.339Z] 58 | }
+[2026-05-10T19:10:45.340Z] 59 |
+[2026-05-10T19:10:45.340Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:45.340Z] |                 ^
+[2026-05-10T19:10:45.341Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:45.341Z] 62 | }
+[2026-05-10T19:10:45.341Z] Plugin: vite:react-babel
+[2026-05-10T19:10:45.342Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:45.342Z] 58 |  }
+[2026-05-10T19:10:45.342Z] 59 |
+[2026-05-10T19:10:45.343Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:45.343Z] |                  ^
+[2026-05-10T19:10:45.344Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:45.345Z] 62 |  }
+[2026-05-10T19:10:45.346Z] 10:10:45 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:45.347Z] 
+[2026-05-10T19:10:45.347Z] 58 | }
+[2026-05-10T19:10:45.348Z] 59 |
+[2026-05-10T19:10:45.348Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:45.348Z] |                 ^
+[2026-05-10T19:10:45.349Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:45.349Z] 62 | }
+[2026-05-10T19:10:45.349Z] Plugin: vite:react-babel
+[2026-05-10T19:10:45.350Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:45.350Z] 58 |  }
+[2026-05-10T19:10:45.350Z] 59 |
+[2026-05-10T19:10:45.351Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:45.351Z] |                  ^
+[2026-05-10T19:10:45.351Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:45.352Z] 62 |  }
+[2026-05-10T19:10:45.353Z] 10:10:45 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:45.353Z] 
+[2026-05-10T19:10:45.354Z] 58 | }
+[2026-05-10T19:10:45.355Z] 59 |
+[2026-05-10T19:10:45.356Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:45.356Z] |                 ^
+[2026-05-10T19:10:45.357Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:45.357Z] 62 | }
+[2026-05-10T19:10:45.358Z] Plugin: vite:react-babel
+[2026-05-10T19:10:45.358Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:45.359Z] 58 |  }
+[2026-05-10T19:10:45.359Z] 59 |
+[2026-05-10T19:10:45.360Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:45.360Z] |                  ^
+[2026-05-10T19:10:45.361Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:45.361Z] 62 |  }
+[2026-05-10T19:10:45.362Z] 10:10:45 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:45.362Z] 
+[2026-05-10T19:10:45.363Z] 58 | }
+[2026-05-10T19:10:45.364Z] 59 |
+[2026-05-10T19:10:45.364Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:45.364Z] |                 ^
+[2026-05-10T19:10:45.365Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:45.365Z] 62 | }
+[2026-05-10T19:10:45.366Z] Plugin: vite:react-babel
+[2026-05-10T19:10:45.366Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:45.366Z] 58 |  }
+[2026-05-10T19:10:45.367Z] 59 |
+[2026-05-10T19:10:45.367Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:45.368Z] |                  ^
+[2026-05-10T19:10:45.368Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:45.369Z] 62 |  }
+[2026-05-10T19:10:45.369Z] 10:10:45 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:45.370Z] 
+[2026-05-10T19:10:45.370Z] 58 | }
+[2026-05-10T19:10:45.371Z] 59 |
+[2026-05-10T19:10:45.371Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:45.372Z] |                 ^
+[2026-05-10T19:10:45.372Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:45.373Z] 62 | }
+[2026-05-10T19:10:45.373Z] Plugin: vite:react-babel
+[2026-05-10T19:10:45.374Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:45.374Z] 58 |  }
+[2026-05-10T19:10:45.374Z] 59 |
+[2026-05-10T19:10:45.375Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:45.375Z] |                  ^
+[2026-05-10T19:10:45.376Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:45.376Z] 62 |  }
+[2026-05-10T19:10:48.146Z] 10:10:48 PM [vite] Internal server error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:10:48.146Z] 
+[2026-05-10T19:10:48.147Z] 58 | }
+[2026-05-10T19:10:48.147Z] 59 |
+[2026-05-10T19:10:48.147Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:10:48.148Z] |                 ^
+[2026-05-10T19:10:48.148Z] 61 |   return <button {...props} />;
+[2026-05-10T19:10:48.148Z] 62 | }
+[2026-05-10T19:10:48.149Z] Plugin: vite:react-babel
+[2026-05-10T19:10:48.149Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:10:48.149Z] 58 |  }
+[2026-05-10T19:10:48.150Z] 59 |
+[2026-05-10T19:10:48.150Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:10:48.150Z] |                  ^
+[2026-05-10T19:10:48.151Z] 61 |    return <button {...props} />;
+[2026-05-10T19:10:48.151Z] 62 |  }
+[2026-05-10T19:10:48.151Z] at toParseError (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-05-10T19:10:48.151Z] at raise (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+[2026-05-10T19:10:48.152Z] at checkRedeclarationInScope (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:164:19)
+[2026-05-10T19:10:48.152Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:118:12)
+[2026-05-10T19:10:48.153Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+[2026-05-10T19:10:48.153Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1745:16)
+[2026-05-10T19:10:48.153Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:2618:15)
+[2026-05-10T19:10:48.154Z] at parseFunction (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1708:12)
+[2026-05-10T19:10:48.154Z] at parseFunctionStatement (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+[2026-05-10T19:10:48.154Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+[2026-05-10T19:10:48.154Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:10:48.155Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:10:48.155Z] at parseStatementListItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+[2026-05-10T19:10:48.155Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2635:17)
+[2026-05-10T19:10:48.156Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3447:15)
+[2026-05-10T19:10:48.156Z] at maybeParseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2551:31)
+[2026-05-10T19:10:48.156Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2432:29)
+[2026-05-10T19:10:48.157Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3046:22)
+[2026-05-10T19:10:48.157Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:649:25)
+[2026-05-10T19:10:48.157Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:10:48.158Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:10:48.158Z] at parseModuleItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+[2026-05-10T19:10:48.158Z] at parseBlockOrModuleBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+[2026-05-10T19:10:48.159Z] at parseBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+[2026-05-10T19:10:48.159Z] at parseProgram (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-05-10T19:10:48.159Z] at parseTopLevel (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-05-10T19:10:48.160Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/index.ts:83:25)
+[2026-05-10T19:10:48.160Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+[2026-05-10T19:10:48.160Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/index.ts:86:38)
+[2026-05-10T19:10:48.161Z] at parser (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/parser/index.ts:29:19)
+[2026-05-10T19:10:48.161Z] at parser.next (<anonymous>)
+[2026-05-10T19:10:48.161Z] at normalizeFile (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+[2026-05-10T19:10:48.162Z] at normalizeFile.next (<anonymous>)
+[2026-05-10T19:10:48.162Z] at run (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[2026-05-10T19:10:48.162Z] at run.next (<anonymous>)
+[2026-05-10T19:10:48.163Z] at transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-05-10T19:10:48.163Z] at transform.next (<anonymous>)
+[2026-05-10T19:10:48.163Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-05-10T19:10:48.163Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:10:48.164Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:10:48.164Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-05-10T19:10:48.164Z] at <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-05-10T19:10:48.165Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-05-10T19:10:48.165Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-05-10T19:10:48.165Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:10:48.166Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:10:54.950Z] Dev server process group stopped
+[2026-05-10T19:10:54.952Z] ELIFECYCLE  Command failed.
+[2026-05-10T19:10:55.017Z] Dev server exited with code -15
+[2026-05-10T19:10:57.978Z] Starting dev server with command: pnpm run dev
+[2026-05-10T19:10:58.740Z] 
+[2026-05-10T19:10:58.741Z] > inginerie-creativa-portal@1.0.0 dev /home/ubuntu/inginerie-creativa-portal
+[2026-05-10T19:10:58.742Z] > NODE_ENV=development tsx watch server/_core/index.ts
+[2026-05-10T19:10:58.742Z] 
+[2026-05-10T19:11:01.587Z] [OAuth] Initialized with baseURL: https://api.manus.im
+[2026-05-10T19:11:02.190Z] Server running on http://localhost:3000/
+[2026-05-10T19:11:05.326Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.328Z] 
+[2026-05-10T19:11:05.328Z] 58 | }
+[2026-05-10T19:11:05.328Z] 59 |
+[2026-05-10T19:11:05.328Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.329Z] |                 ^
+[2026-05-10T19:11:05.329Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.329Z] 62 | }
+[2026-05-10T19:11:05.330Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.330Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.330Z] 58 |  }
+[2026-05-10T19:11:05.331Z] 59 |
+[2026-05-10T19:11:05.331Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.331Z] |                  ^
+[2026-05-10T19:11:05.331Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.332Z] 62 |  }
+[2026-05-10T19:11:05.332Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.332Z] 
+[2026-05-10T19:11:05.333Z] 58 | }
+[2026-05-10T19:11:05.333Z] 59 |
+[2026-05-10T19:11:05.333Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.334Z] |                 ^
+[2026-05-10T19:11:05.334Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.334Z] 62 | }
+[2026-05-10T19:11:05.334Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.335Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.335Z] 58 |  }
+[2026-05-10T19:11:05.335Z] 59 |
+[2026-05-10T19:11:05.336Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.336Z] |                  ^
+[2026-05-10T19:11:05.336Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.336Z] 62 |  }
+[2026-05-10T19:11:05.337Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.337Z] 
+[2026-05-10T19:11:05.337Z] 58 | }
+[2026-05-10T19:11:05.338Z] 59 |
+[2026-05-10T19:11:05.338Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.338Z] |                 ^
+[2026-05-10T19:11:05.338Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.339Z] 62 | }
+[2026-05-10T19:11:05.339Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.339Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.340Z] 58 |  }
+[2026-05-10T19:11:05.340Z] 59 |
+[2026-05-10T19:11:05.340Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.340Z] |                  ^
+[2026-05-10T19:11:05.341Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.341Z] 62 |  }
+[2026-05-10T19:11:05.341Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.342Z] 
+[2026-05-10T19:11:05.342Z] 58 | }
+[2026-05-10T19:11:05.342Z] 59 |
+[2026-05-10T19:11:05.342Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.343Z] |                 ^
+[2026-05-10T19:11:05.343Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.343Z] 62 | }
+[2026-05-10T19:11:05.344Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.344Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.344Z] 58 |  }
+[2026-05-10T19:11:05.344Z] 59 |
+[2026-05-10T19:11:05.345Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.345Z] |                  ^
+[2026-05-10T19:11:05.345Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.346Z] 62 |  }
+[2026-05-10T19:11:05.346Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.346Z] 
+[2026-05-10T19:11:05.346Z] 58 | }
+[2026-05-10T19:11:05.347Z] 59 |
+[2026-05-10T19:11:05.347Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.347Z] |                 ^
+[2026-05-10T19:11:05.348Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.348Z] 62 | }
+[2026-05-10T19:11:05.348Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.348Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.349Z] 58 |  }
+[2026-05-10T19:11:05.349Z] 59 |
+[2026-05-10T19:11:05.349Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.349Z] |                  ^
+[2026-05-10T19:11:05.350Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.350Z] 62 |  }
+[2026-05-10T19:11:05.350Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.351Z] 
+[2026-05-10T19:11:05.351Z] 58 | }
+[2026-05-10T19:11:05.351Z] 59 |
+[2026-05-10T19:11:05.352Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.352Z] |                 ^
+[2026-05-10T19:11:05.352Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.353Z] 62 | }
+[2026-05-10T19:11:05.353Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.353Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.354Z] 58 |  }
+[2026-05-10T19:11:05.354Z] 59 |
+[2026-05-10T19:11:05.354Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.354Z] |                  ^
+[2026-05-10T19:11:05.355Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.355Z] 62 |  }
+[2026-05-10T19:11:05.355Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.356Z] 
+[2026-05-10T19:11:05.356Z] 58 | }
+[2026-05-10T19:11:05.356Z] 59 |
+[2026-05-10T19:11:05.356Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.357Z] |                 ^
+[2026-05-10T19:11:05.357Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.357Z] 62 | }
+[2026-05-10T19:11:05.358Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.358Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.358Z] 58 |  }
+[2026-05-10T19:11:05.358Z] 59 |
+[2026-05-10T19:11:05.359Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.359Z] |                  ^
+[2026-05-10T19:11:05.359Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.360Z] 62 |  }
+[2026-05-10T19:11:05.360Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.360Z] 
+[2026-05-10T19:11:05.360Z] 58 | }
+[2026-05-10T19:11:05.361Z] 59 |
+[2026-05-10T19:11:05.361Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.361Z] |                 ^
+[2026-05-10T19:11:05.362Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.362Z] 62 | }
+[2026-05-10T19:11:05.362Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.362Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.363Z] 58 |  }
+[2026-05-10T19:11:05.363Z] 59 |
+[2026-05-10T19:11:05.363Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.364Z] |                  ^
+[2026-05-10T19:11:05.364Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.364Z] 62 |  }
+[2026-05-10T19:11:05.364Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.365Z] 
+[2026-05-10T19:11:05.365Z] 58 | }
+[2026-05-10T19:11:05.365Z] 59 |
+[2026-05-10T19:11:05.366Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.366Z] |                 ^
+[2026-05-10T19:11:05.366Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.366Z] 62 | }
+[2026-05-10T19:11:05.367Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.367Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.367Z] 58 |  }
+[2026-05-10T19:11:05.368Z] 59 |
+[2026-05-10T19:11:05.368Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.368Z] |                  ^
+[2026-05-10T19:11:05.368Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.369Z] 62 |  }
+[2026-05-10T19:11:05.369Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.369Z] 
+[2026-05-10T19:11:05.370Z] 58 | }
+[2026-05-10T19:11:05.370Z] 59 |
+[2026-05-10T19:11:05.370Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.370Z] |                 ^
+[2026-05-10T19:11:05.371Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.371Z] 62 | }
+[2026-05-10T19:11:05.371Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.371Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.372Z] 58 |  }
+[2026-05-10T19:11:05.372Z] 59 |
+[2026-05-10T19:11:05.372Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.372Z] |                  ^
+[2026-05-10T19:11:05.373Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.373Z] 62 |  }
+[2026-05-10T19:11:05.373Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.374Z] 
+[2026-05-10T19:11:05.374Z] 58 | }
+[2026-05-10T19:11:05.374Z] 59 |
+[2026-05-10T19:11:05.374Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.375Z] |                 ^
+[2026-05-10T19:11:05.375Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.375Z] 62 | }
+[2026-05-10T19:11:05.376Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.376Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.376Z] 58 |  }
+[2026-05-10T19:11:05.376Z] 59 |
+[2026-05-10T19:11:05.377Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.377Z] |                  ^
+[2026-05-10T19:11:05.377Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.378Z] 62 |  }
+[2026-05-10T19:11:05.378Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.378Z] 
+[2026-05-10T19:11:05.378Z] 58 | }
+[2026-05-10T19:11:05.379Z] 59 |
+[2026-05-10T19:11:05.379Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.379Z] |                 ^
+[2026-05-10T19:11:05.380Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.380Z] 62 | }
+[2026-05-10T19:11:05.380Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.381Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.381Z] 58 |  }
+[2026-05-10T19:11:05.381Z] 59 |
+[2026-05-10T19:11:05.382Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.382Z] |                  ^
+[2026-05-10T19:11:05.382Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.383Z] 62 |  }
+[2026-05-10T19:11:05.383Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.383Z] 
+[2026-05-10T19:11:05.383Z] 58 | }
+[2026-05-10T19:11:05.384Z] 59 |
+[2026-05-10T19:11:05.384Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.385Z] |                 ^
+[2026-05-10T19:11:05.385Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.385Z] 62 | }
+[2026-05-10T19:11:05.385Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.386Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.386Z] 58 |  }
+[2026-05-10T19:11:05.386Z] 59 |
+[2026-05-10T19:11:05.387Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.387Z] |                  ^
+[2026-05-10T19:11:05.387Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.387Z] 62 |  }
+[2026-05-10T19:11:05.388Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.388Z] 
+[2026-05-10T19:11:05.388Z] 58 | }
+[2026-05-10T19:11:05.389Z] 59 |
+[2026-05-10T19:11:05.389Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.389Z] |                 ^
+[2026-05-10T19:11:05.390Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.390Z] 62 | }
+[2026-05-10T19:11:05.390Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.390Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.391Z] 58 |  }
+[2026-05-10T19:11:05.391Z] 59 |
+[2026-05-10T19:11:05.391Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.391Z] |                  ^
+[2026-05-10T19:11:05.392Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.392Z] 62 |  }
+[2026-05-10T19:11:05.392Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.393Z] 
+[2026-05-10T19:11:05.393Z] 58 | }
+[2026-05-10T19:11:05.393Z] 59 |
+[2026-05-10T19:11:05.393Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.394Z] |                 ^
+[2026-05-10T19:11:05.394Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.394Z] 62 | }
+[2026-05-10T19:11:05.395Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.395Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.395Z] 58 |  }
+[2026-05-10T19:11:05.395Z] 59 |
+[2026-05-10T19:11:05.396Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.396Z] |                  ^
+[2026-05-10T19:11:05.396Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.397Z] 62 |  }
+[2026-05-10T19:11:05.397Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.397Z] 
+[2026-05-10T19:11:05.397Z] 58 | }
+[2026-05-10T19:11:05.398Z] 59 |
+[2026-05-10T19:11:05.398Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.398Z] |                 ^
+[2026-05-10T19:11:05.399Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.399Z] 62 | }
+[2026-05-10T19:11:05.399Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.399Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.400Z] 58 |  }
+[2026-05-10T19:11:05.400Z] 59 |
+[2026-05-10T19:11:05.400Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.401Z] |                  ^
+[2026-05-10T19:11:05.401Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.401Z] 62 |  }
+[2026-05-10T19:11:05.401Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.402Z] 
+[2026-05-10T19:11:05.402Z] 58 | }
+[2026-05-10T19:11:05.402Z] 59 |
+[2026-05-10T19:11:05.403Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.403Z] |                 ^
+[2026-05-10T19:11:05.403Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.404Z] 62 | }
+[2026-05-10T19:11:05.404Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.404Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.405Z] 58 |  }
+[2026-05-10T19:11:05.405Z] 59 |
+[2026-05-10T19:11:05.405Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.405Z] |                  ^
+[2026-05-10T19:11:05.406Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.408Z] 62 |  }
+[2026-05-10T19:11:05.408Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.408Z] 
+[2026-05-10T19:11:05.409Z] 58 | }
+[2026-05-10T19:11:05.409Z] 59 |
+[2026-05-10T19:11:05.409Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.409Z] |                 ^
+[2026-05-10T19:11:05.410Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.410Z] 62 | }
+[2026-05-10T19:11:05.410Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.410Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.411Z] 58 |  }
+[2026-05-10T19:11:05.411Z] 59 |
+[2026-05-10T19:11:05.411Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.412Z] |                  ^
+[2026-05-10T19:11:05.412Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.412Z] 62 |  }
+[2026-05-10T19:11:05.732Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.733Z] 
+[2026-05-10T19:11:05.733Z] 58 | }
+[2026-05-10T19:11:05.733Z] 59 |
+[2026-05-10T19:11:05.734Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.734Z] |                 ^
+[2026-05-10T19:11:05.734Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.735Z] 62 | }
+[2026-05-10T19:11:05.735Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.735Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.735Z] 58 |  }
+[2026-05-10T19:11:05.736Z] 59 |
+[2026-05-10T19:11:05.736Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.736Z] |                  ^
+[2026-05-10T19:11:05.736Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.737Z] 62 |  }
+[2026-05-10T19:11:05.737Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.737Z] 
+[2026-05-10T19:11:05.738Z] 58 | }
+[2026-05-10T19:11:05.738Z] 59 |
+[2026-05-10T19:11:05.738Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.739Z] |                 ^
+[2026-05-10T19:11:05.739Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.739Z] 62 | }
+[2026-05-10T19:11:05.740Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.740Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.741Z] 58 |  }
+[2026-05-10T19:11:05.741Z] 59 |
+[2026-05-10T19:11:05.742Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.742Z] |                  ^
+[2026-05-10T19:11:05.742Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.742Z] 62 |  }
+[2026-05-10T19:11:05.743Z] 10:11:05 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:05.743Z] 
+[2026-05-10T19:11:05.743Z] 58 | }
+[2026-05-10T19:11:05.744Z] 59 |
+[2026-05-10T19:11:05.744Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:05.744Z] |                 ^
+[2026-05-10T19:11:05.744Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:05.745Z] 62 | }
+[2026-05-10T19:11:05.745Z] Plugin: vite:react-babel
+[2026-05-10T19:11:05.745Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:05.746Z] 58 |  }
+[2026-05-10T19:11:05.746Z] 59 |
+[2026-05-10T19:11:05.746Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:05.746Z] |                  ^
+[2026-05-10T19:11:05.747Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:05.747Z] 62 |  }
+[2026-05-10T19:11:08.136Z] 10:11:08 PM [vite] Internal server error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:08.136Z] 
+[2026-05-10T19:11:08.137Z] 58 | }
+[2026-05-10T19:11:08.137Z] 59 |
+[2026-05-10T19:11:08.137Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:08.138Z] |                 ^
+[2026-05-10T19:11:08.138Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:08.138Z] 62 | }
+[2026-05-10T19:11:08.139Z] Plugin: vite:react-babel
+[2026-05-10T19:11:08.139Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:08.139Z] 58 |  }
+[2026-05-10T19:11:08.140Z] 59 |
+[2026-05-10T19:11:08.140Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:08.140Z] |                  ^
+[2026-05-10T19:11:08.140Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:08.141Z] 62 |  }
+[2026-05-10T19:11:08.141Z] at toParseError (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-05-10T19:11:08.141Z] at raise (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+[2026-05-10T19:11:08.142Z] at checkRedeclarationInScope (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:164:19)
+[2026-05-10T19:11:08.142Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:118:12)
+[2026-05-10T19:11:08.142Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+[2026-05-10T19:11:08.143Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1745:16)
+[2026-05-10T19:11:08.143Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:2618:15)
+[2026-05-10T19:11:08.144Z] at parseFunction (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1708:12)
+[2026-05-10T19:11:08.144Z] at parseFunctionStatement (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+[2026-05-10T19:11:08.144Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+[2026-05-10T19:11:08.145Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:11:08.145Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:11:08.145Z] at parseStatementListItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+[2026-05-10T19:11:08.146Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2635:17)
+[2026-05-10T19:11:08.146Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3447:15)
+[2026-05-10T19:11:08.146Z] at maybeParseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2551:31)
+[2026-05-10T19:11:08.147Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2432:29)
+[2026-05-10T19:11:08.147Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3046:22)
+[2026-05-10T19:11:08.147Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:649:25)
+[2026-05-10T19:11:08.147Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:11:08.148Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:11:08.148Z] at parseModuleItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+[2026-05-10T19:11:08.148Z] at parseBlockOrModuleBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+[2026-05-10T19:11:08.149Z] at parseBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+[2026-05-10T19:11:08.149Z] at parseProgram (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-05-10T19:11:08.149Z] at parseTopLevel (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-05-10T19:11:08.150Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/index.ts:83:25)
+[2026-05-10T19:11:08.150Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+[2026-05-10T19:11:08.150Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/index.ts:86:38)
+[2026-05-10T19:11:08.151Z] at parser (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/parser/index.ts:29:19)
+[2026-05-10T19:11:08.151Z] at parser.next (<anonymous>)
+[2026-05-10T19:11:08.151Z] at normalizeFile (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+[2026-05-10T19:11:08.152Z] at normalizeFile.next (<anonymous>)
+[2026-05-10T19:11:08.152Z] at run (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[2026-05-10T19:11:08.152Z] at run.next (<anonymous>)
+[2026-05-10T19:11:08.153Z] at transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-05-10T19:11:08.153Z] at transform.next (<anonymous>)
+[2026-05-10T19:11:08.153Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-05-10T19:11:08.154Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:11:08.154Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:11:08.154Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-05-10T19:11:08.154Z] at <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-05-10T19:11:08.155Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-05-10T19:11:08.155Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-05-10T19:11:08.155Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:11:08.156Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:11:13.326Z] 10:11:13 PM [vite] Internal server error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:13.327Z] 
+[2026-05-10T19:11:13.328Z] 58 | }
+[2026-05-10T19:11:13.328Z] 59 |
+[2026-05-10T19:11:13.328Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:13.329Z] |                 ^
+[2026-05-10T19:11:13.329Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:13.329Z] 62 | }
+[2026-05-10T19:11:13.330Z] Plugin: vite:react-babel
+[2026-05-10T19:11:13.330Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:13.330Z] 58 |  }
+[2026-05-10T19:11:13.331Z] 59 |
+[2026-05-10T19:11:13.331Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:13.331Z] |                  ^
+[2026-05-10T19:11:13.332Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:13.332Z] 62 |  }
+[2026-05-10T19:11:13.333Z] at toParseError (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-05-10T19:11:13.333Z] at raise (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+[2026-05-10T19:11:13.333Z] at checkRedeclarationInScope (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:164:19)
+[2026-05-10T19:11:13.334Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:118:12)
+[2026-05-10T19:11:13.334Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+[2026-05-10T19:11:13.335Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1745:16)
+[2026-05-10T19:11:13.335Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:2618:15)
+[2026-05-10T19:11:13.336Z] at parseFunction (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1708:12)
+[2026-05-10T19:11:13.336Z] at parseFunctionStatement (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+[2026-05-10T19:11:13.336Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+[2026-05-10T19:11:13.337Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:11:13.338Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:11:13.338Z] at parseStatementListItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+[2026-05-10T19:11:13.339Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2635:17)
+[2026-05-10T19:11:13.339Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3447:15)
+[2026-05-10T19:11:13.340Z] at maybeParseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2551:31)
+[2026-05-10T19:11:13.340Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2432:29)
+[2026-05-10T19:11:13.340Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3046:22)
+[2026-05-10T19:11:13.341Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:649:25)
+[2026-05-10T19:11:13.341Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:11:13.342Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:11:13.342Z] at parseModuleItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+[2026-05-10T19:11:13.343Z] at parseBlockOrModuleBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+[2026-05-10T19:11:13.343Z] at parseBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+[2026-05-10T19:11:13.344Z] at parseProgram (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-05-10T19:11:13.344Z] at parseTopLevel (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-05-10T19:11:13.344Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/index.ts:83:25)
+[2026-05-10T19:11:13.345Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+[2026-05-10T19:11:13.345Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/index.ts:86:38)
+[2026-05-10T19:11:13.346Z] at parser (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/parser/index.ts:29:19)
+[2026-05-10T19:11:13.346Z] at parser.next (<anonymous>)
+[2026-05-10T19:11:13.347Z] at normalizeFile (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+[2026-05-10T19:11:13.347Z] at normalizeFile.next (<anonymous>)
+[2026-05-10T19:11:13.347Z] at run (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[2026-05-10T19:11:13.348Z] at run.next (<anonymous>)
+[2026-05-10T19:11:13.348Z] at transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-05-10T19:11:13.349Z] at transform.next (<anonymous>)
+[2026-05-10T19:11:13.349Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-05-10T19:11:13.349Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:11:13.350Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:11:13.350Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-05-10T19:11:13.351Z] at <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-05-10T19:11:13.351Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-05-10T19:11:13.351Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-05-10T19:11:13.352Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:11:13.352Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:11:14.485Z] 10:11:14 PM [vite] Internal server error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:14.486Z] 
+[2026-05-10T19:11:14.486Z] 58 | }
+[2026-05-10T19:11:14.487Z] 59 |
+[2026-05-10T19:11:14.487Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:14.487Z] |                 ^
+[2026-05-10T19:11:14.488Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:14.488Z] 62 | }
+[2026-05-10T19:11:14.488Z] Plugin: vite:react-babel
+[2026-05-10T19:11:14.489Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:14.489Z] 58 |  }
+[2026-05-10T19:11:14.489Z] 59 |
+[2026-05-10T19:11:14.490Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:14.490Z] |                  ^
+[2026-05-10T19:11:14.491Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:14.491Z] 62 |  }
+[2026-05-10T19:11:14.492Z] at toParseError (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-05-10T19:11:14.492Z] at raise (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+[2026-05-10T19:11:14.493Z] at checkRedeclarationInScope (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:164:19)
+[2026-05-10T19:11:14.493Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:118:12)
+[2026-05-10T19:11:14.493Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+[2026-05-10T19:11:14.494Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1745:16)
+[2026-05-10T19:11:14.494Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:2618:15)
+[2026-05-10T19:11:14.494Z] at parseFunction (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1708:12)
+[2026-05-10T19:11:14.495Z] at parseFunctionStatement (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+[2026-05-10T19:11:14.495Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+[2026-05-10T19:11:14.495Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:11:14.496Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:11:14.496Z] at parseStatementListItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+[2026-05-10T19:11:14.496Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2635:17)
+[2026-05-10T19:11:14.497Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3447:15)
+[2026-05-10T19:11:14.497Z] at maybeParseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2551:31)
+[2026-05-10T19:11:14.497Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2432:29)
+[2026-05-10T19:11:14.497Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3046:22)
+[2026-05-10T19:11:14.498Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:649:25)
+[2026-05-10T19:11:14.498Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:11:14.498Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:11:14.499Z] at parseModuleItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+[2026-05-10T19:11:14.499Z] at parseBlockOrModuleBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+[2026-05-10T19:11:14.499Z] at parseBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+[2026-05-10T19:11:14.500Z] at parseProgram (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-05-10T19:11:14.500Z] at parseTopLevel (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-05-10T19:11:14.501Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/index.ts:83:25)
+[2026-05-10T19:11:14.501Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+[2026-05-10T19:11:14.502Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/index.ts:86:38)
+[2026-05-10T19:11:14.502Z] at parser (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/parser/index.ts:29:19)
+[2026-05-10T19:11:14.503Z] at parser.next (<anonymous>)
+[2026-05-10T19:11:14.503Z] at normalizeFile (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+[2026-05-10T19:11:14.504Z] at normalizeFile.next (<anonymous>)
+[2026-05-10T19:11:14.504Z] at run (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[2026-05-10T19:11:14.505Z] at run.next (<anonymous>)
+[2026-05-10T19:11:14.505Z] at transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-05-10T19:11:14.506Z] at transform.next (<anonymous>)
+[2026-05-10T19:11:14.507Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-05-10T19:11:14.507Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:11:14.508Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:11:14.508Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-05-10T19:11:14.508Z] at <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-05-10T19:11:14.509Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-05-10T19:11:14.509Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-05-10T19:11:14.510Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:11:14.511Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:11:15.376Z] 10:11:15 PM [vite] Internal server error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
+[2026-05-10T19:11:15.377Z] 
+[2026-05-10T19:11:15.378Z] 58 | }
+[2026-05-10T19:11:15.378Z] 59 |
+[2026-05-10T19:11:15.379Z] > 60 | export function Button(props: any) {
+[2026-05-10T19:11:15.379Z] |                 ^
+[2026-05-10T19:11:15.380Z] 61 |   return <button {...props} />;
+[2026-05-10T19:11:15.380Z] 62 | }
+[2026-05-10T19:11:15.381Z] Plugin: vite:react-babel
+[2026-05-10T19:11:15.381Z] File: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx:60:16
+[2026-05-10T19:11:15.381Z] 58 |  }
+[2026-05-10T19:11:15.382Z] 59 |
+[2026-05-10T19:11:15.382Z] 60 |  export function Button(props: any) {
+[2026-05-10T19:11:15.382Z] |                  ^
+[2026-05-10T19:11:15.382Z] 61 |    return <button {...props} />;
+[2026-05-10T19:11:15.383Z] 62 |  }
+[2026-05-10T19:11:15.383Z] at toParseError (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parse-error.ts:95:45)
+[2026-05-10T19:11:15.383Z] at raise (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/tokenizer/index.ts:1504:19)
+[2026-05-10T19:11:15.384Z] at checkRedeclarationInScope (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:164:19)
+[2026-05-10T19:11:15.384Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/util/scope.ts:118:12)
+[2026-05-10T19:11:15.384Z] at declareName (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/scope.ts:89:11)
+[2026-05-10T19:11:15.385Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1745:16)
+[2026-05-10T19:11:15.385Z] at registerFunctionStatementId (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:2618:15)
+[2026-05-10T19:11:15.386Z] at parseFunction (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1708:12)
+[2026-05-10T19:11:15.387Z] at parseFunctionStatement (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1080:17)
+[2026-05-10T19:11:15.387Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:525:21)
+[2026-05-10T19:11:15.387Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:11:15.387Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:11:15.388Z] at parseStatementListItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:431:17)
+[2026-05-10T19:11:15.388Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2635:17)
+[2026-05-10T19:11:15.389Z] at parseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3447:15)
+[2026-05-10T19:11:15.389Z] at maybeParseExportDeclaration (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2551:31)
+[2026-05-10T19:11:15.389Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:2432:29)
+[2026-05-10T19:11:15.390Z] at parseExport (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3046:22)
+[2026-05-10T19:11:15.390Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:649:25)
+[2026-05-10T19:11:15.391Z] at parseStatementContent (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:3220:20)
+[2026-05-10T19:11:15.391Z] at parseStatementLike (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:482:17)
+[2026-05-10T19:11:15.391Z] at parseModuleItem (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:419:17)
+[2026-05-10T19:11:15.391Z] at parseBlockOrModuleBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1443:16)
+[2026-05-10T19:11:15.392Z] at parseBlockBody (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:1417:10)
+[2026-05-10T19:11:15.392Z] at parseProgram (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:229:10)
+[2026-05-10T19:11:15.393Z] at parseTopLevel (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/statement.ts:203:25)
+[2026-05-10T19:11:15.393Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/parser/index.ts:83:25)
+[2026-05-10T19:11:15.394Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/plugins/typescript/index.ts:4354:20)
+[2026-05-10T19:11:15.394Z] at parse (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+parser@7.29.3/node_modules/@babel/parser/src/index.ts:86:38)
+[2026-05-10T19:11:15.395Z] at parser (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/parser/index.ts:29:19)
+[2026-05-10T19:11:15.395Z] at parser.next (<anonymous>)
+[2026-05-10T19:11:15.395Z] at normalizeFile (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/normalize-file.ts:50:24)
+[2026-05-10T19:11:15.396Z] at normalizeFile.next (<anonymous>)
+[2026-05-10T19:11:15.396Z] at run (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transformation/index.ts:41:36)
+[2026-05-10T19:11:15.397Z] at run.next (<anonymous>)
+[2026-05-10T19:11:15.397Z] at transform (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/transform.ts:29:20)
+[2026-05-10T19:11:15.398Z] at transform.next (<anonymous>)
+[2026-05-10T19:11:15.398Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:261:32)
+[2026-05-10T19:11:15.398Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:11:15.399Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)
+[2026-05-10T19:11:15.399Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:189:28
+[2026-05-10T19:11:15.400Z] at <anonymous> (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/@babel+core@7.29.0/node_modules/@babel/core/src/gensync-utils/async.ts:90:7)
+[2026-05-10T19:11:15.400Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:113:33
+[2026-05-10T19:11:15.400Z] at step (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:287:14)
+[2026-05-10T19:11:15.401Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:273:13
+[2026-05-10T19:11:15.401Z] at async.call.result.err.err (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/gensync@1.0.0-beta.2/node_modules/gensync/index.js:223:11)

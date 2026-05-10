@@ -1,4 +1,4 @@
-import { cn } from "../lib/utils";
+import { cn } from "@/lib/utils";
 
 // Fixed color palette used across the entire application
 // No free color pickers — only these 7 predefined colors

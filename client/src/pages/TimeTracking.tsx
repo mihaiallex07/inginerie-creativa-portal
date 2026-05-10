@@ -4,7 +4,7 @@ import {
   startOfMonth, endOfMonth, getISOWeek, isSameMonth, isToday, getDay,
 } from "date-fns";
 import { ro } from "date-fns/locale";
-import { trpc } from "../lib/trpc";
+import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronLeft, ChevronRight, Plus, Pencil, Trash2, ExternalLink, Cake, Lock, Download, Calendar, RefreshCw, Unlink, Search, Repeat2, Hourglass, X, Check, UserPlus, Users } from "lucide-react";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { cn } from "../lib/utils";
+import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
 
 // ─── Constants ─────────────────────────────────────────────────────────────

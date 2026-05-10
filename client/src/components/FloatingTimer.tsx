@@ -5,7 +5,7 @@
  * State persisted in localStorage so it survives page navigation.
  */
 import { useState, useEffect, useRef, useCallback } from "react";
-import { trpc } from "../lib/trpc";
+import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { toast } from "sonner";
 import { Timer, X, Play, Square, ChevronDown, GripHorizontal, Settings } from "lucide-react";
