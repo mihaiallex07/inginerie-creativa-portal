@@ -57,7 +57,7 @@ export default function FloatingTimer() {
       utils.timeTracking.runningTimer.invalidate();
       toast.success("Timer pornit!");
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   const stopMutation = trpc.timeTracking.stopTimer.useMutation({
@@ -70,7 +70,7 @@ export default function FloatingTimer() {
       const m = mins % 60;
       toast.success(`Timer oprit — ${h > 0 ? `${h}h ` : ""}${m}m înregistrate`);
     },
-    onError: (err) => toast.error(err.message),
+    onError: (err: any) => toast.error(err.message),
   });
 
   // UI state
