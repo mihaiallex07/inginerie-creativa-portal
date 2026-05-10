@@ -4384,3 +4384,107 @@
 [2026-05-09T18:37:48.721Z] at async handleMessage (node:internal/modules/esm/worker:199:18)
 [2026-05-09T18:37:48.721Z] 
 [2026-05-09T18:37:48.721Z] Node.js v22.13.0
+[2026-05-10T19:02:19.623Z] Dev server process group stopped
+[2026-05-10T19:02:19.626Z] ELIFECYCLE  Command failed.
+[2026-05-10T19:02:19.640Z] Dev server exited with code -15
+[2026-05-10T19:02:22.734Z] Starting dev server with command: pnpm run dev
+[2026-05-10T19:02:23.073Z] ERROR  Expected double-quoted property name in JSON at position 344 (line 16 column 1) while parsing '{  "name": "portal-ic",  "version": "0' in /home/ubuntu/inginerie-creativa-portal/package.json
+[2026-05-10T19:02:23.074Z] For help, run: pnpm help run
+[2026-05-10T19:02:23.082Z] Dev server exited with code 1
+[2026-05-10T19:04:04.362Z] Starting dev server with command: pnpm run dev
+[2026-05-10T19:04:05.085Z] ERROR  packages field missing or empty
+[2026-05-10T19:04:05.086Z] For help, run: pnpm help run
+[2026-05-10T19:04:05.103Z] Dev server exited with code 1
+[2026-05-10T19:05:53.478Z] Starting dev server with command: pnpm run dev
+[2026-05-10T19:05:54.362Z] 
+[2026-05-10T19:05:54.363Z] > inginerie-creativa-portal@1.0.0 dev /home/ubuntu/inginerie-creativa-portal
+[2026-05-10T19:05:54.363Z] > NODE_ENV=development tsx watch server/_core/index.ts
+[2026-05-10T19:05:54.364Z] 
+[2026-05-10T19:05:54.837Z] 
+[2026-05-10T19:05:54.837Z] node:internal/modules/run_main:122
+[2026-05-10T19:05:54.838Z] triggerUncaughtException(
+[2026-05-10T19:05:54.838Z] ^
+[2026-05-10T19:05:54.838Z] Error [ERR_MODULE_NOT_FOUND]: Cannot find package '@shared/const' imported from /home/ubuntu/inginerie-creativa-portal/server/_core/oauth.ts
+[2026-05-10T19:05:54.839Z] at packageResolve (node:internal/modules/esm/resolve:857:9)
+[2026-05-10T19:05:54.839Z] at moduleResolve (node:internal/modules/esm/resolve:926:18)
+[2026-05-10T19:05:54.839Z] at defaultResolve (node:internal/modules/esm/resolve:1056:11)
+[2026-05-10T19:05:54.840Z] at nextResolve (node:internal/modules/esm/hooks:748:28)
+[2026-05-10T19:05:54.840Z] at resolveBase (file:///home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1778439954641:2:3744)
+[2026-05-10T19:05:54.840Z] at resolveDirectory (file:///home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1778439954641:2:4243)
+[2026-05-10T19:05:54.841Z] at resolveTsPaths (file:///home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1778439954641:2:4984)
+[2026-05-10T19:05:54.841Z] at async resolve (file:///home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/tsx@4.21.0/node_modules/tsx/dist/esm/index.mjs?1778439954641:2:5355)
+[2026-05-10T19:05:54.841Z] at async nextResolve (node:internal/modules/esm/hooks:748:22)
+[2026-05-10T19:05:54.842Z] at async Hooks.resolve (node:internal/modules/esm/hooks:240:24) {
+[2026-05-10T19:05:54.842Z] code: 'ERR_MODULE_NOT_FOUND'
+[2026-05-10T19:05:54.842Z] }
+[2026-05-10T19:05:54.842Z] 
+[2026-05-10T19:05:54.843Z] Node.js v22.13.0
+[2026-05-10T19:07:04.275Z] 3:07:04 PM [tsx] change in ./server/_core/oauth.ts Rerunning...
+[2026-05-10T19:07:07.010Z] c[OAuth] Initialized with baseURL: https://api.manus.im
+[2026-05-10T19:07:07.095Z] Dev server process group stopped
+[2026-05-10T19:07:07.098Z] ELIFECYCLE  Command failed.
+[2026-05-10T19:07:07.769Z] Dev server exited with code -15
+[2026-05-10T19:07:10.108Z] Starting dev server with command: pnpm run dev
+[2026-05-10T19:07:10.844Z] 
+[2026-05-10T19:07:10.845Z] > inginerie-creativa-portal@1.0.0 dev /home/ubuntu/inginerie-creativa-portal
+[2026-05-10T19:07:10.845Z] > NODE_ENV=development tsx watch server/_core/index.ts
+[2026-05-10T19:07:10.846Z] 
+[2026-05-10T19:07:13.595Z] [OAuth] Initialized with baseURL: https://api.manus.im
+[2026-05-10T19:07:14.261Z] 10:07:14 PM [vite] (client) Re-optimizing dependencies because lockfile has changed
+[2026-05-10T19:07:14.293Z] Server running on http://localhost:3000/
+[2026-05-10T19:07:14.594Z] (!) Failed to run dependency scan. Skipping dependency pre-bundling. Error:   Failed to scan for dependencies from entries:
+[2026-05-10T19:07:14.595Z] /home/ubuntu/inginerie-creativa-portal/client/index.html
+[2026-05-10T19:07:14.595Z] 
+[2026-05-10T19:07:14.596Z] [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mThe symbol "Button" has already been declared[0m
+[2026-05-10T19:07:14.596Z] 
+[2026-05-10T19:07:14.596Z] client/src/components/ui/button.tsx:60:16:
+[2026-05-10T19:07:14.597Z] [37m      60 │ export function [32mButton[37m(props: any) {
+[2026-05-10T19:07:14.597Z] ╵                 [32m~~~~~~[0m
+[2026-05-10T19:07:14.597Z] 
+[2026-05-10T19:07:14.598Z] The symbol "Button" was originally declared here:
+[2026-05-10T19:07:14.598Z] 
+[2026-05-10T19:07:14.598Z] client/src/components/ui/button.tsx:39:9:
+[2026-05-10T19:07:14.599Z] [37m      39 │ function [32mButton[37m({
+[2026-05-10T19:07:14.599Z] ╵          [32m~~~~~~[0m
+[2026-05-10T19:07:14.599Z] 
+[2026-05-10T19:07:14.599Z] Duplicate top-level function declarations are not allowed in an ECMAScript module. This file is considered to be an ECMAScript module because of the "export" keyword here:
+[2026-05-10T19:07:14.600Z] 
+[2026-05-10T19:07:14.600Z] client/src/components/ui/button.tsx:60:0:
+[2026-05-10T19:07:14.600Z] [37m      60 │ [32mexport[37m function Button(props: any) {
+[2026-05-10T19:07:14.601Z] ╵ [32m~~~~~~[0m
+[2026-05-10T19:07:14.601Z] 
+[2026-05-10T19:07:14.601Z] 
+[2026-05-10T19:07:14.602Z] [31m✘ [41;31m[[41;97mERROR[41;31m][0m [1mThe symbol "Textarea" has already been declared[0m
+[2026-05-10T19:07:14.602Z] 
+[2026-05-10T19:07:14.602Z] client/src/components/ui/textarea.tsx:67:16:
+[2026-05-10T19:07:14.602Z] [37m      67 │ export function [32mTextarea[37m(props: any) {
+[2026-05-10T19:07:14.603Z] ╵                 [32m~~~~~~~~[0m
+[2026-05-10T19:07:14.603Z] 
+[2026-05-10T19:07:14.603Z] The symbol "Textarea" was originally declared here:
+[2026-05-10T19:07:14.604Z] 
+[2026-05-10T19:07:14.604Z] client/src/components/ui/textarea.tsx:6:9:
+[2026-05-10T19:07:14.604Z] [37m      6 │ function [32mTextarea[37m({
+[2026-05-10T19:07:14.604Z] ╵          [32m~~~~~~~~[0m
+[2026-05-10T19:07:14.605Z] 
+[2026-05-10T19:07:14.605Z] Duplicate top-level function declarations are not allowed in an ECMAScript module. This file is considered to be an ECMAScript module because of the "export" keyword here:
+[2026-05-10T19:07:14.605Z] 
+[2026-05-10T19:07:14.606Z] client/src/components/ui/textarea.tsx:67:0:
+[2026-05-10T19:07:14.606Z] [37m      67 │ [32mexport[37m function Textarea(props: any) {
+[2026-05-10T19:07:14.607Z] ╵ [32m~~~~~~[0m
+[2026-05-10T19:07:14.608Z] 
+[2026-05-10T19:07:14.608Z] 
+[2026-05-10T19:07:14.609Z] at failureErrorWithLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:1467:15)
+[2026-05-10T19:07:14.609Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:926:25
+[2026-05-10T19:07:14.610Z] at runOnEndCallbacks (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:1307:45)
+[2026-05-10T19:07:14.610Z] at buildResponseToResult (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:924:7)
+[2026-05-10T19:07:14.611Z] at /home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:936:9
+[2026-05-10T19:07:14.611Z] at new Promise (<anonymous>)
+[2026-05-10T19:07:14.611Z] at requestCallbacks.on-end (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:935:54)
+[2026-05-10T19:07:14.612Z] at handleRequest (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:628:17)
+[2026-05-10T19:07:14.612Z] at handleIncomingPacket (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:653:7)
+[2026-05-10T19:07:14.612Z] at Socket.readFromStdout (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/esbuild@0.27.3/node_modules/esbuild/lib/main.js:581:7)
+[2026-05-10T19:07:14.613Z] at Socket.emit (node:events:524:28)
+[2026-05-10T19:07:14.613Z] at addChunk (node:internal/streams/readable:561:12)
+[2026-05-10T19:07:14.613Z] at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+[2026-05-10T19:07:14.614Z] at Readable.push (node:internal/streams/readable:392:5)
+[2026-05-10T19:07:14.614Z] at Pipe.onStreamRead (node:internal/stream_base_commons:189:23)
