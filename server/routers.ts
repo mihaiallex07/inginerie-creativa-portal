@@ -1,4 +1,4 @@
-import { COOKIE_NAME } from "from "../shared/const"const";
+import { COOKIE_NAME } from "../shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { projectsRouter } from "./routers/projects";

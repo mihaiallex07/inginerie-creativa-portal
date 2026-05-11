@@ -1,4 +1,4 @@
-export { COOKIE_NAME, ONE_YEAR_MS } from "from "../shared/const"const";
+export { COOKIE_NAME, ONE_YEAR_MS } from from "@shared/const";
 
 // Redirect to Google OAuth login — fetches the URL from backend so it works on any domain
 export const redirectToLogin = async () => {
