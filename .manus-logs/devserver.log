@@ -920,7 +920,7 @@
 [2026-05-10T19:07:35.680Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:35.680Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:35.680Z] |                        ^
-[2026-05-10T19:07:35.681Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:35.681Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:35.682Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:35.682Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
 [2026-05-10T19:07:35.683Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
@@ -937,7 +937,7 @@
 [2026-05-10T19:07:35.693Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:35.694Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:35.695Z] |                        ^
-[2026-05-10T19:07:35.695Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:35.695Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:35.696Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:35.957Z] 10:07:35 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:35.957Z] Require stack:
@@ -961,7 +961,7 @@
 [2026-05-10T19:07:37.169Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:37.170Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:37.170Z] |                        ^
-[2026-05-10T19:07:37.170Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:37.170Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:37.170Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:37.327Z] 10:07:37 PM [vite] (client) Pre-transform error: /home/ubuntu/inginerie-creativa-portal/client/src/components/ui/button.tsx: Identifier 'Button' has already been declared. (60:16)
 [2026-05-10T19:07:37.328Z] 
@@ -2281,7 +2281,7 @@
 [2026-05-10T19:07:38.308Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:38.309Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:38.309Z] |                        ^
-[2026-05-10T19:07:38.310Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:38.310Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:38.310Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:38.311Z] 10:07:38 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:38.311Z] Require stack:
@@ -2316,7 +2316,7 @@
 [2026-05-10T19:07:38.985Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:38.986Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:38.986Z] |                        ^
-[2026-05-10T19:07:38.986Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:38.986Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:38.986Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:39.045Z] 10:07:39 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:39.046Z] Require stack:
@@ -2340,7 +2340,7 @@
 [2026-05-10T19:07:39.890Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:39.891Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:39.891Z] |                        ^
-[2026-05-10T19:07:39.891Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:39.891Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:39.892Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:39.892Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
 [2026-05-10T19:07:39.892Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
@@ -3609,7 +3609,7 @@
 [2026-05-10T19:07:40.696Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:40.696Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:40.696Z] |                        ^
-[2026-05-10T19:07:40.696Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:40.696Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:40.697Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:40.697Z] 10:07:40 PM [vite] (client) Pre-transform error: Failed to resolve import "../lib/utils" from "client/src/components/ui/separator.tsx". Does the file exist?
 [2026-05-10T19:07:40.697Z] Plugin: vite:import-analysis
@@ -3678,7 +3678,7 @@
 [2026-05-10T19:07:40.717Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:40.718Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:40.718Z] |                        ^
-[2026-05-10T19:07:40.718Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:40.718Z] 3  |  import { UNAUTHED_ERR_MSG } ffrom "../../shared/const";
 [2026-05-10T19:07:40.718Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:40.719Z] 10:07:40 PM [vite] (client) Pre-transform error: Failed to resolve import "../lib/utils" from "client/src/components/ui/dialog.tsx". Does the file exist?
 [2026-05-10T19:07:40.719Z] Plugin: vite:import-analysis
@@ -3695,7 +3695,7 @@
 [2026-05-10T19:07:40.723Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:40.723Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:40.723Z] |                        ^
-[2026-05-10T19:07:40.724Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:40.724Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:40.724Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:40.724Z] 10:07:40 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:40.725Z] Require stack:
@@ -3751,7 +3751,7 @@
 [2026-05-10T19:07:41.155Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:41.155Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:41.156Z] |                        ^
-[2026-05-10T19:07:41.156Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:41.156Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:41.156Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:41.157Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
 [2026-05-10T19:07:41.157Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
@@ -3785,7 +3785,7 @@
 [2026-05-10T19:07:41.183Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:41.183Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:41.184Z] |                        ^
-[2026-05-10T19:07:41.184Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:41.184Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:41.184Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:41.197Z] 10:07:41 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:41.203Z] Require stack:
@@ -3809,7 +3809,7 @@
 [2026-05-10T19:07:43.538Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:43.539Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:43.539Z] |                        ^
-[2026-05-10T19:07:43.539Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:43.539Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:43.540Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:43.549Z] 10:07:43 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:43.549Z] Require stack:
@@ -3833,7 +3833,7 @@
 [2026-05-10T19:07:45.051Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:45.052Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:45.052Z] |                        ^
-[2026-05-10T19:07:45.052Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:45.052Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:45.053Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:45.061Z] 10:07:45 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:45.062Z] Require stack:
@@ -3857,7 +3857,7 @@
 [2026-05-10T19:07:45.315Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:45.315Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:45.315Z] |                        ^
-[2026-05-10T19:07:45.315Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:45.315Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:45.316Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:45.316Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
 [2026-05-10T19:07:45.316Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
@@ -3891,7 +3891,7 @@
 [2026-05-10T19:07:45.339Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:45.340Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:45.340Z] |                        ^
-[2026-05-10T19:07:45.340Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:45.340Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:45.340Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:45.349Z] 10:07:45 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:45.350Z] Require stack:
@@ -3915,7 +3915,7 @@
 [2026-05-10T19:07:46.111Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:46.112Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:46.112Z] |                        ^
-[2026-05-10T19:07:46.113Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:46.113Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:46.113Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:46.121Z] 10:07:46 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:46.122Z] Require stack:
@@ -3939,7 +3939,7 @@
 [2026-05-10T19:07:46.374Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:46.374Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:46.374Z] |                        ^
-[2026-05-10T19:07:46.375Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:46.375Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:46.375Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:46.375Z] at TransformPluginContext._formatLog (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29019:43)
 [2026-05-10T19:07:46.376Z] at TransformPluginContext.error (/home/ubuntu/inginerie-creativa-portal/node_modules/.pnpm/vite@7.3.3_@types+node@24.7.0_jiti@2.6.1_lightningcss@1.32.0_terser@5.16.9_tsx@4.21.0_yaml@2.8.4/node_modules/vite/dist/node/chunks/config.js:29016:14)
@@ -3973,7 +3973,7 @@
 [2026-05-10T19:07:46.400Z] 1  |  import { jsxDEV } from "react/jsx-dev-runtime";
 [2026-05-10T19:07:46.400Z] 2  |  import { trpc } from "../lib/trpc";
 [2026-05-10T19:07:46.401Z] |                        ^
-[2026-05-10T19:07:46.401Z] 3  |  import { UNAUTHED_ERR_MSG } from "from "../shared/const"const";
+[2026-05-10T19:07:46.401Z] 3  |  import { UNAUTHED_ERR_MSG } from "../../shared/const";
 [2026-05-10T19:07:46.402Z] 4  |  import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 [2026-05-10T19:07:46.409Z] 10:07:46 PM [vite] (client) Pre-transform error: Failed to load PostCSS config (searchPath: /home/ubuntu/inginerie-creativa-portal/client): [Error] Loading PostCSS Plugin failed: Cannot find module '@tailwindcss/postcss'
 [2026-05-10T19:07:46.409Z] Require stack:
