@@ -6,13 +6,13 @@
 const APP_CONFIG = {
   // Supabase — obține din: https://app.supabase.com → Project Settings → API
   supabase: {
-    url: 'YOUR_SUPABASE_URL',          // ex: https://xxxx.supabase.co
-    anonKey: 'YOUR_SUPABASE_ANON_KEY', // cheia publică anon
+    url: 'https://ofknvxwcqwgnthnvslfl.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9ma252eHdjcXdnbnRobnZzbGZsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg2MDIwNTcsImV4cCI6MjA5NDE3ODA1N30.HhI-MAeGlmFIIEfL1mDWxQhKBbCPDn3qgaSKBS9otS8',
   },
 
   // Modul demo — activ când Supabase nu este configurat
   // Setează pe false după ce ai configurat Supabase
-  demoMode: true,
+  demoMode: false,
 
   // Setări aplicație
   app: {
@@ -27,6 +27,8 @@ const APP_CONFIG = {
     coordonator: 'coordonator',
     angajat: 'angajat',
   },
+  // Restricție domeniu email
+  allowedDomain: 'ingineriecreativa.ro',
 };
 
 // Auto-detectare: dacă URL-ul Supabase este setat, dezactivează demo mode
