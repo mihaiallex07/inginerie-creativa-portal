@@ -25,7 +25,7 @@ const Admin = {
 
   renderPage() {
     document.getElementById('page-content').innerHTML = `
-      <div style="max-width:900px">
+      <div>
         <div class="page-header">
           <h1 class="page-title">Administrare</h1>
         </div>
@@ -159,7 +159,6 @@ const Admin = {
         <div><label class="label">Rol</label>
           <select id="edit-role" class="select">
             <option value="angajat" ${u.role === 'angajat' ? 'selected' : ''}>Angajat</option>
-            <option value="coordonator" ${u.role === 'coordonator' ? 'selected' : ''}>Coordonator</option>
             <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
           </select>
         </div>

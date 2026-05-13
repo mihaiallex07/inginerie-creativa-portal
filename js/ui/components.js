@@ -47,12 +47,17 @@ function openModal(title, contentHtml, footerHtml = '') {
 function closeModal(event) {
   if (event && event.target !== document.getElementById('modal-overlay')) return;
   document.getElementById('modal-overlay').style.display = 'none';
-  document.body.style.overflow = '';
+  // Only reset overflow if we're not in the app (auth page doesn't need overflow hidden)
+  if (document.getElementById('app').style.display !== 'none') {
+    document.body.style.overflow = 'hidden';
+  }
 }
 
 function closeModalForce() {
   document.getElementById('modal-overlay').style.display = 'none';
-  document.body.style.overflow = '';
+  if (document.getElementById('app').style.display !== 'none') {
+    document.body.style.overflow = 'hidden';
+  }
 }
 
 // ── LOADING ─────────────────────────────────────────────────
@@ -88,7 +93,6 @@ function statusBadge(status) {
 function roleBadge(role) {
   const map = {
     admin: ['Admin', 'red'],
-    coordonator: ['Coordonator', 'blue'],
     angajat: ['Angajat', 'gray'],
   };
   const [label, color] = map[role] || [role, 'gray'];

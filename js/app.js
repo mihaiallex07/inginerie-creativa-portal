@@ -58,6 +58,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 function showApp(user, profile) {
   document.getElementById('auth-page').style.display = 'none';
   document.getElementById('app').style.display = 'flex';
+  document.body.classList.remove('auth-bg');
+  document.body.style.cssText = 'margin:0;padding:0;overflow:hidden;width:100%;height:100%';
 
   // Update topbar avatar initials
   const topbarAvatar = document.getElementById('topbar-avatar');
@@ -88,6 +90,8 @@ function showApp(user, profile) {
 function showLogin() {
   document.getElementById('app').style.display = 'none';
   document.getElementById('auth-page').style.display = 'flex';
+  document.body.classList.add('auth-bg');
+  document.body.style.cssText = '';
   const emailEl = document.getElementById('login-email');
   const passEl = document.getElementById('login-password');
   if (emailEl) emailEl.value = '';
@@ -149,7 +153,7 @@ function updateSidebarUser() {
   if (avatarEl) avatarEl.textContent = Auth.getInitials(profile.full_name);
   if (nameEl) nameEl.textContent = profile.full_name || 'Utilizator';
   if (roleEl) {
-    const roleMap = { admin: 'Administrator', coordonator: 'Coordonator', angajat: 'Angajat' };
+    const roleMap = { admin: 'Administrator', angajat: 'Angajat' };
     roleEl.textContent = roleMap[profile.role] || profile.role || 'Angajat';
   }
 }

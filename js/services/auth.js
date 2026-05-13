@@ -75,13 +75,22 @@ const Auth = {
     } else {
       // Crează profil dacă nu există
       const user = this.currentUser;
+      const fullName = user.user_metadata?.full_name || user.email.split('@')[0];
+      // Generează codul angajat din inițialele prenume+nume (ex: Mihai Porumboiu → MP)
+      const employeeCode = fullName
+        .split(' ')
+        .filter(w => w.length > 0)
+        .map(w => w[0].toUpperCase())
+        .join('')
+        .slice(0, 4);
       const newProfile = {
         id: userId,
         email: user.email,
-        full_name: user.user_metadata?.full_name || user.email.split('@')[0],
+        full_name: fullName,
         role: 'angajat',
         department: '',
         position: '',
+        employee_code: employeeCode,
       };
       await sb.from('profiles').upsert(newProfile);
       this.currentProfile = newProfile;
@@ -176,7 +185,7 @@ const Auth = {
   },
 
   isCoordinator() {
-    return ['admin', 'coordonator'].includes(this.currentProfile?.role);
+    return this.currentProfile?.role === 'admin';
   },
 
   getInitials(name) {
