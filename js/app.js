@@ -295,14 +295,42 @@ function showAuthError(elId, message) {
 }
 
 // ── GLOBAL TIMER (shared between Proiecte and TimeTracking) ───
-// window.activeTimerData  = { taskId, taskName, projectId, phaseId, startTime, startHour, startMin, pausedMs }
-// window.pausedTimerData  = same shape + pausedAt
+// Persistat în localStorage pentru a supraviețui refresh-ului
+const TIMER_LS_KEY = 'ic_timer_state';
+
+function _timerSave() {
+  try {
+    localStorage.setItem(TIMER_LS_KEY, JSON.stringify({
+      active: window.activeTimerData || null,
+      paused: window.pausedTimerData || null
+    }));
+  } catch(e) {}
+}
+
+function _timerLoad() {
+  try {
+    const raw = localStorage.getItem(TIMER_LS_KEY);
+    if (!raw) return;
+    const state = JSON.parse(raw);
+    window.activeTimerData = state.active || null;
+    window.pausedTimerData = state.paused || null;
+  } catch(e) {}
+}
+
+function _timerClear() {
+  try { localStorage.removeItem(TIMER_LS_KEY); } catch(e) {}
+}
+
 window.activeTimerData = null;
 window.pausedTimerData = null;
 let _globalTimerInterval = null;
 
+// Restaurează starea la încărcarea paginii
+_timerLoad();
+
 function startGlobalTimer() {
   stopGlobalTimerInterval();
+  _timerSave();
   _globalTimerInterval = setInterval(updateHeaderTimer, 1000);
   updateHeaderTimer();
 }
@@ -352,44 +380,49 @@ function updateHeaderTimer() {
   }
 }
 
-// Pause from header
+// Pause from header (sau din orice pagina)
 function pauseActiveTimer() {
   if (!window.activeTimerData) return;
-  if (typeof Proiecte !== 'undefined' && Proiecte.pauseTask) {
-    Proiecte.pauseTask(window.activeTimerData.taskId);
-  } else {
-    window.pausedTimerData = Object.assign({}, window.activeTimerData, { pausedAt: Date.now() });
-    window.activeTimerData = null;
-    stopGlobalTimerInterval();
-    updateHeaderTimer();
+  // Actualizăm starea local întâi
+  window.pausedTimerData = Object.assign({}, window.activeTimerData, { pausedAt: Date.now() });
+  window.activeTimerData = null;
+  stopGlobalTimerInterval();
+  _timerSave();
+  updateHeaderTimer();
+  // Notificăm modulul Proiecte dacă e activ (pentru a re-randa butoanele din tabel)
+  if (typeof Proiecte !== 'undefined' && Proiecte.renderProjectDetail) {
+    try { Proiecte.renderProjectDetail(); } catch(e) {}
   }
 }
 
-// Resume from header
+// Resume from header (sau din orice pagina)
 function resumeActiveTimer() {
   if (!window.pausedTimerData) return;
-  if (typeof Proiecte !== 'undefined' && Proiecte.resumeTask) {
-    Proiecte.resumeTask(window.pausedTimerData.taskId);
-  } else {
-    const paused = window.pausedTimerData;
-    const additionalPause = Date.now() - (paused.pausedAt || Date.now());
-    window.activeTimerData = Object.assign({}, paused, { pausedMs: (paused.pausedMs || 0) + additionalPause });
-    delete window.activeTimerData.pausedAt;
-    window.pausedTimerData = null;
-    startGlobalTimer();
+  const paused = window.pausedTimerData;
+  const additionalPause = Date.now() - (paused.pausedAt || Date.now());
+  window.activeTimerData = Object.assign({}, paused, { pausedMs: (paused.pausedMs || 0) + additionalPause });
+  delete window.activeTimerData.pausedAt;
+  window.pausedTimerData = null;
+  _timerSave();
+  startGlobalTimer();
+  // Notificăm modulul Proiecte dacă e activ
+  if (typeof Proiecte !== 'undefined' && Proiecte.renderProjectDetail) {
+    try { Proiecte.renderProjectDetail(); } catch(e) {}
   }
 }
 
-// Stop from header
+// Stop from header (sau din orice pagina)
 function stopActiveTimer() {
   const data = window.activeTimerData || window.pausedTimerData;
   if (!data) return;
+  // Dacă suntem în pagina Proiecte, delegăm stopTask pentru a salva time_entry
   if (typeof Proiecte !== 'undefined' && Proiecte.stopTask) {
     Proiecte.stopTask(data.taskId);
   } else {
     stopGlobalTimerInterval();
     window.activeTimerData = null;
     window.pausedTimerData = null;
+    _timerClear();
     updateHeaderTimer();
   }
 }

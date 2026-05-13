@@ -623,6 +623,7 @@ const Proiecte = {
       pausedMs: 0,
     };
     window.pausedTimerData = null;
+    if (typeof _timerSave === 'function') _timerSave();
     if (typeof startGlobalTimer === 'function') startGlobalTimer();
     this.renderProjectDetail();
     showToast('▶ Task pornit: ' + taskName, 'success');
@@ -633,6 +634,7 @@ const Proiecte = {
     window.pausedTimerData = Object.assign({}, window.activeTimerData, { pausedAt: Date.now() });
     window.activeTimerData = null;
     if (typeof stopGlobalTimerInterval === 'function') stopGlobalTimerInterval();
+    if (typeof _timerSave === 'function') _timerSave();
     if (typeof updateHeaderTimer === 'function') updateHeaderTimer();
     this.renderProjectDetail();
     showToast('⏸ Task în pauză', 'info');
@@ -645,6 +647,7 @@ const Proiecte = {
     window.activeTimerData = Object.assign({}, paused, { pausedMs: (paused.pausedMs || 0) + additionalPause });
     delete window.activeTimerData.pausedAt;
     window.pausedTimerData = null;
+    if (typeof _timerSave === 'function') _timerSave();
     if (typeof startGlobalTimer === 'function') startGlobalTimer();
     if (typeof updateHeaderTimer === 'function') updateHeaderTimer();
     this.renderProjectDetail();
@@ -693,6 +696,7 @@ const Proiecte = {
       showToast('⏹ Task oprit. ' + (h > 0 ? h + 'h ' : '') + m + 'm înregistrate.', 'success');
     }
 
+    if (typeof _timerClear === 'function') _timerClear();
     this.renderProjectDetail();
     if (typeof updateHeaderTimer === 'function') updateHeaderTimer();
   },
