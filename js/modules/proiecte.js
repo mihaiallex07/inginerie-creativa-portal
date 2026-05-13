@@ -113,7 +113,7 @@ const Proiecte = {
 
   async loadProjectDetails(projectId) {
     const [membersRes, phasesRes, tasksRes] = await Promise.all([
-      dbQuery('project_members', q => q.select('*, profiles(id,full_name,name,email,employee_code,role)').eq('project_id', projectId), []),
+      dbQuery('project_members', q => q.select('*, profiles!project_members_user_id_fkey(id,full_name,name,email,employee_code,role)').eq('project_id', projectId), []),
       dbQuery('project_phases', q => q.select('*').eq('project_id', projectId).order('display_order'), []),
       dbQuery('project_tasks', q => q.select('*').eq('project_id', projectId).order('display_order'), []),
     ]);
