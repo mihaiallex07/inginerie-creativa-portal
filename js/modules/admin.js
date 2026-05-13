@@ -72,8 +72,8 @@ const Admin = {
               <tr>
                 <td>
                   <div class="flex items-center gap-2">
-                    ${avatarHtml(u.full_name, u.avatar_url, 'sm')}
-                    <span style="font-weight:600">${u.full_name}</span>
+                    ${avatarHtml(u.full_name || u.name, u.avatar_url, 'sm')}
+                    <span style="font-weight:600">${u.full_name || u.name || u.email || 'Utilizator'}</span>
                   </div>
                 </td>
                 <td class="text-sm text-muted">${u.email}</td>
