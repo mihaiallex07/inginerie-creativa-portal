@@ -31,6 +31,7 @@ let sidebarCollapsed = false;
 
 // ── INIT ─────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
+  initSupabase();
   const profile = await Auth.init();
 
   if (profile) {
