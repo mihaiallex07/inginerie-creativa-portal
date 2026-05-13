@@ -52,8 +52,8 @@ const Admin = {
       <div class="card" style="overflow:hidden">
         <div class="card-header">
           <span class="card-title">Utilizatori (${this.users.length})</span>
-          <button class="btn-brand" style="font-size:12px;padding:5px 12px" onclick="showToast('Invitație prin email disponibilă cu Supabase configurat','warning')">
-            + Invită utilizator
+          <button class="btn-brand" style="font-size:12px;padding:5px 12px" onclick="Admin.openAddUserModal()">
+            + Adaugă angajat
           </button>
         </div>
         <table>
@@ -193,5 +193,108 @@ const Admin = {
   setTab(tab) {
     this.tab = tab;
     this.renderPage();
+  },
+
+  openAddUserModal() {
+    openModal('Adaugă angajat nou', `
+      <div class="space-y-3">
+        <div style="padding:10px 12px;border-radius:8px;background:#fffbea;border:1px solid #ffe066;font-size:13px;color:#7a5c00">
+          ℹ️ Angajatul va fi adăugat fără notificare. Când va intra pe portal cu contul Google <strong>@ingineriecreativa.ro</strong>, contul său va fi legat automat de profilul creat.
+        </div>
+        <div class="form-row form-row-2">
+          <div>
+            <label class="label">Prenume *</label>
+            <input type="text" id="new-user-fname" class="input" placeholder="ex: Maria" />
+          </div>
+          <div>
+            <label class="label">Nume *</label>
+            <input type="text" id="new-user-lname" class="input" placeholder="ex: IONESCU" />
+          </div>
+        </div>
+        <div>
+          <label class="label">Email *</label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="new-user-email-prefix" class="input" placeholder="maria.ionescu" style="flex:1" />
+            <span class="text-sm text-muted" style="white-space:nowrap">@ingineriecreativa.ro</span>
+          </div>
+        </div>
+        <div class="form-row form-row-2">
+          <div>
+            <label class="label">Departament</label>
+            <input type="text" id="new-user-dept" class="input" placeholder="ex: Structuri" />
+          </div>
+          <div>
+            <label class="label">Funcție</label>
+            <input type="text" id="new-user-pos" class="input" placeholder="ex: Inginer proiectant" />
+          </div>
+        </div>
+        <div>
+          <label class="label">Rol</label>
+          <select id="new-user-role" class="select">
+            <option value="angajat" selected>Angajat</option>
+            <option value="coordonator">Coordonator</option>
+            <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div>
+          <label class="label">Cod angajat (opțional)</label>
+          <input type="text" id="new-user-code" class="input" placeholder="ex: MI (apare în cercul galben)" maxlength="4" style="text-transform:uppercase" />
+        </div>
+      </div>
+    `, `
+      <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
+      <button class="btn-brand" onclick="Admin.saveNewUser()">Creează profil</button>
+    `);
+  },
+
+  async saveNewUser() {
+    const fname = document.getElementById('new-user-fname')?.value?.trim();
+    const lname = document.getElementById('new-user-lname')?.value?.trim();
+    const emailPrefix = document.getElementById('new-user-email-prefix')?.value?.trim().toLowerCase();
+    const dept = document.getElementById('new-user-dept')?.value?.trim();
+    const pos = document.getElementById('new-user-pos')?.value?.trim();
+    const role = document.getElementById('new-user-role')?.value || 'angajat';
+    const code = document.getElementById('new-user-code')?.value?.trim().toUpperCase();
+
+    if (!fname || !lname || !emailPrefix) {
+      showToast('Prenume, Nume și Email sunt obligatorii', 'error');
+      return;
+    }
+
+    const email = emailPrefix + '@ingineriecreativa.ro';
+    const fullName = fname + ' ' + lname.toUpperCase();
+
+    // Verifică dacă emailul există deja
+    const existing = this.users.find(u => u.email === email);
+    if (existing) {
+      showToast('Un utilizator cu acest email există deja', 'error');
+      return;
+    }
+
+    // Pre-creăm profilul cu un UUID temporar
+    // Trigger-ul va actualiza id-ul când angajatul se loghează cu Google
+    const tempId = crypto.randomUUID();
+    const profile = {
+      id: tempId,
+      email,
+      full_name: fullName,
+      name: fullName,
+      role,
+      department: dept || null,
+      position: pos || null,
+      employee_code: code || (fname[0] + lname[0]).toUpperCase(),
+      is_pre_created: true,
+    };
+
+    const result = await dbQuery('profiles', q => q.insert(profile).select().single(), null);
+    if (result && result.error) {
+      showToast('Eroare la creare: ' + result.error.message, 'error');
+      return;
+    }
+
+    this.users.push(profile);
+    closeModalForce();
+    showToast('✅ Profil creat pentru ' + fullName + '. Angajatul poate intra acum pe portal cu Google.', 'success');
+    document.getElementById('admin-tab-content').innerHTML = this.renderTab();
   },
 };
