@@ -633,6 +633,7 @@ const Proiecte = {
     window.pausedTimerData = Object.assign({}, window.activeTimerData, { pausedAt: Date.now() });
     window.activeTimerData = null;
     if (typeof stopGlobalTimerInterval === 'function') stopGlobalTimerInterval();
+    if (typeof updateHeaderTimer === 'function') updateHeaderTimer();
     this.renderProjectDetail();
     showToast('⏸ Task în pauză', 'info');
   },
@@ -645,6 +646,7 @@ const Proiecte = {
     delete window.activeTimerData.pausedAt;
     window.pausedTimerData = null;
     if (typeof startGlobalTimer === 'function') startGlobalTimer();
+    if (typeof updateHeaderTimer === 'function') updateHeaderTimer();
     this.renderProjectDetail();
     showToast('▶ Task reluat', 'success');
   },
