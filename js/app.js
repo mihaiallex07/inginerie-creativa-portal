@@ -293,3 +293,57 @@ function showAuthError(elId, message) {
   const el = document.getElementById(elId);
   if (el) { el.style.display = 'block'; el.style.color = ''; el.textContent = message; }
 }
+
+// ── GLOBAL TIMER (shared between Proiecte and TimeTracking) ───
+// window.activeTimerData  = { taskId, taskName, projectId, phaseId, startTime, startHour, startMin, pausedMs }
+// window.pausedTimerData  = same shape + pausedAt
+window.activeTimerData = null;
+window.pausedTimerData = null;
+let _globalTimerInterval = null;
+
+function startGlobalTimer() {
+  stopGlobalTimerInterval();
+  const widget = document.getElementById('timer-widget');
+  if (widget) widget.style.display = 'flex';
+  _globalTimerInterval = setInterval(updateHeaderTimer, 1000);
+  updateHeaderTimer();
+}
+
+function stopGlobalTimerInterval() {
+  if (_globalTimerInterval) {
+    clearInterval(_globalTimerInterval);
+    _globalTimerInterval = null;
+  }
+}
+
+function updateHeaderTimer() {
+  const data = window.activeTimerData;
+  const display = document.getElementById('timer-display');
+  const widget = document.getElementById('timer-widget');
+  if (!data) {
+    if (widget) widget.style.display = 'none';
+    if (display) display.textContent = '00:00:00';
+    return;
+  }
+  if (widget) widget.style.display = 'flex';
+  const elapsed = Math.floor((Date.now() - data.startTime - (data.pausedMs || 0)) / 1000);
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+  if (display) display.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+}
+
+// Called from header stop button
+function stopActiveTimer() {
+  const data = window.activeTimerData || window.pausedTimerData;
+  if (!data) return;
+  if (typeof Proiecte !== 'undefined' && Proiecte.stopTask) {
+    Proiecte.stopTask(data.taskId);
+  } else {
+    stopGlobalTimerInterval();
+    window.activeTimerData = null;
+    window.pausedTimerData = null;
+    updateHeaderTimer();
+  }
+}
+

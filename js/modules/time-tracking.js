@@ -20,15 +20,34 @@ const TimeTracking = {
   async loadData() {
     const weekEnd = new Date(this.currentWeekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    const [entriesRes, projectsRes] = await Promise.all([
-      DB.getTimeEntries(Auth.currentUser?.id, formatDateISO(this.currentWeekStart), formatDateISO(weekEnd)),
+    const userId = Auth.currentUser?.id;
+    const isAdmin = Auth.currentProfile?.role === 'admin';
+
+    const [entriesRes, projectsRes, membershipsRes] = await Promise.all([
+      DB.getTimeEntries(userId, formatDateISO(this.currentWeekStart), formatDateISO(weekEnd)),
       DB.getProjects(),
+      dbQuery('project_members', q => q.select('project_id').eq('user_id', userId), []),
     ]);
     this.entries = entriesRes.data || [];
-    this.projects = (projectsRes.data || []).filter(p => p.status === 'activ');
-    // Load tasks for active projects
+    const allProjects = (projectsRes.data || []).filter(p => p.status === 'activ');
+
+    // Filtrare proiecte: admin vede toate, angajat vede doar proiectele la care e înrolat
+    if (isAdmin) {
+      this.projects = allProjects;
+    } else {
+      const enrolledIds = new Set((membershipsRes.data || []).map(m => m.project_id));
+      this.projects = allProjects.filter(p => enrolledIds.has(p.id));
+    }
+
+    // Load tasks for accessible projects
     const allTasksRes = await Promise.all(this.projects.map(p => DB.getProjectTasks(p.id)));
-    this.tasks = allTasksRes.flatMap(r => r.data || []);
+    const allTasks = allTasksRes.flatMap(r => r.data || []);
+    // Filtrare task-uri: admin/coordonator vede toate, angajat vede doar task-urile asignate lui
+    if (isAdmin) {
+      this.tasks = allTasks;
+    } else {
+      this.tasks = allTasks.filter(t => !t.assigned_user_id || t.assigned_user_id === userId);
+    }
   },
 
   renderPage() {
@@ -249,21 +268,43 @@ const TimeTracking = {
     const taskName = document.getElementById('tt-task')?.value?.trim();
     if (!taskName) { showToast('Completează descrierea activității', 'error'); return; }
 
+    const hour = parseInt(document.getElementById('tt-hour')?.value) || 9;
+    const min = parseInt(document.getElementById('tt-min')?.value) || 0;
+    const projectId = document.getElementById('tt-project')?.value || null;
+    const taskId = document.getElementById('tt-task-id')?.value || null;
+
+    // Găsim phase_id din task selectat
+    let phaseId = null;
+    if (taskId) {
+      const task = this.tasks.find(t => String(t.id) === String(taskId));
+      if (task) phaseId = task.phase_id || null;
+    }
+
     const entry = {
       user_id: Auth.currentUser?.id,
       date: document.getElementById('tt-date')?.value,
-      start_hour: parseInt(document.getElementById('tt-hour')?.value) || 9,
-      start_min: parseInt(document.getElementById('tt-min')?.value) || 0,
+      start_time: String(hour).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':00',
       duration_minutes: parseInt(document.getElementById('tt-duration')?.value) || 60,
       task_name: taskName,
       activity_type: document.getElementById('tt-type')?.value || 'proiectare',
-      project_id: parseInt(document.getElementById('tt-project')?.value) || null,
-      task_id: parseInt(document.getElementById('tt-task-id')?.value) || null,
-      count_in_time: document.getElementById('tt-count')?.checked ?? true,
+      project_id: projectId ? parseInt(projectId) : null,
+      project_task_id: taskId ? parseInt(taskId) : null,
+      phase_id: phaseId,
+      is_billable: document.getElementById('tt-count')?.checked ?? true,
+      status: 'draft',
     };
 
-    const { error } = await DB.createTimeEntry(entry);
-    if (error) { showToast('Eroare la salvare: ' + error.message, 'error'); return; }
+    const result = await dbQuery('time_entries', q => q.insert(entry).select().single(), null);
+    if (result && result.error) { showToast('Eroare la salvare: ' + result.error.message, 'error'); return; }
+
+    // Actualizează minutes_worked pe task dacă e selectat
+    if (taskId && entry.duration_minutes) {
+      const task = this.tasks.find(t => String(t.id) === String(taskId));
+      if (task) {
+        const newMinutes = (task.minutes_worked || 0) + entry.duration_minutes;
+        await dbQuery('project_tasks', q => q.update({ minutes_worked: newMinutes }).eq('id', taskId), null);
+      }
+    }
 
     closeModalForce();
     showToast('Activitate salvată', 'success');
@@ -352,51 +393,6 @@ function isLightColor(hex) {
   return (r * 299 + g * 587 + b * 114) / 1000 > 128;
 }
 
-// Active timer (global)
-let activeTimerData = null;
-let timerIntervalId = null;
-
-function startTimer(taskName, projectId) {
-  activeTimerData = {
-    taskName,
-    projectId,
-    startTime: Date.now(),
-    startHour: new Date().getHours(),
-    startMin: new Date().getMinutes(),
-  };
-  const widget = document.getElementById('timer-widget');
-  if (widget) widget.style.display = 'flex';
-  timerIntervalId = setInterval(updateTimerDisplay, 1000);
-}
-
-function updateTimerDisplay() {
-  if (!activeTimerData) return;
-  const elapsed = Math.floor((Date.now() - activeTimerData.startTime) / 1000);
-  const h = Math.floor(elapsed / 3600);
-  const m = Math.floor((elapsed % 3600) / 60);
-  const s = elapsed % 60;
-  const display = document.getElementById('timer-display');
-  if (display) display.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
-}
-
-function stopActiveTimer() {
-  if (!activeTimerData) return;
-  clearInterval(timerIntervalId);
-  const elapsed = Math.floor((Date.now() - activeTimerData.startTime) / 1000);
-  const minutes = Math.max(1, Math.round(elapsed / 60));
-  const widget = document.getElementById('timer-widget');
-  if (widget) widget.style.display = 'none';
-
-  // Pre-fill add modal with timer data
-  TimeTracking.openAddModal(getTodayStr(), activeTimerData.startHour);
-  setTimeout(() => {
-    const taskInput = document.getElementById('tt-task');
-    const durationInput = document.getElementById('tt-duration');
-    const minInput = document.getElementById('tt-min');
-    if (taskInput) taskInput.value = activeTimerData.taskName || '';
-    if (durationInput) durationInput.value = minutes;
-    if (minInput) minInput.value = activeTimerData.startMin;
-  }, 100);
-
-  activeTimerData = null;
-}
+// Timer functions are now handled globally in app.js
+// startGlobalTimer(), stopGlobalTimerInterval(), updateHeaderTimer(), stopActiveTimer()
+// window.activeTimerData and window.pausedTimerData are the shared state

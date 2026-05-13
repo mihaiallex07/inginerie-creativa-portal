@@ -1,210 +1,1194 @@
 // ============================================================
-// Proiecte Module — Portal Inginerie Creativă
+// MODUL PROIECTE — Portal Inginerie Creativă
+// Etape prestabilite, buget ore, coordonatori, echipă, timer
 // ============================================================
+
+// Etape și task-uri prestabilite din PDF
+const PRESET_PHASES = [
+  {
+    code: 'A', name: 'Contractare / Administrativ pe proiect', color: '#3B82F6',
+    tasks: [
+      'Cunoaștere beneficiar',
+      'Discuții prezentare concept / design&build / contract concept',
+      'Deviz estimativ',
+      'Prezentare deviz estimativ către beneficiar',
+      'Elaborare contract',
+      'Facturi',
+      'Verificare ore',
+      'Comunicare pe mail',
+      'Comunicare cu beneficiarul',
+      'Livrare',
+    ]
+  },
+  {
+    code: 'B', name: 'Proiectare Structură', color: '#8B5CF6',
+    tasks: [
+      'Temă de proiectare',
+      'Modelare 3D Draft 1 — Calcul structural',
+      'Modelare 3D Draft 1 — Modelare',
+      'Modelare 3D Draft 2',
+      'Verificare de către coordonator',
+      'Implementare feedback de la coordonator',
+      'Prezentare model 3D',
+      'Implementare feedback după prezentarea către beneficiar',
+      'Redactare — Piese desenate (modelator)',
+      'Redactare — Piese scrise (coordonator)',
+      'Redactare — Liste de cantități',
+      'Livrare electronică (coordonator)',
+    ]
+  },
+  {
+    code: 'C', name: 'Proiectare Arhitectură', color: '#EC4899',
+    tasks: [
+      'Temă de proiectare',
+      'Modelare 3D Draft 1',
+      'Modelare 3D Draft 2',
+      'Verificare de către coordonator',
+      'Implementare feedback de la coordonator',
+      'Prezentare model 3D',
+      'Implementare feedback după prezentarea către beneficiar',
+      'Redactare — Piese desenate (modelator)',
+      'Redactare — Piese scrise (coordonator)',
+      'Redactare — Liste de cantități',
+      'Livrare electronică (coordonator)',
+    ]
+  },
+  {
+    code: 'D', name: 'Proiectare Instalații', color: '#F59E0B',
+    tasks: [
+      'Temă de proiectare',
+      'Modelare 3D Draft 1',
+      'Modelare 3D Draft 2',
+      'Verificare',
+      'Implementare feedback',
+      'Prezentare model 3D',
+      'Implementare feedback după prezentarea către beneficiar',
+      'Redactare — Piese desenate',
+      'Redactare — Piese scrise',
+      'Redactare — Liste de cantități',
+      'Livrare electronică',
+    ]
+  },
+  {
+    code: 'E', name: 'Execuție', color: '#EF4444',
+    tasks: [
+      'Deviz',
+      'Achiziții',
+      'Planificare',
+      'Urmărire șantier',
+      'Rapoarte',
+      'Predare',
+    ]
+  },
+  {
+    code: 'F', name: 'Social Media (pe proiect)', color: '#10B981',
+    tasks: [
+      'Creare conținut',
+    ]
+  },
+];
 
 const Proiecte = {
   projects: [],
-  search: '',
-  filter: 'toate',
+  currentProject: null,
+  currentTab: 'etape',
+  members: [],
+  phases: [],
+  tasks: [],
+  allUsers: [],
 
-  async render() {
-    const { data } = await DB.getProjects();
-    this.projects = data || [];
-    this.renderPage();
+  async init() {
+    await this.loadData();
+    this.renderList();
   },
 
-  renderPage() {
-    const canManage = Auth.isCoordinator();
-    let filtered = this.projects;
-    if (this.filter !== 'toate') filtered = filtered.filter(p => p.status === this.filter);
-    if (this.search) filtered = filtered.filter(p =>
-      p.name.toLowerCase().includes(this.search.toLowerCase()) ||
-      (p.client_name || '').toLowerCase().includes(this.search.toLowerCase())
-    );
+  async loadData() {
+    const [projRes, usersRes] = await Promise.all([
+      DB.getProjects(),
+      DB.getUsers(),
+    ]);
+    this.projects = projRes.data || [];
+    this.allUsers = usersRes.data || [];
+  },
 
-    document.getElementById('page-content').innerHTML = `
-      <div style="max-width:900px">
-        <div class="page-header">
-          <div>
-            <h1 class="page-title">Proiecte</h1>
-            <p class="page-subtitle">Proiecte active și arhivate</p>
-          </div>
-          ${canManage ? `<button class="btn-brand" onclick="Proiecte.openNewModal()">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-            Proiect nou
-          </button>` : ''}
-        </div>
+  async loadProjectDetails(projectId) {
+    const [membersRes, phasesRes, tasksRes] = await Promise.all([
+      dbQuery('project_members', q => q.select('*, profiles(id,full_name,name,email,employee_code,role)').eq('project_id', projectId), []),
+      dbQuery('project_phases', q => q.select('*').eq('project_id', projectId).order('display_order'), []),
+      dbQuery('project_tasks', q => q.select('*').eq('project_id', projectId).order('display_order'), []),
+    ]);
+    this.members = membersRes.data || [];
+    this.phases = phasesRes.data || [];
+    this.tasks = tasksRes.data || [];
+  },
 
-        <!-- Filters -->
-        <div class="flex gap-2 mb-4">
-          ${searchInput('proj-search', 'Caută proiecte...', 'Proiecte.onSearch(this.value)')}
-          <select class="select" style="width:160px" onchange="Proiecte.onFilter(this.value)">
-            <option value="toate">Toate statusurile</option>
-            <option value="activ">Active</option>
-            <option value="finalizat">Finalizate</option>
-            <option value="suspendat">Suspendate</option>
-          </select>
-        </div>
+  renderList() {
+    const profile = Auth.currentProfile;
+    const isAdmin = profile && profile.role === 'admin';
+    const container = document.getElementById('page-content');
+    if (!container) return;
 
-        <!-- Projects grid -->
-        <div class="grid-3">
-          ${filtered.length === 0 ? `<div style="grid-column:1/-1">${emptyState('Nu există proiecte')}</div>` :
-            filtered.map(p => this.renderCard(p)).join('')
-          }
+    const statusColors = { activ: 'green', in_asteptare: 'yellow', finalizat: 'gray', anulat: 'red' };
+    const statusLabels = { activ: 'Activ', in_asteptare: 'În așteptare', finalizat: 'Finalizat', anulat: 'Anulat' };
+
+    const cards = this.projects.length === 0
+      ? `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted)">
+          <div style="font-size:48px;margin-bottom:12px">📋</div>
+          <p>Nu există proiecte încă.</p>
+          ${isAdmin ? `<button class="btn-primary" style="margin-top:12px" onclick="Proiecte.openCreateModal()">Creează primul proiect</button>` : ''}
+        </div>`
+      : this.projects.map(p => this.renderProjectCard(p, statusColors, statusLabels)).join('');
+
+    container.innerHTML = `
+      <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px">
+        <div>
+          <h1 class="page-title">Proiecte</h1>
+          <p class="page-subtitle">Gestionare proiecte și buget ore</p>
         </div>
+        ${isAdmin ? `<button class="btn-primary" onclick="Proiecte.openCreateModal()">+ Proiect nou</button>` : ''}
+      </div>
+
+      <div style="display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap">
+        <button class="btn-filter active" onclick="Proiecte.filterProjects('all',this)">Toate (${this.projects.length})</button>
+        <button class="btn-filter" onclick="Proiecte.filterProjects('activ',this)">Active (${this.projects.filter(p=>p.status==='activ').length})</button>
+        <button class="btn-filter" onclick="Proiecte.filterProjects('in_asteptare',this)">În așteptare (${this.projects.filter(p=>p.status==='in_asteptare').length})</button>
+        <button class="btn-filter" onclick="Proiecte.filterProjects('finalizat',this)">Finalizate (${this.projects.filter(p=>p.status==='finalizat').length})</button>
+      </div>
+
+      <div id="projects-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px">
+        ${cards}
       </div>
     `;
   },
 
-  renderCard(p) {
-    const pct = p.budget_hours > 0 ? Math.min(100, Math.round(p.used_hours / p.budget_hours * 100)) : 0;
-    const colorClass = pct >= 90 ? 'danger' : pct >= 70 ? 'warning' : '';
+  renderProjectCard(p, statusColors, statusLabels) {
+    const consumed = p.consumed_hours || 0;
+    const budget = p.budget_hours || 0;
+    const pct = budget > 0 ? Math.min(100, Math.round((consumed / budget) * 100)) : 0;
+    const barColor = pct > 90 ? '#EF4444' : pct > 70 ? '#F59E0B' : '#10B981';
+    const color = p.color || '#3B82F6';
+
     return `
-      <div class="project-card" onclick="Proiecte.openDetail(${p.id})">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div class="project-emoji">${p.emoji || '📁'}</div>
-          ${statusBadge(p.status)}
-        </div>
-        <div class="project-name">${p.name}</div>
-        <div class="project-client">${p.client_name || ''}</div>
-        <div class="text-xs text-muted mb-2">${p.code || ''}</div>
-        ${progressBar(p.used_hours || 0, p.budget_hours || 0)}
-        <div class="flex justify-between text-xs text-muted mt-2">
-          <span>${p.start_date ? formatDate(p.start_date) : '—'}</span>
-          <span>${p.end_date ? formatDate(p.end_date) : '—'}</span>
-        </div>
-      </div>
-    `;
-  },
-
-  async openDetail(id) {
-    const project = this.projects.find(p => p.id === id);
-    if (!project) return;
-    const { data: tasks } = await DB.getProjectTasks(id);
-    const taskList = tasks || [];
-    const totalUsed = taskList.reduce((s, t) => s + (t.used_hours || 0), 0);
-
-    openModal(project.name, `
-      <div class="space-y-4">
-        <div class="flex items-center gap-3">
-          <span style="font-size:32px">${project.emoji || '📁'}</span>
-          <div>
-            <div style="font-size:16px;font-weight:700">${project.name}</div>
-            <div class="text-sm text-muted">${project.client_name || ''} · ${project.code || ''}</div>
-          </div>
-          ${statusBadge(project.status)}
-        </div>
-        ${project.description ? `<p class="text-sm" style="color:var(--text-muted)">${project.description}</p>` : ''}
-        <div class="form-row form-row-2">
-          <div class="card p-3">
-            <div class="text-xs text-muted mb-1">Ore buget</div>
-            <div style="font-size:20px;font-weight:700">${project.budget_hours || 0}h</div>
-          </div>
-          <div class="card p-3">
-            <div class="text-xs text-muted mb-1">Ore folosite</div>
-            <div style="font-size:20px;font-weight:700">${project.used_hours || 0}h</div>
-          </div>
-        </div>
-        ${progressBar(project.used_hours || 0, project.budget_hours || 0)}
-        ${taskList.length > 0 ? `
-          <div>
-            <div style="font-size:13px;font-weight:700;margin-bottom:8px">Task-uri (${taskList.length})</div>
-            <div class="space-y-2">
-              ${taskList.map(t => `
-                <div class="flex items-center gap-3 p-2 rounded border">
-                  ${statusBadge(t.status)}
-                  <span style="flex:1;font-size:13px">${t.name}</span>
-                  <span class="text-xs text-muted">${t.used_hours || 0}h / ${t.budget_hours || 0}h</span>
-                  <button class="btn-brand" style="font-size:11px;padding:3px 8px" onclick="closeModalForce();TimeTracking.openAddModal('${getTodayStr()}');setTimeout(()=>{const s=document.getElementById('tt-project');if(s){s.value='${project.id}';TimeTracking.onProjectChange('${project.id}');setTimeout(()=>{const ts=document.getElementById('tt-task-id');if(ts)ts.value='${t.id}';},100);}},100)">
-                    ▶ Start
-                  </button>
-                </div>
-              `).join('')}
+      <div class="project-card" onclick="Proiecte.openProject(${p.id})" style="cursor:pointer;background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:20px;transition:box-shadow 0.2s;border-left:4px solid ${color}">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px">
+          <div style="display:flex;align-items:center;gap:10px">
+            <div style="width:40px;height:40px;border-radius:8px;background:${color}20;display:flex;align-items:center;justify-content:center;font-weight:700;color:${color};font-size:14px">${p.code || '?'}</div>
+            <div>
+              <div style="font-weight:600;font-size:15px">${p.name}</div>
+              <div style="font-size:12px;color:var(--text-muted)">${p.client_name || 'Fără client'}</div>
             </div>
           </div>
-        ` : ''}
+          <span class="badge badge-${statusColors[p.status] || 'gray'}">${statusLabels[p.status] || p.status}</span>
+        </div>
+        <div style="margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted);margin-bottom:4px">
+            <span>Ore lucrate</span>
+            <span style="font-weight:600;color:var(--text)">${consumed}h / ${budget}h (${pct}%)</span>
+          </div>
+          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width 0.3s"></div>
+          </div>
+        </div>
+        <div style="font-size:12px;color:var(--text-muted)">
+          📅 ${p.start_date ? formatDate(p.start_date) : '—'} → ${p.end_date ? formatDate(p.end_date) : '—'}
+        </div>
       </div>
-    `, `<button class="btn-secondary" onclick="closeModalForce()">Închide</button>`);
+    `;
   },
 
-  openNewModal() {
+  filterProjects(filter, btn) {
+    document.querySelectorAll('.btn-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const grid = document.getElementById('projects-grid');
+    if (!grid) return;
+    const filtered = filter === 'all' ? this.projects : this.projects.filter(p => p.status === filter);
+    const statusColors = { activ: 'green', in_asteptare: 'yellow', finalizat: 'gray', anulat: 'red' };
+    const statusLabels = { activ: 'Activ', in_asteptare: 'În așteptare', finalizat: 'Finalizat', anulat: 'Anulat' };
+    grid.innerHTML = filtered.length === 0
+      ? `<div style="grid-column:1/-1;text-align:center;padding:60px;color:var(--text-muted)">Niciun proiect în această categorie.</div>`
+      : filtered.map(p => this.renderProjectCard(p, statusColors, statusLabels)).join('');
+  },
+
+  async openProject(projectId) {
+    this.currentProject = this.projects.find(p => p.id === projectId);
+    if (!this.currentProject) return;
+    await this.loadProjectDetails(projectId);
+    this.currentTab = 'etape';
+    this.renderProjectDetail();
+  },
+
+  renderProjectDetail() {
+    const p = this.currentProject;
+    if (!p) return;
+    const profile = Auth.currentProfile;
+    const isAdmin = profile && profile.role === 'admin';
+    const isCoord = this.members.some(m => m.user_id === profile.id && m.role === 'coordonator');
+    const canEdit = isAdmin || isCoord;
+
+    const container = document.getElementById('page-content');
+    if (!container) return;
+
+    const consumed = p.consumed_hours || 0;
+    const budget = p.budget_hours || 0;
+    const pct = budget > 0 ? Math.min(100, Math.round((consumed / budget) * 100)) : 0;
+    const barColor = pct > 90 ? '#EF4444' : pct > 70 ? '#F59E0B' : '#10B981';
+    const color = p.color || '#3B82F6';
+
+    container.innerHTML = `
+      <div style="margin-bottom:20px">
+        <button class="btn-secondary" onclick="Proiecte.backToList()" style="margin-bottom:16px">← Înapoi la proiecte</button>
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:52px;height:52px;border-radius:10px;background:${color}20;display:flex;align-items:center;justify-content:center;font-weight:700;color:${color};font-size:18px">${p.code || '?'}</div>
+            <div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <h2 style="font-size:20px;font-weight:700;margin:0">${p.name}</h2>
+                <span class="badge badge-green">${p.status === 'activ' ? 'Activ' : (p.status || '')}</span>
+              </div>
+              <div style="font-size:13px;color:var(--text-muted);margin-top:2px">
+                Cod: <strong>${p.code || '—'}</strong> &nbsp;·&nbsp;
+                Client: <strong>${p.client_name || '—'}</strong> &nbsp;·&nbsp;
+                Perioadă: <strong>${p.start_date ? formatDate(p.start_date) : '—'} – ${p.end_date ? formatDate(p.end_date) : '—'}</strong>
+              </div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            ${canEdit ? `<button class="btn-secondary" onclick="Proiecte.openEditProject()">⚙ Setări</button>` : ''}
+            ${canEdit ? `<button class="btn-primary" onclick="Proiecte.openAddPhaseModal()">+ Etapă</button>` : ''}
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding:12px 16px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px">
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">
+            <span style="color:var(--text-muted)">Progres total ore</span>
+            <span style="font-weight:600;color:${barColor}">${consumed}h lucrate din ${budget}h bugetate (${pct}%)</span>
+          </div>
+          <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:4px;transition:width 0.4s"></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;gap:0;border-bottom:2px solid var(--border);margin-bottom:20px">
+        ${['etape','echipa','rapoarte'].map(tab => `
+          <button onclick="Proiecte.switchTab('${tab}')" id="tab-${tab}" style="padding:10px 20px;border:none;background:none;cursor:pointer;font-size:14px;font-weight:${this.currentTab===tab?'600':'400'};color:${this.currentTab===tab?'var(--primary)':'var(--text-muted)'};border-bottom:${this.currentTab===tab?'2px solid var(--primary)':'2px solid transparent'};margin-bottom:-2px;transition:all 0.2s">
+            ${{etape:'Etape & Sarcini',echipa:'Echipă',rapoarte:'Rapoarte'}[tab]}
+          </button>
+        `).join('')}
+      </div>
+
+      <div id="tab-content">
+        ${this.renderTab(this.currentTab, canEdit)}
+      </div>
+    `;
+  },
+
+  renderTab(tab, canEdit) {
+    if (tab === 'etape') return this.renderEtapeTab(canEdit);
+    if (tab === 'echipa') return this.renderEchipaTab(canEdit);
+    if (tab === 'rapoarte') return this.renderRapoarteTab();
+    return '';
+  },
+
+  renderEtapeTab(canEdit) {
+    if (this.phases.length === 0) {
+      return `
+        <div style="text-align:center;padding:60px;color:var(--text-muted)">
+          <div style="font-size:48px;margin-bottom:12px">📋</div>
+          <p>Nu există etape definite pentru acest proiect.</p>
+          ${canEdit ? `<button class="btn-primary" style="margin-top:12px" onclick="Proiecte.openAddPhaseModal()">Adaugă prima etapă</button>` : ''}
+        </div>
+      `;
+    }
+
+    return `
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+          <h3 style="font-size:16px;font-weight:600;margin:0">Etape de lucru</h3>
+          ${canEdit ? `<button class="btn-primary btn-sm" onclick="Proiecte.openAddPhaseModal()">+ Adaugă etapă</button>` : ''}
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:var(--bg-secondary);font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px">
+                <th style="padding:10px 16px;text-align:left">Etapă / Sarcină</th>
+                <th style="padding:10px 12px;text-align:center;width:100px">Buget (H)</th>
+                <th style="padding:10px 12px;text-align:center;width:100px">Lucrat (H)</th>
+                <th style="padding:10px 12px;text-align:center;width:100px">Rămas (H)</th>
+                <th style="padding:10px 12px;text-align:left;width:160px">Progres</th>
+                <th style="padding:10px 12px;text-align:left;width:160px">Responsabil</th>
+                <th style="padding:10px 12px;width:120px"></th>
+              </tr>
+            </thead>
+            ${this.phases.map(phase => this.renderPhaseRows(phase, canEdit)).join('')}
+          </table>
+        </div>
+      </div>
+    `;
+  },
+
+  renderPhaseRows(phase, canEdit) {
+    const phaseTasks = this.tasks.filter(t => t.phase_id === phase.id);
+    const budgetH = phase.budget_hours || 0;
+    const workedMin = phaseTasks.reduce((sum, t) => sum + (t.minutes_worked || 0), 0);
+    const workedH = Math.round(workedMin / 60 * 10) / 10;
+    const remainH = Math.max(0, budgetH - workedH);
+    const pct = budgetH > 0 ? Math.min(100, Math.round((workedH / budgetH) * 100)) : 0;
+    const barColor = pct > 90 ? '#EF4444' : pct > 70 ? '#F59E0B' : '#10B981';
+    const color = phase.color || '#3B82F6';
+    const phaseBodyId = 'phasebody-' + phase.id;
+
+    const phaseRow = `
+      <tbody>
+        <tr style="border-top:2px solid var(--border);background:var(--bg-secondary)">
+          <td style="padding:10px 16px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <button onclick="Proiecte.togglePhase('${phaseBodyId}')" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:11px;padding:2px 4px;line-height:1">▼</button>
+              <div style="width:12px;height:12px;border-radius:3px;background:${color};flex-shrink:0"></div>
+              <strong style="font-size:14px">${phase.code ? phase.code + '. ' : ''}${phase.name}</strong>
+              <span style="font-size:11px;color:var(--text-muted)">(${phaseTasks.length} sarcini)</span>
+            </div>
+          </td>
+          <td style="padding:10px 12px;text-align:center">
+            ${canEdit ? `<input type="number" value="${budgetH}" min="0" style="width:70px;text-align:center;padding:4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)" onchange="Proiecte.updatePhaseBudget(${phase.id},this.value)">` : `<strong>${budgetH}h</strong>`}
+          </td>
+          <td style="padding:10px 12px;text-align:center;color:#3B82F6;font-weight:600">${workedH}h</td>
+          <td style="padding:10px 12px;text-align:center;color:var(--text-muted)">${remainH}h</td>
+          <td style="padding:10px 12px">
+            <div style="display:flex;align-items:center;gap:6px">
+              <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+                <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px"></div>
+              </div>
+              <span style="font-size:11px;color:var(--text-muted);width:30px">${pct}%</span>
+            </div>
+          </td>
+          <td style="padding:10px 12px;font-size:12px;color:var(--text-muted)">—</td>
+          <td style="padding:10px 12px;text-align:right">
+            ${canEdit ? `
+              <button onclick="Proiecte.openAddTaskModal(${phase.id})" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:13px;margin-right:6px" title="Adaugă sarcină">＋</button>
+              <button onclick="Proiecte.deletePhase(${phase.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:13px" title="Șterge etapă">🗑</button>
+            ` : ''}
+          </td>
+        </tr>
+      </tbody>
+      <tbody id="${phaseBodyId}">
+        ${phaseTasks.map((task, idx) => this.renderTaskRow(task, idx + 1, canEdit, budgetH)).join('')}
+        ${canEdit ? `
+          <tr style="border-top:1px solid var(--border)">
+            <td colspan="7" style="padding:6px 16px 6px 52px">
+              <button onclick="Proiecte.openAddTaskModal(${phase.id})" style="background:none;border:none;cursor:pointer;color:var(--primary);font-size:12px">＋ Adaugă sarcină</button>
+            </td>
+          </tr>
+        ` : ''}
+      </tbody>
+    `;
+    return phaseRow;
+  },
+
+  renderTaskRow(task, idx, canEdit, phaseBudget) {
+    const workedH = Math.round((task.minutes_worked || 0) / 60 * 10) / 10;
+    const budgetH = task.budget_hours || 0;
+    const remainH = Math.max(0, budgetH - workedH);
+    const pct = budgetH > 0 ? Math.min(100, Math.round((workedH / budgetH) * 100)) : 0;
+    const barColor = pct > 90 ? '#EF4444' : pct > 70 ? '#F59E0B' : '#10B981';
+    const assignee = task.assigned_user_id ? this.getUserName(task.assigned_user_id) : null;
+    const profile = Auth.currentProfile;
+    const isAssigned = task.assigned_user_id === profile.id;
+    const canStart = isAssigned || canEdit;
+
+    return `
+      <tr style="border-top:1px solid var(--border);font-size:13px" id="task-row-${task.id}">
+        <td style="padding:8px 16px 8px 52px">
+          <span style="color:var(--text-muted);margin-right:8px">${idx}.</span>
+          ${task.name}
+        </td>
+        <td style="padding:8px 12px;text-align:center">
+          ${canEdit ? `<input type="number" value="${budgetH}" min="0" style="width:70px;text-align:center;padding:3px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text);font-size:12px" onchange="Proiecte.updateTaskBudget(${task.id},${task.phase_id},this.value,${phaseBudget})">` : `${budgetH}h`}
+        </td>
+        <td style="padding:8px 12px;text-align:center;color:#3B82F6">${workedH}h</td>
+        <td style="padding:8px 12px;text-align:center;color:var(--text-muted)">${remainH}h</td>
+        <td style="padding:8px 12px">
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="flex:1;height:4px;background:var(--border);border-radius:2px;overflow:hidden">
+              <div style="height:100%;width:${pct}%;background:${barColor};border-radius:2px"></div>
+            </div>
+            <span style="font-size:11px;color:var(--text-muted);width:30px">${pct}%</span>
+          </div>
+        </td>
+        <td style="padding:8px 12px;font-size:12px">
+          ${canEdit ? `
+            <button onclick="Proiecte.openAssignModal(${task.id})" style="background:none;border:none;cursor:pointer;font-size:12px" title="Asignează">
+              ${assignee ? `<span style="color:var(--text)">${assignee}</span>` : '<span style="color:var(--text-muted)">👤 Asignează</span>'}
+            </button>
+          ` : (assignee || '—')}
+        </td>
+        <td style="padding:8px 12px;text-align:right;white-space:nowrap">
+          ${canStart ? this.renderTimerBtn(task) : ''}
+          ${canEdit ? `
+            <button onclick="Proiecte.deleteTask(${task.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:12px;margin-left:4px" title="Șterge">🗑</button>
+          ` : ''}
+        </td>
+      </tr>
+    `;
+  },
+
+  renderTimerBtn(task) {
+    const isRunning = window.activeTimerData && window.activeTimerData.taskId === task.id;
+    const isPaused = window.pausedTimerData && window.pausedTimerData.taskId === task.id;
+    if (isRunning) {
+      return `
+        <button onclick="Proiecte.pauseTask(${task.id})" style="background:#F59E0B20;border:1px solid #F59E0B;color:#F59E0B;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">⏸ Pauză</button>
+        <button onclick="Proiecte.stopTask(${task.id})" style="background:#EF444420;border:1px solid #EF4444;color:#EF4444;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px;margin-left:2px">⏹ Stop</button>
+      `;
+    }
+    if (isPaused) {
+      return `
+        <button onclick="Proiecte.resumeTask(${task.id})" style="background:#10B98120;border:1px solid #10B981;color:#10B981;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">▶ Reia</button>
+        <button onclick="Proiecte.stopTask(${task.id})" style="background:#EF444420;border:1px solid #EF4444;color:#EF4444;border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px;margin-left:2px">⏹ Stop</button>
+      `;
+    }
+    const taskNameEsc = (task.name || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    return `<button onclick="Proiecte.startTask(${task.id},'${taskNameEsc}',${task.project_id},${task.phase_id})" style="background:var(--primary-light,#3B82F620);border:1px solid var(--primary);color:var(--primary);border-radius:4px;padding:3px 8px;cursor:pointer;font-size:11px">▶ Start</button>`;
+  },
+
+  renderEchipaTab(canEdit) {
+    const coords = this.members.filter(m => m.role === 'coordonator');
+    const angajati = this.members.filter(m => m.role === 'angajat');
+
+    return `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="font-size:15px;font-weight:600;margin:0">Coordonatori (${coords.length})</h3>
+            ${canEdit ? `<button class="btn-sm btn-secondary" onclick="Proiecte.openAddMemberModal('coordonator')">+ Adaugă</button>` : ''}
+          </div>
+          ${coords.length === 0 ? `<p style="color:var(--text-muted);font-size:13px">Niciun coordonator asignat.</p>` : ''}
+          ${coords.map(m => this.renderMemberCard(m, canEdit)).join('')}
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <h3 style="font-size:15px;font-weight:600;margin:0">Angajați (${angajati.length})</h3>
+            ${canEdit ? `<button class="btn-sm btn-secondary" onclick="Proiecte.openAddMemberModal('angajat')">+ Adaugă</button>` : ''}
+          </div>
+          ${angajati.length === 0 ? `<p style="color:var(--text-muted);font-size:13px">Niciun angajat asignat.</p>` : ''}
+          ${angajati.map(m => this.renderMemberCard(m, canEdit)).join('')}
+        </div>
+      </div>
+    `;
+  },
+
+  renderMemberCard(m, canEdit) {
+    const u = m.profiles || {};
+    const name = u.full_name || u.name || u.email || 'Utilizator';
+    const code = u.employee_code || '??';
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--card-bg);border:1px solid var(--border);border-radius:8px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <div style="width:36px;height:36px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:13px">${code}</div>
+          <div>
+            <div style="font-weight:600;font-size:13px">${name}</div>
+            <div style="font-size:11px;color:var(--text-muted)">${u.email || ''}</div>
+          </div>
+        </div>
+        ${canEdit ? `<button onclick="Proiecte.removeMember(${m.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:13px" title="Elimină">✕</button>` : ''}
+      </div>
+    `;
+  },
+
+  renderRapoarteTab() {
+    const totalBudget = this.phases.reduce((s, p) => s + (p.budget_hours || 0), 0);
+    const totalWorked = this.tasks.reduce((s, t) => s + Math.round((t.minutes_worked || 0) / 60 * 10) / 10, 0);
+    const pct = totalBudget > 0 ? Math.min(100, Math.round((totalWorked / totalBudget) * 100)) : 0;
+
+    return `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:24px">
+        <div style="padding:20px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:var(--primary)">${totalBudget}h</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Ore bugetate total</div>
+        </div>
+        <div style="padding:20px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:#10B981">${totalWorked}h</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Ore lucrate</div>
+        </div>
+        <div style="padding:20px;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;text-align:center">
+          <div style="font-size:28px;font-weight:700;color:${pct > 90 ? '#EF4444' : '#F59E0B'}">${pct}%</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px">Progres</div>
+        </div>
+      </div>
+
+      <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:20px">
+        <h3 style="font-size:15px;font-weight:600;margin:0 0 16px">Ore pe etapă</h3>
+        ${this.phases.map(phase => {
+          const phaseTasks = this.tasks.filter(t => t.phase_id === phase.id);
+          const worked = phaseTasks.reduce((s, t) => s + Math.round((t.minutes_worked || 0) / 60 * 10) / 10, 0);
+          const budget = phase.budget_hours || 0;
+          const p = budget > 0 ? Math.min(100, Math.round((worked / budget) * 100)) : 0;
+          const barColor = p > 90 ? '#EF4444' : p > 70 ? '#F59E0B' : '#10B981';
+          return `
+            <div style="margin-bottom:12px">
+              <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+                <span>${phase.code ? phase.code + '. ' : ''}${phase.name}</span>
+                <span style="color:var(--text-muted)">${worked}h / ${budget}h</span>
+              </div>
+              <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden">
+                <div style="height:100%;width:${p}%;background:${barColor};border-radius:4px"></div>
+              </div>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  },
+
+  switchTab(tab) {
+    this.currentTab = tab;
+    const profile = Auth.currentProfile;
+    const isAdmin = profile && profile.role === 'admin';
+    const isCoord = this.members.some(m => m.user_id === profile.id && m.role === 'coordonator');
+    const canEdit = isAdmin || isCoord;
+
+    ['etape', 'echipa', 'rapoarte'].forEach(t => {
+      const btn = document.getElementById('tab-' + t);
+      if (btn) {
+        btn.style.fontWeight = t === tab ? '600' : '400';
+        btn.style.color = t === tab ? 'var(--primary)' : 'var(--text-muted)';
+        btn.style.borderBottom = t === tab ? '2px solid var(--primary)' : '2px solid transparent';
+      }
+    });
+    const content = document.getElementById('tab-content');
+    if (content) content.innerHTML = this.renderTab(tab, canEdit);
+  },
+
+  togglePhase(phaseBodyId) {
+    const tbody = document.getElementById(phaseBodyId);
+    if (!tbody) return;
+    tbody.style.display = tbody.style.display === 'none' ? '' : 'none';
+  },
+
+  backToList() {
+    this.currentProject = null;
+    this.renderList();
+  },
+
+  getUserName(userId) {
+    const u = this.allUsers.find(u => u.id === userId);
+    return u ? (u.full_name || u.name || u.email) : String(userId);
+  },
+
+  // ===== TIMER =====
+  startTask(taskId, taskName, projectId, phaseId) {
+    if (window.activeTimerData) {
+      showToast('Oprește task-ul activ înainte de a începe altul.', 'warning');
+      return;
+    }
+    const now = new Date();
+    window.activeTimerData = {
+      taskId, taskName, projectId, phaseId,
+      startTime: Date.now(),
+      startHour: now.getHours(),
+      startMin: now.getMinutes(),
+      pausedMs: 0,
+    };
+    window.pausedTimerData = null;
+    if (typeof startGlobalTimer === 'function') startGlobalTimer();
+    this.renderProjectDetail();
+    showToast('▶ Task pornit: ' + taskName, 'success');
+  },
+
+  pauseTask(taskId) {
+    if (!window.activeTimerData || window.activeTimerData.taskId !== taskId) return;
+    window.pausedTimerData = Object.assign({}, window.activeTimerData, { pausedAt: Date.now() });
+    window.activeTimerData = null;
+    if (typeof stopGlobalTimerInterval === 'function') stopGlobalTimerInterval();
+    this.renderProjectDetail();
+    showToast('⏸ Task în pauză', 'info');
+  },
+
+  resumeTask(taskId) {
+    if (!window.pausedTimerData || window.pausedTimerData.taskId !== taskId) return;
+    const paused = window.pausedTimerData;
+    const additionalPause = Date.now() - paused.pausedAt;
+    window.activeTimerData = Object.assign({}, paused, { pausedMs: (paused.pausedMs || 0) + additionalPause });
+    delete window.activeTimerData.pausedAt;
+    window.pausedTimerData = null;
+    if (typeof startGlobalTimer === 'function') startGlobalTimer();
+    this.renderProjectDetail();
+    showToast('▶ Task reluat', 'success');
+  },
+
+  async stopTask(taskId) {
+    const timerData = (window.activeTimerData && window.activeTimerData.taskId === taskId) ? window.activeTimerData
+                    : (window.pausedTimerData && window.pausedTimerData.taskId === taskId) ? window.pausedTimerData
+                    : null;
+    if (!timerData) return;
+
+    if (typeof stopGlobalTimerInterval === 'function') stopGlobalTimerInterval();
+    window.activeTimerData = null;
+    window.pausedTimerData = null;
+
+    const elapsed = Date.now() - timerData.startTime - (timerData.pausedMs || 0);
+    const minutes = Math.max(1, Math.round(elapsed / 60000));
+
+    const entry = {
+      user_id: Auth.currentProfile ? Auth.currentProfile.id : null,
+      project_id: timerData.projectId,
+      project_task_id: timerData.taskId,
+      phase_id: timerData.phaseId,
+      date: new Date().toISOString().split('T')[0],
+      start_time: String(timerData.startHour).padStart(2,'0') + ':' + String(timerData.startMin).padStart(2,'0') + ':00',
+      duration_minutes: minutes,
+      task_name: timerData.taskName,
+      activity_type: 'proiectare',
+      is_billable: true,
+      status: 'draft',
+    };
+
+    const result = await dbQuery('time_entries', q => q.insert(entry).select().single(), null);
+    if (result && result.error) {
+      showToast('Eroare la salvarea timpului: ' + result.error.message, 'error');
+    } else {
+      const task = this.tasks.find(t => t.id === taskId);
+      if (task) {
+        const newMinutes = (task.minutes_worked || 0) + minutes;
+        await dbQuery('project_tasks', q => q.update({ minutes_worked: newMinutes }).eq('id', taskId), null);
+        task.minutes_worked = newMinutes;
+      }
+      const h = Math.floor(minutes / 60);
+      const m = minutes % 60;
+      showToast('⏹ Task oprit. ' + (h > 0 ? h + 'h ' : '') + m + 'm înregistrate.', 'success');
+    }
+
+    this.renderProjectDetail();
+    if (typeof updateHeaderTimer === 'function') updateHeaderTimer();
+  },
+
+  // ===== MODALS =====
+  openCreateModal() {
+    const phaseCheckboxes = PRESET_PHASES.map(ph => `
+      <label style="display:flex;align-items:center;gap:8px;padding:6px 0;cursor:pointer">
+        <input type="checkbox" name="preset-phase" value="${ph.code}" checked style="width:16px;height:16px">
+        <span style="font-size:13px"><strong>${ph.code}.</strong> ${ph.name}</span>
+      </label>
+    `).join('');
+
     openModal('Proiect nou', `
-      <div class="space-y-3">
-        <div class="form-row form-row-2">
-          <div>
-            <label class="label">Nume proiect *</label>
-            <input type="text" id="proj-name" class="input" placeholder="Ex: Clădire Rezidențială" />
-          </div>
-          <div>
-            <label class="label">Cod proiect</label>
-            <input type="text" id="proj-code" class="input" placeholder="IC-2025-001" />
-          </div>
-        </div>
-        <div class="form-row form-row-2">
-          <div>
-            <label class="label">Client</label>
-            <input type="text" id="proj-client" class="input" placeholder="Nume client" />
-          </div>
-          <div>
-            <label class="label">Emoji</label>
-            <input type="text" id="proj-emoji" class="input" placeholder="🏢" maxlength="2" />
-          </div>
-        </div>
-        <div class="form-row form-row-2">
-          <div>
-            <label class="label">Data start</label>
-            <input type="date" id="proj-start" class="input" />
-          </div>
-          <div>
-            <label class="label">Data final</label>
-            <input type="date" id="proj-end" class="input" />
-          </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="grid-column:1/-1">
+          <label class="form-label">Nume proiect *</label>
+          <input id="p-name" class="form-input" placeholder="ex: Modul Găzduire Via Transilvanica">
         </div>
         <div>
-          <label class="label">Buget ore</label>
-          <input type="number" id="proj-budget" class="input" placeholder="1000" min="0" />
+          <label class="form-label">Cod proiect *</label>
+          <input id="p-code" class="form-input" placeholder="ex: 222" maxlength="10">
         </div>
         <div>
-          <label class="label">Descriere</label>
-          <textarea id="proj-desc" class="textarea" placeholder="Descriere proiect..."></textarea>
+          <label class="form-label">Client</label>
+          <input id="p-client" class="form-input" placeholder="Numele clientului">
+        </div>
+        <div>
+          <label class="form-label">Data start</label>
+          <input id="p-start" type="date" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Data final</label>
+          <input id="p-end" type="date" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select id="p-status" class="form-input">
+            <option value="activ">Activ</option>
+            <option value="in_asteptare">În așteptare</option>
+            <option value="finalizat">Finalizat</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Culoare</label>
+          <input id="p-color" type="color" value="#3B82F6" class="form-input" style="height:38px;padding:2px">
+        </div>
+        <div style="grid-column:1/-1">
+          <label class="form-label">Link Google Drive</label>
+          <input id="p-drive" class="form-input" placeholder="https://drive.google.com/...">
+        </div>
+        <div style="grid-column:1/-1">
+          <label class="form-label" style="margin-bottom:8px">Etape prestabilite de inclus</label>
+          <div style="background:var(--bg-secondary);padding:12px;border-radius:8px;border:1px solid var(--border)">
+            ${phaseCheckboxes}
+          </div>
         </div>
       </div>
     `, `
       <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
-      <button class="btn-brand" onclick="Proiecte.saveNew()">Salvează</button>
+      <button class="btn-primary" onclick="Proiecte.createProject()">Creează proiect</button>
     `);
   },
 
-  async saveNew() {
-    const name = document.getElementById('proj-name')?.value?.trim();
-    if (!name) { showToast('Completează numele proiectului', 'error'); return; }
+  async createProject() {
+    const name = document.getElementById('p-name') ? document.getElementById('p-name').value.trim() : '';
+    const code = document.getElementById('p-code') ? document.getElementById('p-code').value.trim() : '';
+    if (!name || !code) { showToast('Completează numele și codul proiectului', 'error'); return; }
+
+    const selectedPhases = Array.from(document.querySelectorAll('input[name="preset-phase"]:checked')).map(cb => cb.value);
+
     const project = {
       name,
-      code: document.getElementById('proj-code')?.value?.trim(),
-      client_name: document.getElementById('proj-client')?.value?.trim(),
-      emoji: document.getElementById('proj-emoji')?.value?.trim() || '📁',
-      start_date: document.getElementById('proj-start')?.value,
-      end_date: document.getElementById('proj-end')?.value,
-      budget_hours: parseInt(document.getElementById('proj-budget')?.value) || 0,
-      description: document.getElementById('proj-desc')?.value?.trim(),
-      status: 'activ',
-      used_hours: 0,
-      color: '#FFCB09',
+      code,
+      client_name: document.getElementById('p-client') ? document.getElementById('p-client').value.trim() || null : null,
+      start_date: document.getElementById('p-start') ? document.getElementById('p-start').value || null : null,
+      end_date: document.getElementById('p-end') ? document.getElementById('p-end').value || null : null,
+      status: document.getElementById('p-status') ? document.getElementById('p-status').value : 'activ',
+      color: document.getElementById('p-color') ? document.getElementById('p-color').value : '#3B82F6',
+      drive_url: document.getElementById('p-drive') ? document.getElementById('p-drive').value.trim() || null : null,
+      manager_id: Auth.currentProfile ? Auth.currentProfile.id : null,
+      budget_hours: 0,
+      consumed_hours: 0,
     };
-    const { error } = await DB.createProject(project);
-    if (error) { showToast('Eroare: ' + error.message, 'error'); return; }
+
+    const createResult = await dbQuery('projects', q => q.insert(project).select().single(), null);
+    if (!createResult || createResult.error) {
+      showToast('Eroare la creare: ' + (createResult ? createResult.error.message : 'necunoscut'), 'error');
+      return;
+    }
+    const newProject = createResult.data;
+
+    if (selectedPhases.length > 0 && newProject) {
+      const phasesToInsert = PRESET_PHASES
+        .filter(ph => selectedPhases.includes(ph.code))
+        .map((ph, idx) => ({
+          project_id: newProject.id,
+          name: ph.name,
+          code: ph.code,
+          color: ph.color,
+          display_order: idx + 1,
+          budget_hours: 0,
+          status: 'activ',
+          is_preset: true,
+        }));
+
+      const phasesResult = await dbQuery('project_phases', q => q.insert(phasesToInsert).select(), []);
+      const insertedPhases = phasesResult ? (phasesResult.data || []) : [];
+
+      if (insertedPhases.length > 0) {
+        const tasksToInsert = [];
+        insertedPhases.forEach(phase => {
+          const presetPhase = PRESET_PHASES.find(p => p.code === phase.code);
+          if (presetPhase) {
+            presetPhase.tasks.forEach((taskName, tidx) => {
+              tasksToInsert.push({
+                project_id: newProject.id,
+                phase_id: phase.id,
+                name: taskName,
+                display_order: tidx + 1,
+                budget_hours: 0,
+                minutes_worked: 0,
+                status: 'todo',
+                is_preset: true,
+              });
+            });
+          }
+        });
+        if (tasksToInsert.length > 0) {
+          await dbQuery('project_tasks', q => q.insert(tasksToInsert), []);
+        }
+      }
+    }
+
+    // Adaugă creatorul ca coordonator
+    if (Auth.currentProfile) {
+      await dbQuery('project_members', q => q.insert({
+        project_id: newProject.id,
+        user_id: Auth.currentProfile.id,
+        role: 'coordonator',
+        added_by: Auth.currentProfile.id,
+      }), null);
+    }
+
     closeModalForce();
-    showToast('Proiect creat cu succes', 'success');
-    await this.render();
+    showToast('Proiect creat cu succes!', 'success');
+    await this.loadData();
+    this.renderList();
   },
 
-  onSearch(val) {
-    this.search = val;
-    this.renderPage();
+  openAddPhaseModal() {
+    if (!this.currentProject) return;
+    const alreadyAdded = this.phases.map(p => p.code).filter(Boolean);
+    const availablePresets = PRESET_PHASES.filter(p => !alreadyAdded.includes(p.code));
+
+    const presetOptions = availablePresets.length > 0 ? `
+      <div style="margin-bottom:16px">
+        <label class="form-label">Etape prestabilite disponibile</label>
+        <div style="background:var(--bg-secondary);padding:12px;border-radius:8px;border:1px solid var(--border)">
+          ${availablePresets.map(ph => `
+            <label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer">
+              <input type="radio" name="phase-preset" value="${ph.code}">
+              <span style="font-size:13px"><strong>${ph.code}.</strong> ${ph.name}</span>
+            </label>
+          `).join('')}
+          <label style="display:flex;align-items:center;gap:8px;padding:5px 0;cursor:pointer">
+            <input type="radio" name="phase-preset" value="custom" checked>
+            <span style="font-size:13px">Etapă personalizată</span>
+          </label>
+        </div>
+      </div>
+    ` : '';
+
+    openModal('Adaugă etapă', `
+      <div>
+        ${presetOptions}
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div>
+            <label class="form-label">Cod etapă</label>
+            <input id="ph-code" class="form-input" placeholder="ex: G" maxlength="5">
+          </div>
+          <div>
+            <label class="form-label">Culoare</label>
+            <input id="ph-color" type="color" value="#3B82F6" class="form-input" style="height:38px;padding:2px">
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="form-label">Nume etapă *</label>
+            <input id="ph-name" class="form-input" placeholder="ex: Proiectare Rezistență">
+          </div>
+          <div style="grid-column:1/-1">
+            <label class="form-label">Buget ore</label>
+            <input id="ph-budget" type="number" class="form-input" placeholder="0" min="0">
+          </div>
+        </div>
+      </div>
+    `, `
+      <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
+      <button class="btn-primary" onclick="Proiecte.addPhase()">Adaugă etapă</button>
+    `);
   },
 
-  onFilter(val) {
-    this.filter = val;
-    this.renderPage();
+  async addPhase() {
+    const presetRadio = document.querySelector('input[name="phase-preset"]:checked');
+    const presetCode = presetRadio ? presetRadio.value : null;
+
+    let phaseData;
+    if (presetCode && presetCode !== 'custom') {
+      const preset = PRESET_PHASES.find(p => p.code === presetCode);
+      if (!preset) return;
+      phaseData = {
+        project_id: this.currentProject.id,
+        name: preset.name,
+        code: preset.code,
+        color: preset.color,
+        display_order: this.phases.length + 1,
+        budget_hours: parseFloat(document.getElementById('ph-budget') ? document.getElementById('ph-budget').value : '0') || 0,
+        status: 'activ',
+        is_preset: true,
+      };
+    } else {
+      const name = document.getElementById('ph-name') ? document.getElementById('ph-name').value.trim() : '';
+      if (!name) { showToast('Completează numele etapei', 'error'); return; }
+      phaseData = {
+        project_id: this.currentProject.id,
+        name,
+        code: document.getElementById('ph-code') ? document.getElementById('ph-code').value.trim() || null : null,
+        color: document.getElementById('ph-color') ? document.getElementById('ph-color').value : '#3B82F6',
+        display_order: this.phases.length + 1,
+        budget_hours: parseFloat(document.getElementById('ph-budget') ? document.getElementById('ph-budget').value : '0') || 0,
+        status: 'activ',
+        is_preset: false,
+      };
+    }
+
+    const result = await dbQuery('project_phases', q => q.insert(phaseData).select().single(), null);
+    if (!result || result.error) { showToast('Eroare: ' + (result ? result.error.message : ''), 'error'); return; }
+    const newPhase = result.data;
+
+    if (presetCode && presetCode !== 'custom' && newPhase) {
+      const preset = PRESET_PHASES.find(p => p.code === presetCode);
+      if (preset) {
+        const tasks = preset.tasks.map((taskName, idx) => ({
+          project_id: this.currentProject.id,
+          phase_id: newPhase.id,
+          name: taskName,
+          display_order: idx + 1,
+          budget_hours: 0,
+          minutes_worked: 0,
+          status: 'todo',
+          is_preset: true,
+        }));
+        await dbQuery('project_tasks', q => q.insert(tasks), []);
+      }
+    }
+
+    closeModalForce();
+    showToast('Etapă adăugată!', 'success');
+    await this.loadProjectDetails(this.currentProject.id);
+    this.renderProjectDetail();
+  },
+
+  openAddTaskModal(phaseId) {
+    const phase = this.phases.find(p => p.id === phaseId);
+    const phaseBudget = phase ? (phase.budget_hours || 0) : 0;
+    const phaseAllocated = this.tasks.filter(t => t.phase_id === phaseId).reduce((s, t) => s + (t.budget_hours || 0), 0);
+    const phaseRemain = Math.max(0, phaseBudget - phaseAllocated);
+
+    const memberOptions = this.members.map(m => {
+      const u = m.profiles || {};
+      return '<option value="' + m.user_id + '">' + (u.full_name || u.name || u.email) + '</option>';
+    }).join('');
+
+    openModal('Adaugă sarcină — ' + (phase ? phase.name : ''), `
+      <div>
+        ${phaseBudget > 0 ? `<div style="padding:8px 12px;background:var(--bg-secondary);border-radius:6px;margin-bottom:12px;font-size:13px;color:var(--text-muted)">
+          Buget etapă: <strong>${phaseBudget}h</strong> · Alocat: <strong>${phaseAllocated}h</strong> · Disponibil: <strong style="color:${phaseRemain > 0 ? '#10B981' : '#EF4444'}">${phaseRemain}h</strong>
+        </div>` : ''}
+        <div style="display:grid;gap:12px">
+          <div>
+            <label class="form-label">Nume sarcină *</label>
+            <input id="task-name" class="form-input" placeholder="ex: Modelare 3D Draft 1">
+          </div>
+          <div>
+            <label class="form-label">Buget ore ${phaseBudget > 0 ? '(max ' + phaseRemain + 'h disponibil)' : ''}</label>
+            <input id="task-budget" type="number" class="form-input" placeholder="0" min="0">
+          </div>
+          <div>
+            <label class="form-label">Responsabil</label>
+            <select id="task-assignee" class="form-input">
+              <option value="">— Neasignat —</option>
+              ${memberOptions}
+            </select>
+          </div>
+        </div>
+      </div>
+    `, `
+      <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
+      <button class="btn-primary" onclick="Proiecte.addTask(${phaseId},${phaseBudget},${phaseAllocated})">Adaugă sarcină</button>
+    `);
+  },
+
+  async addTask(phaseId, phaseBudget, phaseAllocated) {
+    const name = document.getElementById('task-name') ? document.getElementById('task-name').value.trim() : '';
+    if (!name) { showToast('Completează numele sarcinii', 'error'); return; }
+
+    const budgetH = parseFloat(document.getElementById('task-budget') ? document.getElementById('task-budget').value : '0') || 0;
+    const assigneeId = document.getElementById('task-assignee') ? document.getElementById('task-assignee').value || null : null;
+
+    if (phaseBudget > 0 && (phaseAllocated + budgetH) > phaseBudget) {
+      showToast('Depășești bugetul etapei! Disponibil: ' + Math.max(0, phaseBudget - phaseAllocated) + 'h', 'error');
+      return;
+    }
+
+    const task = {
+      project_id: this.currentProject.id,
+      phase_id: phaseId,
+      name,
+      budget_hours: budgetH,
+      minutes_worked: 0,
+      status: 'todo',
+      display_order: this.tasks.filter(t => t.phase_id === phaseId).length + 1,
+      assigned_user_id: assigneeId || null,
+      is_preset: false,
+    };
+
+    const result = await dbQuery('project_tasks', q => q.insert(task), null);
+    if (result && result.error) { showToast('Eroare: ' + result.error.message, 'error'); return; }
+
+    closeModalForce();
+    showToast('Sarcină adăugată!', 'success');
+    await this.loadProjectDetails(this.currentProject.id);
+    this.renderProjectDetail();
+  },
+
+  async updatePhaseBudget(phaseId, value) {
+    const budget = parseFloat(value) || 0;
+    await dbQuery('project_phases', q => q.update({ budget_hours: budget }).eq('id', phaseId), null);
+    const phase = this.phases.find(p => p.id === phaseId);
+    if (phase) phase.budget_hours = budget;
+  },
+
+  async updateTaskBudget(taskId, phaseId, value, phaseBudget) {
+    const budget = parseFloat(value) || 0;
+    const phase = this.phases.find(p => p.id === phaseId);
+    const otherTasksBudget = this.tasks.filter(t => t.phase_id === phaseId && t.id !== taskId).reduce((s, t) => s + (t.budget_hours || 0), 0);
+    const phaseB = phase ? (phase.budget_hours || 0) : 0;
+
+    if (phaseB > 0 && (otherTasksBudget + budget) > phaseB) {
+      showToast('Depășești bugetul etapei! Disponibil: ' + Math.max(0, phaseB - otherTasksBudget) + 'h', 'error');
+      return;
+    }
+
+    await dbQuery('project_tasks', q => q.update({ budget_hours: budget }).eq('id', taskId), null);
+    const task = this.tasks.find(t => t.id === taskId);
+    if (task) task.budget_hours = budget;
+  },
+
+  async deletePhase(phaseId) {
+    if (!confirm('Ștergi etapa și toate sarcinile din ea?')) return;
+    await dbQuery('project_tasks', q => q.delete().eq('phase_id', phaseId), null);
+    await dbQuery('project_phases', q => q.delete().eq('id', phaseId), null);
+    showToast('Etapă ștearsă', 'success');
+    await this.loadProjectDetails(this.currentProject.id);
+    this.renderProjectDetail();
+  },
+
+  async deleteTask(taskId) {
+    if (!confirm('Ștergi această sarcină?')) return;
+    await dbQuery('project_tasks', q => q.delete().eq('id', taskId), null);
+    showToast('Sarcină ștearsă', 'success');
+    await this.loadProjectDetails(this.currentProject.id);
+    this.renderProjectDetail();
+  },
+
+  openAddMemberModal(role) {
+    const existingIds = this.members.map(m => m.user_id);
+    const available = this.allUsers.filter(u => !existingIds.includes(u.id));
+
+    openModal('Adaugă ' + (role === 'coordonator' ? 'coordonator' : 'angajat'), `
+      <div>
+        <label class="form-label">Selectează utilizator</label>
+        <select id="member-user" class="form-input">
+          <option value="">— Selectează —</option>
+          ${available.map(u => '<option value="' + u.id + '">' + (u.full_name || u.name || u.email) + '</option>').join('')}
+        </select>
+      </div>
+    `, `
+      <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
+      <button class="btn-primary" onclick="Proiecte.addMember('${role}')">Adaugă</button>
+    `);
+  },
+
+  async addMember(role) {
+    const userId = document.getElementById('member-user') ? document.getElementById('member-user').value : '';
+    if (!userId) { showToast('Selectează un utilizator', 'error'); return; }
+
+    const result = await dbQuery('project_members', q => q.insert({
+      project_id: this.currentProject.id,
+      user_id: userId,
+      role,
+      added_by: Auth.currentProfile ? Auth.currentProfile.id : null,
+    }), null);
+
+    if (result && result.error) { showToast('Eroare: ' + result.error.message, 'error'); return; }
+    closeModalForce();
+    showToast('Membru adăugat!', 'success');
+    await this.loadProjectDetails(this.currentProject.id);
+    this.switchTab('echipa');
+  },
+
+  async removeMember(memberId) {
+    if (!confirm('Elimini acest membru din proiect?')) return;
+    await dbQuery('project_members', q => q.delete().eq('id', memberId), null);
+    showToast('Membru eliminat', 'success');
+    await this.loadProjectDetails(this.currentProject.id);
+    this.switchTab('echipa');
+  },
+
+  openAssignModal(taskId) {
+    const task = this.tasks.find(t => t.id === taskId);
+    const memberOptions = this.members.map(m => {
+      const u = m.profiles || {};
+      const name = u.full_name || u.name || u.email;
+      const sel = task && task.assigned_user_id === m.user_id ? ' selected' : '';
+      return '<option value="' + m.user_id + '"' + sel + '>' + name + '</option>';
+    }).join('');
+
+    openModal('Asignează responsabil', `
+      <div>
+        <label class="form-label">Responsabil sarcină</label>
+        <select id="assign-user" class="form-input">
+          <option value="">— Neasignat —</option>
+          ${memberOptions}
+        </select>
+      </div>
+    `, `
+      <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
+      <button class="btn-primary" onclick="Proiecte.assignTask(${taskId})">Salvează</button>
+    `);
+  },
+
+  async assignTask(taskId) {
+    const userId = document.getElementById('assign-user') ? document.getElementById('assign-user').value || null : null;
+    await dbQuery('project_tasks', q => q.update({ assigned_user_id: userId || null }).eq('id', taskId), null);
+    closeModalForce();
+    showToast('Responsabil actualizat', 'success');
+    await this.loadProjectDetails(this.currentProject.id);
+    this.renderProjectDetail();
+  },
+
+  openEditProject() {
+    const p = this.currentProject;
+    if (!p) return;
+    openModal('Setări proiect', `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+        <div style="grid-column:1/-1">
+          <label class="form-label">Nume proiect</label>
+          <input id="ep-name" class="form-input" value="${(p.name || '').replace(/"/g,'&quot;')}">
+        </div>
+        <div>
+          <label class="form-label">Cod</label>
+          <input id="ep-code" class="form-input" value="${p.code || ''}">
+        </div>
+        <div>
+          <label class="form-label">Client</label>
+          <input id="ep-client" class="form-input" value="${(p.client_name || '').replace(/"/g,'&quot;')}">
+        </div>
+        <div>
+          <label class="form-label">Data start</label>
+          <input id="ep-start" type="date" class="form-input" value="${p.start_date || ''}">
+        </div>
+        <div>
+          <label class="form-label">Data final</label>
+          <input id="ep-end" type="date" class="form-input" value="${p.end_date || ''}">
+        </div>
+        <div>
+          <label class="form-label">Status</label>
+          <select id="ep-status" class="form-input">
+            <option value="activ" ${p.status==='activ'?'selected':''}>Activ</option>
+            <option value="in_asteptare" ${p.status==='in_asteptare'?'selected':''}>În așteptare</option>
+            <option value="finalizat" ${p.status==='finalizat'?'selected':''}>Finalizat</option>
+            <option value="anulat" ${p.status==='anulat'?'selected':''}>Anulat</option>
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Culoare</label>
+          <input id="ep-color" type="color" value="${p.color || '#3B82F6'}" class="form-input" style="height:38px;padding:2px">
+        </div>
+        <div style="grid-column:1/-1">
+          <label class="form-label">Link Google Drive</label>
+          <input id="ep-drive" class="form-input" value="${(p.drive_url || '').replace(/"/g,'&quot;')}">
+        </div>
+      </div>
+    `, `
+      <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
+      <button class="btn-primary" onclick="Proiecte.saveEditProject()">Salvează</button>
+    `);
+  },
+
+  async saveEditProject() {
+    const updates = {
+      name: document.getElementById('ep-name') ? document.getElementById('ep-name').value.trim() : '',
+      code: document.getElementById('ep-code') ? document.getElementById('ep-code').value.trim() : '',
+      client_name: document.getElementById('ep-client') ? document.getElementById('ep-client').value.trim() || null : null,
+      start_date: document.getElementById('ep-start') ? document.getElementById('ep-start').value || null : null,
+      end_date: document.getElementById('ep-end') ? document.getElementById('ep-end').value || null : null,
+      status: document.getElementById('ep-status') ? document.getElementById('ep-status').value : 'activ',
+      color: document.getElementById('ep-color') ? document.getElementById('ep-color').value : '#3B82F6',
+      drive_url: document.getElementById('ep-drive') ? document.getElementById('ep-drive').value.trim() || null : null,
+    };
+    const result = await dbQuery('projects', q => q.update(updates).eq('id', this.currentProject.id), null);
+    if (result && result.error) { showToast('Eroare: ' + result.error.message, 'error'); return; }
+    Object.assign(this.currentProject, updates);
+    closeModalForce();
+    showToast('Proiect actualizat!', 'success');
+    await this.loadData();
+    this.renderProjectDetail();
+  },
+
+  renderPage() {
+    if (this.currentProject) {
+      this.renderProjectDetail();
+    } else {
+      this.renderList();
+    }
+  },
+
+  async render() {
+    await this.init();
   },
 };
+
+window.Proiecte = Proiecte;

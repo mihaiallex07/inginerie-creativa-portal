@@ -1888,3 +1888,51 @@ tbody tr:hover { background: var(--surface-2); }
 /* p-6 utility used in profil.js */
 .p-6 { padding: 24px; }
 .p-5 { padding: 20px; }
+
+/* ============================================================
+   PROIECTE MODULE — clase adăugate
+   ============================================================ */
+
+/* Alias variabile pentru compatibilitate cu noul modul Proiecte */
+:root {
+  --card-bg: var(--surface);
+  --bg-secondary: var(--surface-2);
+  --border-light: var(--border);
+  --primary-light: rgba(59, 130, 246, 0.12);
+}
+
+/* Butoane filtru (pills) */
+.btn-filter {
+  padding: 6px 14px;
+  background: var(--surface);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all var(--transition);
+  white-space: nowrap;
+}
+
+.btn-filter:hover {
+  background: var(--surface-2);
+  color: var(--text);
+}
+
+.btn-filter.active {
+  background: var(--info);
+  color: #fff;
+  border-color: var(--info);
+}
+
+/* Buton mic */
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+/* Project card hover */
+.project-card:hover {
+  box-shadow: var(--shadow);
+}
