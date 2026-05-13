@@ -42,11 +42,16 @@ const TimeTracking = {
     // Load tasks for accessible projects
     const allTasksRes = await Promise.all(this.projects.map(p => DB.getProjectTasks(p.id)));
     const allTasks = allTasksRes.flatMap(r => r.data || []);
-    // Filtrare task-uri: admin/coordonator vede toate, angajat vede doar task-urile asignate lui
+    // Filtrare task-uri: admin vede toate, angajat vede STRICT task-urile asignate lui
     if (isAdmin) {
       this.tasks = allTasks;
     } else {
-      this.tasks = allTasks.filter(t => !t.assigned_user_id || t.assigned_user_id === userId);
+      // Verificăm și dacă e coordonator pe vreun proiect
+      const coordProjectIds = new Set((membershipsRes.data || []).filter(m => m.role === 'coordonator').map(m => m.project_id));
+      this.tasks = allTasks.filter(t => {
+        if (coordProjectIds.has(t.project_id)) return true; // coordonatorii văd toate task-urile din proiectele lor
+        return t.assigned_user_id === userId; // angajații văd STRICT task-urile asignate lor
+      });
     }
   },
 

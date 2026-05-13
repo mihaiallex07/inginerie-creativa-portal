@@ -174,13 +174,29 @@
           <h2 class="topbar-title" id="page-title">Tablou de bord</h2>
         </div>
         <div class="topbar-right">
-          <!-- Quick timer -->
-          <div class="timer-widget" id="timer-widget" style="display:none">
-            <div class="timer-dot"></div>
-            <span class="timer-text" id="timer-display">00:00:00</span>
-            <button class="timer-stop" onclick="stopActiveTimer()" title="Oprește timer">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
-            </button>
+          <!-- Quick timer - mereu vizibil -->
+          <div class="timer-widget" id="timer-widget" style="display:flex">
+            <!-- Starea IDLE: buton Start rapid -->
+            <div id="timer-idle" style="display:flex;align-items:center">
+              <button onclick="openQuickStartModal()" title="Începe un task rapid" style="display:flex;align-items:center;gap:6px;background:var(--primary-light,#FFCB0920);border:1px solid var(--primary);color:var(--primary);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:12px;font-weight:600;white-space:nowrap">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                Start task
+              </button>
+            </div>
+            <!-- Starea RUNNING: dot + timp + Pauza + Stop -->
+            <div id="timer-running" style="display:none;align-items:center;gap:6px">
+              <div class="timer-dot"></div>
+              <span class="timer-text" id="timer-display">00:00:00</span>
+              <button onclick="pauseActiveTimer()" title="Pauza" style="background:#F59E0B20;border:1px solid #F59E0B;color:#F59E0B;border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;font-weight:600">⏸</button>
+              <button onclick="stopActiveTimer()" title="Stop" style="background:#EF444420;border:1px solid #EF4444;color:#EF4444;border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;font-weight:600">⏹</button>
+            </div>
+            <!-- Starea PAUSED: timp + Reia + Stop -->
+            <div id="timer-paused" style="display:none;align-items:center;gap:6px">
+              <div class="timer-dot" style="background:#F59E0B;animation:none"></div>
+              <span class="timer-text" id="timer-display-paused">00:00:00</span>
+              <button onclick="resumeActiveTimer()" title="Reia" style="background:#10B98120;border:1px solid #10B981;color:#10B981;border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;font-weight:600">▶</button>
+              <button onclick="stopActiveTimer()" title="Stop" style="background:#EF444420;border:1px solid #EF4444;color:#EF4444;border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;font-weight:600">⏹</button>
+            </div>
           </div>
           <!-- Notifications -->
           <button class="topbar-btn" id="notif-btn" onclick="navigate('notificari', null)" title="Notificări">

@@ -303,8 +303,6 @@ let _globalTimerInterval = null;
 
 function startGlobalTimer() {
   stopGlobalTimerInterval();
-  const widget = document.getElementById('timer-widget');
-  if (widget) widget.style.display = 'flex';
   _globalTimerInterval = setInterval(updateHeaderTimer, 1000);
   updateHeaderTimer();
 }
@@ -316,24 +314,73 @@ function stopGlobalTimerInterval() {
   }
 }
 
-function updateHeaderTimer() {
-  const data = window.activeTimerData;
-  const display = document.getElementById('timer-display');
-  const widget = document.getElementById('timer-widget');
-  if (!data) {
-    if (widget) widget.style.display = 'none';
-    if (display) display.textContent = '00:00:00';
-    return;
-  }
-  if (widget) widget.style.display = 'flex';
-  const elapsed = Math.floor((Date.now() - data.startTime - (data.pausedMs || 0)) / 1000);
-  const h = Math.floor(elapsed / 3600);
-  const m = Math.floor((elapsed % 3600) / 60);
-  const s = elapsed % 60;
-  if (display) display.textContent = String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+function _fmtTime(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
 }
 
-// Called from header stop button
+function updateHeaderTimer() {
+  const idle = document.getElementById('timer-idle');
+  const running = document.getElementById('timer-running');
+  const paused = document.getElementById('timer-paused');
+  const display = document.getElementById('timer-display');
+  const displayPaused = document.getElementById('timer-display-paused');
+
+  if (window.activeTimerData) {
+    // RUNNING state
+    if (idle) idle.style.display = 'none';
+    if (running) running.style.display = 'flex';
+    if (paused) paused.style.display = 'none';
+    const elapsed = Date.now() - window.activeTimerData.startTime - (window.activeTimerData.pausedMs || 0);
+    if (display) display.textContent = _fmtTime(elapsed);
+  } else if (window.pausedTimerData) {
+    // PAUSED state
+    if (idle) idle.style.display = 'none';
+    if (running) running.style.display = 'none';
+    if (paused) paused.style.display = 'flex';
+    const elapsed = (window.pausedTimerData.pausedAt || Date.now()) - window.pausedTimerData.startTime - (window.pausedTimerData.pausedMs || 0);
+    if (displayPaused) displayPaused.textContent = _fmtTime(elapsed);
+  } else {
+    // IDLE state
+    if (idle) idle.style.display = 'flex';
+    if (running) running.style.display = 'none';
+    if (paused) paused.style.display = 'none';
+    stopGlobalTimerInterval();
+  }
+}
+
+// Pause from header
+function pauseActiveTimer() {
+  if (!window.activeTimerData) return;
+  if (typeof Proiecte !== 'undefined' && Proiecte.pauseTask) {
+    Proiecte.pauseTask(window.activeTimerData.taskId);
+  } else {
+    window.pausedTimerData = Object.assign({}, window.activeTimerData, { pausedAt: Date.now() });
+    window.activeTimerData = null;
+    stopGlobalTimerInterval();
+    updateHeaderTimer();
+  }
+}
+
+// Resume from header
+function resumeActiveTimer() {
+  if (!window.pausedTimerData) return;
+  if (typeof Proiecte !== 'undefined' && Proiecte.resumeTask) {
+    Proiecte.resumeTask(window.pausedTimerData.taskId);
+  } else {
+    const paused = window.pausedTimerData;
+    const additionalPause = Date.now() - (paused.pausedAt || Date.now());
+    window.activeTimerData = Object.assign({}, paused, { pausedMs: (paused.pausedMs || 0) + additionalPause });
+    delete window.activeTimerData.pausedAt;
+    window.pausedTimerData = null;
+    startGlobalTimer();
+  }
+}
+
+// Stop from header
 function stopActiveTimer() {
   const data = window.activeTimerData || window.pausedTimerData;
   if (!data) return;
@@ -344,6 +391,81 @@ function stopActiveTimer() {
     window.activeTimerData = null;
     window.pausedTimerData = null;
     updateHeaderTimer();
+  }
+}
+
+// Quick start modal - start rapid task din header
+function openQuickStartModal() {
+  // Colectăm proiectele active disponibile
+  const projects = (typeof Proiecte !== 'undefined' && Proiecte.projects) ? Proiecte.projects.filter(p => p.status === 'activ') : [];
+  const projectOptions = projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+
+  openModal('Start rapid task', `
+    <div class="space-y-3">
+      <div>
+        <label class="label">Proiect</label>
+        <select id="qs-project" class="select" onchange="quickStartLoadTasks(this.value)">
+          <option value="">— Selectează proiect —</option>
+          ${projectOptions}
+        </select>
+      </div>
+      <div>
+        <label class="label">Task</label>
+        <select id="qs-task" class="select">
+          <option value="">— Selectează task —</option>
+        </select>
+      </div>
+      <div>
+        <label class="label">Sau descrie activitatea</label>
+        <input type="text" id="qs-desc" class="input" placeholder="Ex: Modelare 3D Draft 1" />
+      </div>
+    </div>
+  `, `
+    <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
+    <button class="btn-brand" onclick="quickStartConfirm()">▶ Start</button>
+  `);
+}
+
+function quickStartLoadTasks(projectId) {
+  const taskSelect = document.getElementById('qs-task');
+  if (!taskSelect) return;
+  const pid = parseInt(projectId);
+  const profile = Auth.currentProfile;
+  const isAdmin = profile?.role === 'admin';
+  const allTasks = (typeof Proiecte !== 'undefined' && Proiecte.tasks) ? Proiecte.tasks : [];
+  const tasks = allTasks.filter(t => t.project_id === pid && (isAdmin || !t.assigned_user_id || t.assigned_user_id === Auth.currentUser?.id));
+  taskSelect.innerHTML = '<option value="">— Selectează task —</option>' +
+    tasks.map(t => `<option value="${t.id}" data-name="${(t.name||'').replace(/"/g,'&quot;')}">${t.name}</option>`).join('');
+}
+
+function quickStartConfirm() {
+  const projectId = parseInt(document.getElementById('qs-project')?.value) || null;
+  const taskSelect = document.getElementById('qs-task');
+  const taskId = taskSelect?.value ? parseInt(taskSelect.value) : null;
+  const taskName = taskId
+    ? (taskSelect.options[taskSelect.selectedIndex]?.dataset?.name || taskSelect.options[taskSelect.selectedIndex]?.text || '')
+    : (document.getElementById('qs-desc')?.value?.trim() || '');
+  if (!taskName) { showToast('Completează task-ul sau descrierea', 'error'); return; }
+
+  closeModalForce();
+
+  if (taskId && typeof Proiecte !== 'undefined' && Proiecte.startTask) {
+    // Găsim phase_id din task
+    const task = Proiecte.tasks?.find(t => t.id === taskId);
+    Proiecte.startTask(taskId, taskName, projectId, task?.phase_id || null);
+  } else {
+    // Start simplu fără task din proiect
+    const now = new Date();
+    window.activeTimerData = {
+      taskId: null, taskName, projectId,
+      startTime: Date.now(),
+      startHour: now.getHours(),
+      startMin: now.getMinutes(),
+      pausedMs: 0,
+    };
+    window.pausedTimerData = null;
+    startGlobalTimer();
+    showToast('▶ Task pornit: ' + taskName, 'success');
   }
 }
 

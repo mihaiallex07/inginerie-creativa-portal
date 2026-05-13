@@ -103,12 +103,22 @@ const Proiecte = {
   },
 
   async loadData() {
-    const [projRes, usersRes] = await Promise.all([
+    const userId = Auth.currentUser?.id;
+    const isAdmin = Auth.currentProfile?.role === 'admin';
+    const [projRes, usersRes, membershipsRes] = await Promise.all([
       DB.getProjects(),
       DB.getUsers(),
+      dbQuery('project_members', q => q.select('project_id,role').eq('user_id', userId), []),
     ]);
-    this.projects = projRes.data || [];
+    const allProjects = projRes.data || [];
     this.allUsers = usersRes.data || [];
+    this.userMemberships = membershipsRes.data || [];
+    if (isAdmin) {
+      this.projects = allProjects;
+    } else {
+      const enrolledIds = new Set(this.userMemberships.map(m => m.project_id));
+      this.projects = allProjects.filter(p => enrolledIds.has(p.id));
+    }
   },
 
   async loadProjectDetails(projectId) {
@@ -329,7 +339,12 @@ const Proiecte = {
   },
 
   renderPhaseRows(phase, canEdit) {
-    const phaseTasks = this.tasks.filter(t => t.phase_id === phase.id);
+    const profile = Auth.currentProfile;
+    const isAdmin = profile?.role === 'admin';
+    const isCoord = this.members.some(m => m.user_id === profile?.id && m.role === 'coordonator');
+    // Admin și coordonatori văd toate task-urile; angajații văd doar task-urile asignate lor
+    const allPhaseTasks = this.tasks.filter(t => t.phase_id === phase.id);
+    const phaseTasks = (isAdmin || isCoord) ? allPhaseTasks : allPhaseTasks.filter(t => t.assigned_user_id === profile?.id);
     const budgetH = phase.budget_hours || 0;
     const workedMin = phaseTasks.reduce((sum, t) => sum + (t.minutes_worked || 0), 0);
     const workedH = Math.round(workedMin / 60 * 10) / 10;
@@ -393,6 +408,7 @@ const Proiecte = {
     const pct = budgetH > 0 ? Math.min(100, Math.round((workedH / budgetH) * 100)) : 0;
     const barColor = pct > 90 ? '#EF4444' : pct > 70 ? '#F59E0B' : '#10B981';
     const assignee = task.assigned_user_id ? this.getUserName(task.assigned_user_id) : null;
+    const assigneeCode = task.assigned_user_id ? this.getUserCode(task.assigned_user_id) : null;
     const profile = Auth.currentProfile;
     const isAssigned = task.assigned_user_id === profile.id;
     const canStart = isAssigned || canEdit;
@@ -419,7 +435,7 @@ const Proiecte = {
         <td style="padding:8px 12px;font-size:12px">
           ${canEdit ? `
             <button onclick="Proiecte.openAssignModal(${task.id})" style="background:none;border:none;cursor:pointer;font-size:12px" title="Asignează">
-              ${assignee ? `<span style="color:var(--text)">${assignee}</span>` : '<span style="color:var(--text-muted)">👤 Asignează</span>'}
+              ${assigneeCode ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.5px" title="${assignee}">${assigneeCode}</span>` : '<span style="color:var(--text-muted);font-size:12px">👤 Asignează</span>'}
             </button>
           ` : (assignee || '—')}
         </td>
@@ -497,6 +513,9 @@ const Proiecte = {
   },
 
   renderRapoarteTab() {
+    const profile = Auth.currentProfile;
+    const isAdmin = profile?.role === 'admin';
+    const isCoord = this.members.some(m => m.user_id === profile?.id && m.role === 'coordonator');
     const totalBudget = this.phases.reduce((s, p) => s + (p.budget_hours || 0), 0);
     const totalWorked = this.tasks.reduce((s, t) => s + Math.round((t.minutes_worked || 0) / 60 * 10) / 10, 0);
     const pct = totalBudget > 0 ? Math.min(100, Math.round((totalWorked / totalBudget) * 100)) : 0;
@@ -520,7 +539,9 @@ const Proiecte = {
       <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:20px">
         <h3 style="font-size:15px;font-weight:600;margin:0 0 16px">Ore pe etapă</h3>
         ${this.phases.map(phase => {
-          const phaseTasks = this.tasks.filter(t => t.phase_id === phase.id);
+          // Admin și coordonatori văd toate task-urile; angajații văd doar task-urile asignate lor
+    const allPhaseTasks = this.tasks.filter(t => t.phase_id === phase.id);
+    const phaseTasks = (isAdmin || isCoord) ? allPhaseTasks : allPhaseTasks.filter(t => t.assigned_user_id === profile?.id);
           const worked = phaseTasks.reduce((s, t) => s + Math.round((t.minutes_worked || 0) / 60 * 10) / 10, 0);
           const budget = phase.budget_hours || 0;
           const p = budget > 0 ? Math.min(100, Math.round((worked / budget) * 100)) : 0;
@@ -574,6 +595,17 @@ const Proiecte = {
   getUserName(userId) {
     const u = this.allUsers.find(u => u.id === userId);
     return u ? (u.full_name || u.name || u.email) : String(userId);
+  },
+
+  getUserCode(userId) {
+    const u = this.allUsers.find(u => u.id === userId);
+    if (!u) return '??';
+    if (u.employee_code) return u.employee_code;
+    // Fallback: initiale din full_name
+    const name = u.full_name || u.name || '';
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    return name.slice(0, 2).toUpperCase() || '??';
   },
 
   // ===== TIMER =====
