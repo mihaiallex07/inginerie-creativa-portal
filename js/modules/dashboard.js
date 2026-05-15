@@ -9,7 +9,7 @@ const Dashboard = {
       DB.getTimeEntries(Auth.currentUser?.id, getDateStr(-7), getTodayStr()),
       DB.getNews(),
       DB.getNotifications(Auth.currentUser?.id),
-      supabase.from('profiles').select('id,full_name,name,birth_date,hire_date,employee_code').eq('is_active', true),
+      DB.getUsers(),
     ]);
 
     const projects = projectsRes.data || [];

@@ -18,6 +18,7 @@ const ROUTES = {
   'procese-proceduri': { label: 'Procese & Proceduri',   module: () => Procese.render() },
   'biblioteca':        { label: 'Bibliotecă tehnică',    module: () => Placeholder.render('Bibliotecă tehnică', 'Biblioteca de standarde, normative și detalii tehnice.', 'book-open') },
   'organigrama':       { label: 'Organigramă',           module: () => Organigrama.render() },
+  'echipa':             { label: 'Echipa',                 module: () => Echipa.render() },
   'documente':         { label: 'Documentele mele',      module: () => Documente.render() },
   'propuneri':         { label: 'Propunerile mele',      module: () => Propuneri.render() },
   'notificari':        { label: 'Notificări',            module: () => Notificari.render() },
