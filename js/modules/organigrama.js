@@ -65,7 +65,15 @@ const Organigrama = {
           <div class="card-header">
             <span class="card-title">Echipa (${this.users.length} angajați)</span>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:16px">
+          <div style="padding:12px 16px 0">
+            <div style="position:relative">
+              <svg style="position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text-muted)" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="org-team-search" class="input" style="padding-left:32px;font-size:13px"
+                placeholder="Caută după nume, funcție sau departament..."
+                oninput="Organigrama.filterTeam(this.value)" />
+            </div>
+          </div>
+          <div id="org-team-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;padding:12px 16px 16px">
             ${this.users.map(u => this.renderTeamCard(u)).join('')}
           </div>
         </div>
@@ -303,6 +311,27 @@ const Organigrama = {
     const managerId = managerMap[userId];
     if (!managerId) return false;
     return this.hasCycle(managerId, managerMap, visited);
+  },
+
+  // ── SEARCH ECHIPĂ ───────────────────────────────────────────
+  filterTeam(query) {
+    const q = (query || '').toLowerCase().trim();
+    const filtered = q
+      ? this.users.filter(u =>
+          (u.full_name || '').toLowerCase().includes(q) ||
+          (u.job_title || u.position || '').toLowerCase().includes(q) ||
+          (u.department || '').toLowerCase().includes(q) ||
+          (u.employee_code || '').toLowerCase().includes(q)
+        )
+      : this.users;
+
+    const grid = document.getElementById('org-team-grid');
+    if (!grid) return;
+    if (filtered.length === 0) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-muted);font-size:13px">Niciun angajat găsit</div>`;
+    } else {
+      grid.innerHTML = filtered.map(u => this.renderTeamCard(u)).join('');
+    }
   },
 
   // ── CARD ECHIPĂ ───────────────────────────────────────────────
