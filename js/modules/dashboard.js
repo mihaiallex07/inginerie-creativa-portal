@@ -235,8 +235,10 @@ const MiniCalendar = {
       const hasBirthday = dayEvents.some(e => e.type === 'birthday');
       const hasAnniversary = dayEvents.some(e => e.type === 'anniversary');
       const dots = dayEvents.length > 0 ? `<div style="display:flex;gap:2px;justify-content:center;margin-top:1px">${hasBirthday ? '<span style="width:4px;height:4px;border-radius:50%;background:#e91e63;display:inline-block"></span>' : ''}${hasAnniversary ? '<span style="width:4px;height:4px;border-radius:50%;background:var(--brand-dark);display:inline-block"></span>' : ''}</div>` : '';
-      const tooltip = dayEvents.map(e => e.type === 'birthday' ? `🎂 ${e.name}` : `🎉 ${e.name} (${e.years} an${e.years > 1 ? 'i' : ''})`).join('\n');
-      cells += `<div class="mini-cal-day ${isToday ? 'today' : ''} ${dayEvents.length > 0 ? 'has-event' : ''}" title="${tooltip}" style="cursor:${dayEvents.length > 0 ? 'pointer' : 'default'};position:relative;padding-bottom:2px">${day}${dots}</div>`;
+       const clickHandler = dayEvents.length > 0
+        ? `onclick="MiniCalendar.showDayPopup(this, ${day}, ${month})" style="cursor:pointer;position:relative;padding-bottom:2px"`
+        : `style="cursor:default;position:relative;padding-bottom:2px"`;
+      cells += `<div class="mini-cal-day ${isToday ? 'today' : ''} ${dayEvents.length > 0 ? 'has-event' : ''}" ${clickHandler}>${day}${dots}</div>`;
     }
 
     return `
@@ -301,6 +303,64 @@ const MiniCalendar = {
   },
 
   init() {},
+
+  showDayPopup(el, day, month) {
+    // Elimină orice popup existent
+    const existing = document.getElementById('cal-day-popup');
+    if (existing) { existing.remove(); return; }
+
+    const dayEvents = this.getEventsForDay(day, month);
+    if (!dayEvents.length) return;
+
+    const monthNames = ['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
+    const rows = dayEvents.map(ev => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0f0">
+        <div style="font-size:20px;flex-shrink:0">${ev.type === 'birthday' ? '🎂' : '🎉'}</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:#111">${ev.name}</div>
+          <div style="font-size:11px;color:#888">${ev.type === 'birthday' ? 'Zi de naștere' : `Aniversare angajare — ${ev.years} an${ev.years > 1 ? 'i' : ''}`}</div>
+        </div>
+      </div>
+    `).join('');
+
+    const popup = document.createElement('div');
+    popup.id = 'cal-day-popup';
+    popup.innerHTML = `
+      <div style="font-size:12px;font-weight:700;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px">${day} ${monthNames[month]}</div>
+      ${rows}
+    `;
+    Object.assign(popup.style, {
+      position: 'absolute',
+      zIndex: '9999',
+      background: '#fff',
+      border: '1px solid #e0e0e0',
+      borderRadius: '10px',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.13)',
+      padding: '12px 16px',
+      minWidth: '220px',
+      maxWidth: '300px',
+    });
+
+    // Poziționare relativă la celula calendarului
+    const rect = el.getBoundingClientRect();
+    const scrollY = window.scrollY || document.documentElement.scrollTop;
+    const scrollX = window.scrollX || document.documentElement.scrollLeft;
+    popup.style.top = (rect.bottom + scrollY + 6) + 'px';
+    popup.style.left = Math.max(8, rect.left + scrollX - 80) + 'px';
+
+    document.body.appendChild(popup);
+
+    // Închide la click în afara popupului
+    setTimeout(() => {
+      const close = (e) => {
+        if (!popup.contains(e.target) && e.target !== el) {
+          popup.remove();
+          document.removeEventListener('click', close);
+        }
+      };
+      document.addEventListener('click', close);
+    }, 10);
+  },
 
   prevMonth() {
     this.currentDate.setMonth(this.currentDate.getMonth() - 1);
