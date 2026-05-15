@@ -407,11 +407,30 @@ const Proiecte = {
     const remainH = Math.max(0, budgetH - workedH);
     const pct = budgetH > 0 ? Math.min(100, Math.round((workedH / budgetH) * 100)) : 0;
     const barColor = pct > 90 ? '#EF4444' : pct > 70 ? '#F59E0B' : '#10B981';
-    const assignee = task.assigned_user_id ? this.getUserName(task.assigned_user_id) : null;
-    const assigneeCode = task.assigned_user_id ? this.getUserCode(task.assigned_user_id) : null;
     const profile = Auth.currentProfile;
-    const isAssigned = task.assigned_user_id === profile.id;
+
+    // Suport multi-responsabil: assigned_users array sau fallback la assigned_user_id
+    const assignedIds = Array.isArray(task.assigned_users) && task.assigned_users.length > 0
+      ? task.assigned_users
+      : (task.assigned_user_id ? [task.assigned_user_id] : []);
+    const isAssigned = assignedIds.includes(profile.id);
     const canStart = isAssigned || canEdit;
+
+    // Generăm avatarele pentru toți responsabilii (stivă cu overlap)
+    const avatarsHtml = assignedIds.length > 0
+      ? `<div style="display:flex;align-items:center">` +
+        assignedIds.slice(0, 5).map((uid, i) => {
+          const code = this.getUserCode(uid);
+          const name = this.getUserName(uid);
+          const u = this.allUsers.find(u => u.id === uid);
+          const avatarBg = 'var(--brand-dark)';
+          return u && u.avatar_url
+            ? `<img src="${u.avatar_url}" title="${name}" style="width:26px;height:26px;border-radius:50%;object-fit:cover;border:2px solid var(--bg);margin-left:${i > 0 ? '-8px' : '0'};z-index:${5 - i}">`
+            : `<span title="${name}" style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:${avatarBg};color:#fff;font-size:10px;font-weight:700;border:2px solid var(--bg);margin-left:${i > 0 ? '-8px' : '0'};z-index:${5 - i}">${code}</span>`;
+        }).join('') +
+        (assignedIds.length > 5 ? `<span style="margin-left:2px;font-size:11px;color:var(--text-muted)">+${assignedIds.length - 5}</span>` : '') +
+        `</div>`
+      : `<span style="color:var(--text-muted);font-size:12px">👤 Asignează</span>`;
 
     return `
       <tr style="border-top:1px solid var(--border);font-size:13px" id="task-row-${task.id}">
@@ -434,15 +453,16 @@ const Proiecte = {
         </td>
         <td style="padding:8px 12px;font-size:12px">
           ${canEdit ? `
-            <button onclick="Proiecte.openAssignModal(${task.id})" style="background:none;border:none;cursor:pointer;font-size:12px" title="Asignează">
-              ${assigneeCode ? `<span style="display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50%;background:var(--primary);color:#fff;font-size:11px;font-weight:700;letter-spacing:0.5px" title="${assignee}">${assigneeCode}</span>` : '<span style="color:var(--text-muted);font-size:12px">👤 Asignează</span>'}
+            <button onclick="Proiecte.openAssignModal(${task.id})" style="background:none;border:none;cursor:pointer;padding:0" title="Asignează responsabili">
+              ${avatarsHtml}
             </button>
-          ` : (assignee || '—')}
+          ` : (assignedIds.length > 0 ? avatarsHtml : '—')}
         </td>
         <td style="padding:8px 12px;text-align:right;white-space:nowrap">
           ${canStart ? this.renderTimerBtn(task) : ''}
           ${canEdit ? `
-            <button onclick="Proiecte.deleteTask(${task.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:12px;margin-left:4px" title="Șterge">🗑</button>
+            <button onclick="Proiecte.openEditTaskModal(${task.id})" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:13px;margin-left:4px;padding:2px 4px;border-radius:4px" title="Editează">✏️</button>
+            <button onclick="Proiecte.deleteTask(${task.id})" style="background:none;border:none;cursor:pointer;color:var(--danger);font-size:13px;margin-left:2px;padding:2px 4px;border-radius:4px" title="Șterge">🗑</button>
           ` : ''}
         </td>
       </tr>
@@ -1067,6 +1087,51 @@ const Proiecte = {
     if (!confirm('Ștergi această sarcină?')) return;
     await dbQuery('project_tasks', q => q.delete().eq('id', taskId), null);
     showToast('Sarcină ștearsă', 'success');
+    await this.loadProjectDetails(this.currentProject.id);
+    this.renderProjectDetail();
+  },
+
+  openEditTaskModal(taskId) {
+    const task = this.tasks.find(t => t.id === taskId);
+    if (!task) return;
+    const phase = this.phases.find(p => p.id === task.phase_id);
+    const phaseBudget = phase ? (phase.budget_hours || 0) : 0;
+    const phaseAllocated = this.tasks.filter(t => t.phase_id === task.phase_id).reduce((s, t) => s + (t.budget_hours || 0), 0);
+    const phaseRemain = Math.max(0, phaseBudget - phaseAllocated + (task.budget_hours || 0));
+    const nameEsc = (task.name || '').replace(/"/g, '&quot;');
+
+    openModal('Editează sarcină', `
+      <div style="display:grid;gap:12px">
+        <div>
+          <label class="form-label">Nume sarcină *</label>
+          <input id="edit-task-name" class="form-input" value="${nameEsc}">
+        </div>
+        <div>
+          <label class="form-label">Buget ore ${phaseBudget > 0 ? '(max ' + phaseRemain + 'h disponibil)' : ''}</label>
+          <input id="edit-task-budget" type="number" class="form-input" value="${task.budget_hours || 0}" min="0">
+        </div>
+      </div>
+    `, `
+      <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
+      <button class="btn-primary" onclick="Proiecte.saveEditTask(${taskId},${phaseBudget},${phaseAllocated})">Salvează</button>
+    `);
+  },
+
+  async saveEditTask(taskId, phaseBudget, phaseAllocated) {
+    const name = document.getElementById('edit-task-name')?.value?.trim();
+    if (!name) { showToast('Completează numele sarcinii', 'error'); return; }
+    const budgetH = parseFloat(document.getElementById('edit-task-budget')?.value) || 0;
+    const task = this.tasks.find(t => t.id === taskId);
+    const oldBudget = task ? (task.budget_hours || 0) : 0;
+    const otherBudget = phaseAllocated - oldBudget;
+    if (phaseBudget > 0 && (otherBudget + budgetH) > phaseBudget) {
+      showToast('Depășești bugetul etapei! Disponibil: ' + Math.max(0, phaseBudget - otherBudget) + 'h', 'error');
+      return;
+    }
+    const result = await dbQuery('project_tasks', q => q.update({ name, budget_hours: budgetH }).eq('id', taskId), null);
+    if (result && result.error) { showToast('Eroare: ' + result.error.message, 'error'); return; }
+    closeModalForce();
+    showToast('Sarcină actualizată!', 'success');
     await this.loadProjectDetails(this.currentProject.id);
     this.renderProjectDetail();
   },
