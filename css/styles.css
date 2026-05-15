@@ -795,6 +795,15 @@ tbody tr:hover { background: var(--surface-2); }
 
 .input:focus { border-color: var(--brand); }
 
+/* Format dată dd/mm/yyyy pentru toate input-urile de tip date */
+input[type="date"] {
+  -webkit-text-size-adjust: 100%;
+}
+input[type="date"]::-webkit-datetime-edit-fields-wrapper {
+  direction: ltr;
+}
+/* Forcăm locale ro-RO prin lang pe html */
+
 .select {
   padding: 8px 12px;
   border: 1px solid var(--border-strong);

@@ -333,14 +333,26 @@ function getDateStr(offsetDays) {
 function formatDate(dateStr, opts = {}) {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
-  const defaults = { day: '2-digit', month: 'short', year: 'numeric' };
-  return d.toLocaleDateString('ro-RO', { ...defaults, ...opts });
+  // Dacă se trece opts custom (ex: weekday), folosim toLocaleDateString
+  if (Object.keys(opts).length > 0) {
+    return d.toLocaleDateString('ro-RO', opts);
+  }
+  // Format implicit: dd/mm/yyyy
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  return `${day}/${month}/${year}`;
 }
 
 function formatDateTime(dateStr) {
   if (!dateStr) return '—';
   const d = new Date(dateStr);
-  return d.toLocaleDateString('ro-RO', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  const day = String(d.getDate()).padStart(2, '0');
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const year = d.getFullYear();
+  const hour = String(d.getHours()).padStart(2, '0');
+  const min = String(d.getMinutes()).padStart(2, '0');
+  return `${day}/${month}/${year} ${hour}:${min}`;
 }
 
 function formatHours(minutes) {
