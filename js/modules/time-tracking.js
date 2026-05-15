@@ -211,22 +211,9 @@ const TimeTracking = {
 
     openModal('Adaugă activitate', `
       <div class="space-y-3">
-        <div class="form-row form-row-2">
-          <div>
-            <label class="label">Data</label>
-            <input type="date" id="tt-date" class="input" value="${date}" />
-          </div>
-          <div>
-            <label class="label">Tip activitate</label>
-            <select id="tt-type" class="select">
-              <option value="proiectare">Proiectare</option>
-              <option value="verificare">Verificare</option>
-              <option value="administrativ">Administrativ</option>
-              <option value="deplasare">Deplasare</option>
-              <option value="formare">Formare</option>
-              <option value="client">Client</option>
-            </select>
-          </div>
+        <div>
+          <label class="label">Data</label>
+          <input type="date" id="tt-date" class="input" value="${date}" />
         </div>
         <div>
           <label class="label">Descriere activitate *</label>
@@ -261,10 +248,7 @@ const TimeTracking = {
             <input type="number" id="tt-duration" class="input" value="60" min="15" max="480" step="15" />
           </div>
         </div>
-        <div class="flex items-center gap-2">
-          <input type="checkbox" id="tt-count" checked style="width:16px;height:16px;accent-color:var(--brand)" />
-          <label for="tt-count" style="font-size:13px;cursor:pointer">Contorizează în pontaj</label>
-        </div>
+
       </div>
     `, `
       <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
@@ -290,25 +274,19 @@ const TimeTracking = {
     const projectId = document.getElementById('tt-project')?.value || null;
     const taskId = document.getElementById('tt-task-id')?.value || null;
 
-    // Găsim phase_id din task selectat
-    let phaseId = null;
-    if (taskId) {
-      const task = this.tasks.find(t => String(t.id) === String(taskId));
-      if (task) phaseId = task.phase_id || null;
-    }
-
     const entry = {
       user_id: Auth.currentUser?.id,
       date: document.getElementById('tt-date')?.value,
       start_time: String(hour).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':00',
+      start_hour: hour,
+      start_min: min,
       duration_minutes: parseInt(document.getElementById('tt-duration')?.value) || 60,
       task_name: taskName,
-      activity_type: document.getElementById('tt-type')?.value || 'proiectare',
+      activity_type: 'proiectare',
       project_id: projectId ? parseInt(projectId) : null,
       project_task_id: taskId ? parseInt(taskId) : null,
-      phase_id: phaseId,
-      is_billable: document.getElementById('tt-count')?.checked ?? true,
-      status: 'draft',
+      is_billable: true,
+      status: 'salvat',
     };
 
     const result = await dbQuery('time_entries', q => q.insert(entry).select().single(), null);
