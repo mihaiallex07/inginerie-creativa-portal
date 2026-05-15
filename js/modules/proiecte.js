@@ -1074,35 +1074,55 @@ const Proiecte = {
   openAddMemberModal(role) {
     const existingIds = this.members.map(m => m.user_id);
     const available = this.allUsers.filter(u => !existingIds.includes(u.id));
+    const label = role === 'coordonator' ? 'coordonatori' : 'angajați';
 
-    openModal('Adaugă ' + (role === 'coordonator' ? 'coordonator' : 'angajat'), `
+    openModal('Adaugă ' + label, `
       <div>
-        <label class="form-label">Selectează utilizator</label>
-        <select id="member-user" class="form-input">
-          <option value="">— Selectează —</option>
-          ${available.map(u => '<option value="' + u.id + '">' + (u.full_name || u.name || u.email) + '</option>').join('')}
-        </select>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Selectează una sau mai multe persoane:</div>
+        <div style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+          ${available.length === 0
+            ? '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">Toți angajații sunt deja în echipă</div>'
+            : available.map(u => {
+                const initials = u.employee_code || (u.full_name || 'IC').split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+                const avatarEl = u.avatar_url
+                  ? `<img src="${u.avatar_url}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+                  : `<div style="width:32px;height:32px;border-radius:50%;background:var(--brand-dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${initials}</div>`;
+                return `
+                  <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+                    <input type="checkbox" name="member-cb" value="${u.id}" style="width:16px;height:16px;accent-color:var(--brand-dark);flex-shrink:0" />
+                    ${avatarEl}
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600;font-size:13px">${u.full_name || u.name || u.email}</div>
+                      <div style="font-size:11px;color:var(--text-muted)">${u.department || ''} ${u.job_title || u.position ? '· ' + (u.job_title || u.position) : ''}</div>
+                    </div>
+                  </label>
+                `;
+              }).join('')
+          }
+        </div>
       </div>
     `, `
       <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
-      <button class="btn-primary" onclick="Proiecte.addMember('${role}')">Adaugă</button>
+      <button class="btn-primary" onclick="Proiecte.addMember('${role}')">Adaugă selecția</button>
     `);
   },
 
   async addMember(role) {
-    const userId = document.getElementById('member-user') ? document.getElementById('member-user').value : '';
-    if (!userId) { showToast('Selectează un utilizator', 'error'); return; }
+    const checkboxes = document.querySelectorAll('input[name="member-cb"]:checked');
+    const userIds = Array.from(checkboxes).map(cb => cb.value);
+    if (userIds.length === 0) { showToast('Selectează cel puțin un angajat', 'error'); return; }
 
-    const result = await dbQuery('project_members', q => q.insert({
+    const inserts = userIds.map(userId => ({
       project_id: this.currentProject.id,
       user_id: userId,
       role,
       added_by: Auth.currentProfile ? Auth.currentProfile.id : null,
-    }), null);
+    }));
 
+    const result = await dbQuery('project_members', q => q.insert(inserts), null);
     if (result && result.error) { showToast('Eroare: ' + result.error.message, 'error'); return; }
     closeModalForce();
-    showToast('Membru adăugat!', 'success');
+    showToast(`${userIds.length} ${userIds.length === 1 ? 'membru adăugat' : 'membri adăugați'}!`, 'success');
     await this.loadProjectDetails(this.currentProject.id);
     this.switchTab('echipa');
   },
@@ -1117,20 +1137,36 @@ const Proiecte = {
 
   openAssignModal(taskId) {
     const task = this.tasks.find(t => t.id === taskId);
-    const memberOptions = this.members.map(m => {
-      const u = m.profiles || {};
-      const name = u.full_name || u.name || u.email;
-      const sel = task && task.assigned_user_id === m.user_id ? ' selected' : '';
-      return '<option value="' + m.user_id + '"' + sel + '>' + name + '</option>';
-    }).join('');
+    // assigned_users poate fi array de UUID-uri sau assigned_user_id (legacy)
+    const currentAssigned = task?.assigned_users || (task?.assigned_user_id ? [task.assigned_user_id] : []);
 
-    openModal('Asignează responsabil', `
+    openModal('Asignează responsabili', `
       <div>
-        <label class="form-label">Responsabil sarcină</label>
-        <select id="assign-user" class="form-input">
-          <option value="">— Neasignat —</option>
-          ${memberOptions}
-        </select>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">Selectează una sau mai multe persoane din echipa proiectului:</div>
+        <div style="max-height:300px;overflow-y:auto;border:1px solid var(--border);border-radius:8px">
+          ${this.members.length === 0
+            ? '<div style="padding:16px;text-align:center;color:var(--text-muted);font-size:13px">Niciun membru în echipa proiectului</div>'
+            : this.members.map(m => {
+                const u = m.profiles || {};
+                const name = u.full_name || u.name || u.email || 'Utilizator';
+                const initials = u.employee_code || (name).split(' ').map(w => w[0]).join('').toUpperCase().slice(0,2);
+                const avatarEl = u.avatar_url
+                  ? `<img src="${u.avatar_url}" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">`
+                  : `<div style="width:32px;height:32px;border-radius:50%;background:var(--brand-dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0">${initials}</div>`;
+                const checked = currentAssigned.includes(m.user_id) ? 'checked' : '';
+                return `
+                  <label style="display:flex;align-items:center;gap:10px;padding:10px 12px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.15s" onmouseover="this.style.background='var(--bg-secondary)'" onmouseout="this.style.background=''">
+                    <input type="checkbox" name="assign-cb" value="${m.user_id}" ${checked} style="width:16px;height:16px;accent-color:var(--brand-dark);flex-shrink:0" />
+                    ${avatarEl}
+                    <div style="flex:1;min-width:0">
+                      <div style="font-weight:600;font-size:13px">${name}</div>
+                      <div style="font-size:11px;color:var(--text-muted)">${u.department || ''} ${u.job_title || u.position ? '· ' + (u.job_title || u.position) : ''}</div>
+                    </div>
+                  </label>
+                `;
+              }).join('')
+          }
+        </div>
       </div>
     `, `
       <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
@@ -1139,10 +1175,16 @@ const Proiecte = {
   },
 
   async assignTask(taskId) {
-    const userId = document.getElementById('assign-user') ? document.getElementById('assign-user').value || null : null;
-    await dbQuery('project_tasks', q => q.update({ assigned_user_id: userId || null }).eq('id', taskId), null);
+    const checkboxes = document.querySelectorAll('input[name="assign-cb"]:checked');
+    const userIds = Array.from(checkboxes).map(cb => cb.value);
+    // Salvăm primul user în assigned_user_id (compatibilitate) + toți în assigned_users
+    const primaryUserId = userIds[0] || null;
+    await dbQuery('project_tasks', q => q.update({
+      assigned_user_id: primaryUserId,
+      assigned_users: userIds.length > 0 ? userIds : null,
+    }).eq('id', taskId), null);
     closeModalForce();
-    showToast('Responsabil actualizat', 'success');
+    showToast(userIds.length > 0 ? `${userIds.length} responsabil${userIds.length !== 1 ? 'i asignați' : ' asignat'}` : 'Sarcină neasignată', 'success');
     await this.loadProjectDetails(this.currentProject.id);
     this.renderProjectDetail();
   },

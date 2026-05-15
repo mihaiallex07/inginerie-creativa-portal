@@ -4,15 +4,28 @@
 //           Date financiare (sensibil), Contact urgență, Date medicale
 // Vizibilitate: angajat vede info prof + date personale + urgență + medical
 //               doar proprietarul și adminul văd CI + financiar
+// Mod: isSelf → mereu editabil; admin vizualizează alt angajat → preview implicit + buton Editează
 // ============================================================
 const Profil = {
-  viewUserId: null, // null = profilul propriu, altfel ID-ul altui utilizator
+  viewUserId: null,  // null = profilul propriu, altfel ID-ul altui utilizator
+  editMode: false,   // false = preview (pt admin pe alt profil), true = editabil
 
-  async render(userId) {
+  async render(userId, forceEdit) {
     this.viewUserId = userId || null;
     const currentProfile = Auth.currentProfile;
     const isAdmin = currentProfile?.role === 'admin';
     const isSelf = !this.viewUserId || this.viewUserId === Auth.currentUser?.id;
+
+    // Dacă e profilul propriu → mereu în mod editabil
+    // Dacă admin vizualizează alt angajat → preview implicit (editMode controlat de buton)
+    if (isSelf) {
+      this.editMode = true;
+    } else if (forceEdit !== undefined) {
+      this.editMode = !!forceEdit;
+    } else {
+      this.editMode = false; // preview implicit pentru admin
+    }
+
     const canSeeSensitive = isSelf || isAdmin;
 
     // Încarcă profilul (propriu sau al altui angajat)
@@ -26,13 +39,51 @@ const Profil = {
       return;
     }
 
-    const isReadOnly = !isSelf && !isAdmin;
+    const isReadOnly = !this.editMode;
     const title = isSelf ? 'Profilul meu' : `Profil: ${profile.full_name || profile.name || profile.email}`;
+
+    // Helper pentru câmp: preview vs input
+    const field = (id, value, opts = {}) => {
+      if (!this.editMode) {
+        // Preview mode: afișează valoarea ca text
+        const display = value || `<span style="color:var(--text-muted);font-style:italic">—</span>`;
+        return `<div class="input" style="background:var(--bg-secondary,#f8f8f8);cursor:default;color:${value ? 'inherit' : 'var(--text-muted)'}">${display}</div>`;
+      }
+      const extra = opts.readonly ? 'readonly' : '';
+      const style = opts.style ? `style="${opts.style}"` : '';
+      const placeholder = opts.placeholder ? `placeholder="${opts.placeholder}"` : '';
+      const maxlength = opts.maxlength ? `maxlength="${opts.maxlength}"` : '';
+      const pattern = opts.pattern ? `pattern="${opts.pattern}" title="${opts.patternTitle || ''}"` : '';
+      const type = opts.type || 'text';
+      return `<input type="${type}" id="${id}" class="input" value="${(value || '').replace(/"/g,'&quot;')}" ${extra} ${placeholder} ${maxlength} ${pattern} ${style} />`;
+    };
+
+    const selectField = (id, value, options, opts = {}) => {
+      if (!this.editMode) {
+        const display = value || `<span style="color:var(--text-muted);font-style:italic">—</span>`;
+        return `<div class="input" style="background:var(--bg-secondary,#f8f8f8);cursor:default">${display}</div>`;
+      }
+      const disabled = opts.disabled ? 'disabled' : '';
+      const optHtml = options.map(o => `<option value="${o}" ${value === o ? 'selected' : ''}>${o}</option>`).join('');
+      return `<select id="${id}" class="input" ${disabled}><option value="">— Selectează —</option>${optHtml}</select>`;
+    };
 
     document.getElementById('page-content').innerHTML = `
       <div style="max-width:760px">
         <div class="page-header" style="margin-bottom:24px">
-          <h1 class="page-title">${title}</h1>
+          <div style="display:flex;align-items:center;gap:12px">
+            <h1 class="page-title">${title}</h1>
+            ${!isSelf && isAdmin && !this.editMode ? `
+              <button class="btn-brand" onclick="Profil.render('${this.viewUserId}', true)" style="font-size:13px;padding:6px 16px">
+                ✏️ Editează
+              </button>
+            ` : ''}
+            ${!isSelf && isAdmin && this.editMode ? `
+              <button class="btn-secondary" onclick="Profil.render('${this.viewUserId}', false)" style="font-size:13px;padding:6px 16px">
+                👁 Preview
+              </button>
+            ` : ''}
+          </div>
           ${!isSelf ? `<button class="btn-secondary" onclick="navigate('admin',null)" style="font-size:13px">← Înapoi</button>` : ''}
         </div>
 
@@ -63,39 +114,32 @@ const Profil = {
           <div class="form-row form-row-2">
             <div>
               <label class="label">Funcție</label>
-              <input type="text" id="prof-position" class="input" value="${profile.job_title || profile.position || ''}"
-                ${!isSelf && !isAdmin ? 'readonly' : ''} placeholder="Ex: Arhitect" />
+              ${field('prof-position', profile.job_title || profile.position, { placeholder: 'Ex: Arhitect', readonly: !isAdmin && !isSelf })}
             </div>
             <div>
               <label class="label">Departament</label>
-              <input type="text" id="prof-department" class="input" value="${profile.department || ''}"
-                ${!isSelf && !isAdmin ? 'readonly' : ''} placeholder="Ex: Proiectare" />
+              ${field('prof-department', profile.department, { placeholder: 'Ex: Proiectare', readonly: !isAdmin && !isSelf })}
             </div>
           </div>
           <div class="form-row form-row-2 mt-3">
             <div>
               <label class="label">Telefon mobil</label>
-              <input type="tel" id="prof-phone-mobile" class="input" value="${profile.phone_mobile || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="+40 7xx xxx xxx" maxlength="15" />
+              ${field('prof-phone-mobile', profile.phone_mobile, { type: 'tel', placeholder: '+40 7xx xxx xxx', maxlength: '15' })}
             </div>
             <div>
               <label class="label">Telefon de serviciu <span class="text-muted">(opțional)</span></label>
-              <input type="tel" id="prof-phone-work" class="input" value="${profile.phone_work || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="+40 2xx xxx xxx" maxlength="15" />
+              ${field('prof-phone-work', profile.phone_work, { type: 'tel', placeholder: '+40 2xx xxx xxx', maxlength: '15' })}
             </div>
           </div>
           <div class="form-row form-row-2 mt-3">
             <div>
               <label class="label">Data angajării</label>
-              <input type="date" id="prof-hire-date" class="input" value="${profile.hire_date || ''}"
-                ${!isSelf && !isAdmin ? 'readonly' : ''} />
+              ${field('prof-hire-date', profile.hire_date, { type: 'date', readonly: !isAdmin && !isSelf })}
               ${profile.hire_date ? `<div class="text-sm text-muted mt-1">Vechime: ${Profil.calcVechime(profile.hire_date)}</div>` : ''}
             </div>
             <div>
               <label class="label">Cod angajat</label>
-              <input type="text" id="prof-employee-code" class="input" value="${profile.employee_code || ''}"
-                ${!isAdmin ? 'readonly' : ''} placeholder="Ex: MP" maxlength="5"
-                style="text-transform:uppercase" />
+              ${field('prof-employee-code', profile.employee_code, { placeholder: 'Ex: MP', maxlength: '5', style: 'text-transform:uppercase', readonly: !isAdmin })}
             </div>
           </div>
         </div>
@@ -108,14 +152,12 @@ const Profil = {
           <div class="form-row form-row-2">
             <div>
               <label class="label">Data nașterii</label>
-              <input type="date" id="prof-birth-date" class="input" value="${profile.birth_date || ''}"
-                ${isReadOnly ? 'readonly' : ''} />
+              ${field('prof-birth-date', profile.birth_date, { type: 'date' })}
               ${profile.birth_date ? `<div class="text-sm text-muted mt-1">Vârstă: ${Profil.calcVarsta(profile.birth_date)}</div>` : ''}
             </div>
             <div>
               <label class="label">Adresă de reședință <span class="text-muted">(opțional)</span></label>
-              <input type="text" id="prof-residence" class="input" value="${profile.residence_address || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="Str. Exemplu nr. 1, Cluj-Napoca" />
+              ${field('prof-residence', profile.residence_address, { placeholder: 'Str. Exemplu nr. 1, Cluj-Napoca' })}
             </div>
           </div>
         </div>
@@ -130,34 +172,26 @@ const Profil = {
           <div class="form-row form-row-3 mb-3">
             <div>
               <label class="label">CNP</label>
-              <input type="text" id="prof-cnp" class="input" value="${profile.cnp || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="1234567890123" maxlength="13"
-                pattern="[0-9]{13}" title="CNP trebuie să conțină exact 13 cifre" />
+              ${field('prof-cnp', profile.cnp, { placeholder: '1234567890123', maxlength: '13', pattern: '[0-9]{13}', patternTitle: 'CNP trebuie să conțină exact 13 cifre' })}
             </div>
             <div>
               <label class="label">Serie CI</label>
-              <input type="text" id="prof-ci-series" class="input" value="${profile.ci_series || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="CJ" maxlength="2"
-                style="text-transform:uppercase" />
+              ${field('prof-ci-series', profile.ci_series, { placeholder: 'CJ', maxlength: '2', style: 'text-transform:uppercase' })}
             </div>
             <div>
               <label class="label">Număr CI</label>
-              <input type="text" id="prof-ci-number" class="input" value="${profile.ci_number || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="123456" maxlength="6"
-                pattern="[0-9]{6}" title="Numărul CI trebuie să conțină exact 6 cifre" />
+              ${field('prof-ci-number', profile.ci_number, { placeholder: '123456', maxlength: '6', pattern: '[0-9]{6}', patternTitle: 'Numărul CI trebuie să conțină exact 6 cifre' })}
             </div>
           </div>
           <div class="form-row form-row-2">
             <div>
               <label class="label">Data expirare CI</label>
-              <input type="date" id="prof-ci-expiry" class="input" value="${profile.ci_expiry_date || ''}"
-                ${isReadOnly ? 'readonly' : ''} />
+              ${field('prof-ci-expiry', profile.ci_expiry_date, { type: 'date' })}
               ${profile.ci_expiry_date ? Profil.ciExpiryWarning(profile.ci_expiry_date) : ''}
             </div>
             <div>
               <label class="label">Eliberat de</label>
-              <input type="text" id="prof-ci-issued-by" class="input" value="${profile.ci_issued_by || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="SPCLEP Cluj-Napoca" maxlength="60" />
+              ${field('prof-ci-issued-by', profile.ci_issued_by, { placeholder: 'SPCLEP Cluj-Napoca', maxlength: '60' })}
             </div>
           </div>
         </div>
@@ -173,14 +207,11 @@ const Profil = {
           <div class="form-row form-row-2">
             <div>
               <label class="label">IBAN</label>
-              <input type="text" id="prof-iban" class="input" value="${profile.iban || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="RO49AAAA1B31007593840000" maxlength="24"
-                style="text-transform:uppercase;letter-spacing:1px" />
+              ${field('prof-iban', profile.iban, { placeholder: 'RO49AAAA1B31007593840000', maxlength: '24', style: 'text-transform:uppercase;letter-spacing:1px' })}
             </div>
             <div>
               <label class="label">Bancă</label>
-              <input type="text" id="prof-bank" class="input" value="${profile.bank_name || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="Ex: BCR, BRD, ING" maxlength="50" />
+              ${field('prof-bank', profile.bank_name, { placeholder: 'Ex: BCR, BRD, ING', maxlength: '50' })}
             </div>
           </div>
         </div>
@@ -194,18 +225,15 @@ const Profil = {
           <div class="form-row form-row-3">
             <div>
               <label class="label">Nume complet</label>
-              <input type="text" id="prof-emg-name" class="input" value="${profile.emergency_contact_name || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="Ion Popescu" maxlength="80" />
+              ${field('prof-emg-name', profile.emergency_contact_name, { placeholder: 'Ion Popescu', maxlength: '80' })}
             </div>
             <div>
               <label class="label">Telefon</label>
-              <input type="tel" id="prof-emg-phone" class="input" value="${profile.emergency_contact_phone || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="+40 7xx xxx xxx" maxlength="15" />
+              ${field('prof-emg-phone', profile.emergency_contact_phone, { type: 'tel', placeholder: '+40 7xx xxx xxx', maxlength: '15' })}
             </div>
             <div>
               <label class="label">Relație</label>
-              <input type="text" id="prof-emg-relation" class="input" value="${profile.emergency_contact_relation || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="Ex: Soț/Soție, Părinte" maxlength="40" />
+              ${field('prof-emg-relation', profile.emergency_contact_relation, { placeholder: 'Ex: Soț/Soție, Părinte', maxlength: '40' })}
             </div>
           </div>
         </div>
@@ -218,25 +246,19 @@ const Profil = {
           <div class="form-row form-row-2">
             <div>
               <label class="label">Grupă sanguină</label>
-              <select id="prof-blood-type" class="input" ${isReadOnly ? 'disabled' : ''}>
-                <option value="">— Selectează —</option>
-                ${['O+','O-','A+','A-','B+','B-','AB+','AB-'].map(g =>
-                  `<option value="${g}" ${profile.blood_type === g ? 'selected' : ''}>${g}</option>`
-                ).join('')}
-              </select>
+              ${selectField('prof-blood-type', profile.blood_type, ['O+','O-','A+','A-','B+','B-','AB+','AB-'])}
             </div>
             <div>
               <label class="label">Alergii cunoscute</label>
-              <input type="text" id="prof-allergies" class="input" value="${profile.known_allergies || ''}"
-                ${isReadOnly ? 'readonly' : ''} placeholder="Ex: Penicilină, Polen, Nickel" maxlength="200" />
+              ${field('prof-allergies', profile.known_allergies, { placeholder: 'Ex: Penicilină, Polen, Nickel', maxlength: '200' })}
             </div>
           </div>
         </div>
 
-        <!-- Butoane de acțiune (doar pentru proprietar sau admin) -->
-        ${isSelf || isAdmin ? `
+        <!-- Butoane de acțiune (doar când e în mod editabil) -->
+        ${this.editMode ? `
         <div class="flex justify-between items-center mb-6">
-          <button class="btn-danger" onclick="Auth.logout()">Deconectare</button>
+          ${isSelf ? `<button class="btn-danger" onclick="Auth.logout()">Deconectare</button>` : `<div></div>`}
           <button class="btn-brand" onclick="Profil.save()">💾 Salvează toate modificările</button>
         </div>
         ` : ''}
@@ -281,13 +303,16 @@ const Profil = {
   },
 
   async save() {
-    const profile = Auth.currentProfile;
-    const isAdmin = profile?.role === 'admin';
+    const currentProfile = Auth.currentProfile;
+    const isAdmin = currentProfile?.role === 'admin';
     const isSelf = !this.viewUserId || this.viewUserId === Auth.currentUser?.id;
-    const targetId = this.viewUserId || Auth.currentUser?.id;
+    // Salvează pe angajatul vizualizat, NU pe cel logat
+    const targetId = isSelf ? Auth.currentUser?.id : this.viewUserId;
+
+    if (!targetId) { showToast('Eroare: ID utilizator lipsă', 'error'); return; }
 
     const updates = {
-      full_name: document.getElementById('prof-name')?.value?.trim() || profile?.full_name,
+      full_name: document.getElementById('prof-name')?.value?.trim() || undefined,
       phone_mobile: document.getElementById('prof-phone-mobile')?.value?.trim() || null,
       phone_work: document.getElementById('prof-phone-work')?.value?.trim() || null,
       hire_date: document.getElementById('prof-hire-date')?.value || null,
@@ -299,6 +324,8 @@ const Profil = {
       blood_type: document.getElementById('prof-blood-type')?.value || null,
       known_allergies: document.getElementById('prof-allergies')?.value?.trim() || null,
     };
+    // Elimină undefined
+    Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);
 
     // Câmpuri sensibile — doar proprietar sau admin
     if (isSelf || isAdmin) {
@@ -342,12 +369,13 @@ const Profil = {
     const { error } = await DB.updateProfile(targetId, updates);
     if (error) { showToast('Eroare la salvare: ' + error.message, 'error'); return; }
 
+    // Actualizează cache-ul local doar dacă e profilul propriu
     if (isSelf) {
       Object.assign(Auth.currentProfile, updates);
       if (typeof updateSidebarUser === 'function') updateSidebarUser();
     }
     showToast('Profil actualizat cu succes!', 'success');
-    // Re-render pentru a actualiza calculele de vechime/vârstă
-    setTimeout(() => this.render(this.viewUserId), 500);
+    // Re-render în mod preview după salvare (dacă e alt angajat)
+    setTimeout(() => this.render(this.viewUserId, isSelf ? true : false), 500);
   },
 };
