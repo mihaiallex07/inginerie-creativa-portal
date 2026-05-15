@@ -1,0 +1,9 @@
+{
+  "query": "\n-- Fix proposal_votes: drop 'type' column (schema only has id, proposalId, userId, createdAt)\nALTER TABLE proposal_votes DROP COLUMN `type`;\n\n-- Fix proposal_comments: rename 'authorId' to 'userId'\nALTER TABLE proposal_comments ADD COLUMN `userId` int NOT NULL DEFAULT 0;\nUPDATE proposal_comments SET `userId` = `authorId`;\nALTER TABLE proposal_comments DROP COLUMN `authorId`;\nALTER TABLE proposal_comments DROP COLUMN `updatedAt`;\n\n-- Fix notifications: fix 'type' to varchar, fix 'message' to nullable, add 'title' length\nALTER TABLE notifications MODIFY COLUMN `type` varchar(64) NOT NULL;\nALTER TABLE notifications MODIFY COLUMN `title` varchar(256) NOT NULL;\nALTER TABLE notifications MODIFY COLUMN `message` text;\nALTER TABLE notifications MODIFY COLUMN `link` varchar(512);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \n-- Fix proposal_votes: drop 'type' column (schema only has id, proposalId, userId, createdAt)\nALTER TABLE proposal_votes DROP COLUMN `type`;\n\n-- Fix proposal_comments: rename 'authorId' to 'userId'\nALTER TABLE proposal_comments ADD COLUMN `userId` int NOT NULL DEFAULT 0;\nUPDATE proposal_comments SET `userId` = `authorId`;\nALTER TABLE proposal_comments DROP COLUMN `authorId`;\nALTER TABLE proposal_comments DROP COLUMN `updatedAt`;\n\n-- Fix notifications: fix 'type' to varchar, fix 'message' to nullable, add 'title' length\nALTER TABLE notifications MODIFY COLUMN `type` varchar(64) NOT NULL;\nALTER TABLE notifications MODIFY COLUMN `title` varchar(256) NOT NULL;\nALTER TABLE notifications MODIFY COLUMN `message` text;\nALTER TABLE notifications MODIFY COLUMN `link` varchar(512);\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 6559
+}

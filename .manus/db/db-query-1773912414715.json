@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE projects MODIFY COLUMN `status` enum('activ','suspendat','finalizat','intern') NOT NULL DEFAULT 'activ';\nALTER TABLE projects DROP COLUMN `type`;\nALTER TABLE projects DROP COLUMN `googleDriveFolderId`;\nALTER TABLE projects DROP COLUMN `googleDriveFolderUrl`;\nALTER TABLE projects DROP COLUMN `budgetHours`;\nALTER TABLE projects DROP COLUMN `isBillable`;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \nALTER TABLE projects MODIFY COLUMN `status` enum('activ','suspendat','finalizat','intern') NOT NULL DEFAULT 'activ';\nALTER TABLE projects DROP COLUMN `type`;\nALTER TABLE projects DROP COLUMN `googleDriveFolderId`;\nALTER TABLE projects DROP COLUMN `googleDriveFolderUrl`;\nALTER TABLE projects DROP COLUMN `budgetHours`;\nALTER TABLE projects DROP COLUMN `isBillable`;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1916
+}

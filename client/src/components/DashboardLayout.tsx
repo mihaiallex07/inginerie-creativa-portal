@@ -1,0 +1,705 @@
+import { useAuth } from "../_core/hooks/useAuth";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Badge } from "./ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarProvider,
+  SidebarTrigger,
+  useSidebar,
+} from "@/components/ui/sidebar";
+import { redirectToLogin } from "@/const";
+import { useIsMobile } from "@/hooks/useMobile";
+import {
+  AlertTriangle,
+  BarChart3,
+  Bell,
+  BookOpen,
+  Building2,
+  CalendarCheck,
+  CalendarDays,
+  CalendarPlus,
+  ChevronRight,
+  Clock,
+  FileText,
+  FolderOpen,
+  LayoutDashboard,
+  Lightbulb,
+  LogOut,
+  Newspaper,
+  PanelLeft,
+  Pause,
+  Play,
+  Settings,
+  Shield,
+  Square,
+  Timer,
+  User,
+  Users,
+} from "lucide-react";
+import { CSSProperties, useEffect, useRef, useState } from "react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useLocation } from "wouter";
+import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
+import { Button } from "./ui/button";
+import { trpc } from "@/lib/trpc";
+
+const LOGO_YELLOW = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/LOGOtipgalben_transparent_fdda5790.png";
+const LOGO_ICON = "https://d2xsxph8kpxj0f.cloudfront.net/310519663448137464/2gvgk32MDhEEiC7DrEzbf4/LOGOtipgalben_transparent_fdda5790.png";
+
+type NavItem = {
+  icon: any;
+  label: string;
+  path: string;
+  badge?: string;
+  roles?: string[]; // if set, only these roles see this item
+};
+
+type NavSection = {
+  label: string;
+  items: NavItem[];
+  roles?: string[]; // if set, only these roles see this section
+};
+
+const navSections: NavSection[] = [
+  {
+    label: "PRINCIPAL",
+    items: [
+      { icon: LayoutDashboard, label: "Tablou de bord", path: "/" },
+      { icon: Newspaper, label: "Știri & Anunțuri", path: "/stiri" },
+    ],
+  },
+  {
+    label: "TIMP & PROIECTE",
+    items: [
+      { icon: Clock, label: "Time-Tracking", path: "/time-tracking" },
+      { icon: CalendarDays, label: "Process Overview", path: "/process-overview" },
+      { icon: FolderOpen, label: "Proiecte", path: "/proiecte" },
+      { icon: FileText, label: "Formulare & Cereri", path: "/formulare" },
+    ],
+  },
+  {
+    label: "COMPANIE",
+    items: [
+      { icon: Building2, label: "Viziune & Valori", path: "/viziune" },
+      { icon: BookOpen, label: "Regulament intern", path: "/regulament" },
+      { icon: FolderOpen, label: "Procese & Proceduri", path: "/procese-proceduri" },
+      { icon: BookOpen, label: "Bibliotecă tehnică", path: "/biblioteca" },
+      { icon: Users, label: "Organigramă", path: "/organigrama" },
+    ],
+  },
+  {
+    label: "PERSONAL",
+    items: [
+      { icon: FileText, label: "Documentele mele", path: "/documente" },
+      { icon: Lightbulb, label: "Propunerile mele", path: "/propuneri" },
+      { icon: User, label: "Profilul meu", path: "/profil" },
+    ],
+  },
+  {
+    label: "ADMINISTRARE",
+    roles: ["admin", "coordonator"],
+    items: [
+      { icon: Shield, label: "Utilizatori", path: "/admin-utilizatori", roles: ["admin"] },
+      { icon: CalendarPlus, label: "Evenimente Firmă", path: "/evenimente", roles: ["admin", "coordonator"] },
+      { icon: FolderOpen, label: "Documente Drive", path: "/admin-documente", roles: ["admin"] },
+    ],
+  },
+];
+
+const SIDEBAR_WIDTH_KEY = "ic-sidebar-width";
+const DEFAULT_WIDTH = 220;
+const MIN_WIDTH = 180;
+const MAX_WIDTH = 320;
+
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const [sidebarWidth, setSidebarWidth] = useState(() => {
+    const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+    return saved ? parseInt(saved, 10) : DEFAULT_WIDTH;
+  });
+  const { loading, user } = useAuth();
+
+  useEffect(() => {
+    localStorage.setItem(SIDEBAR_WIDTH_KEY, sidebarWidth.toString());
+  }, [sidebarWidth]);
+
+  if (loading) return <DashboardLayoutSkeleton />;
+
+  // Check for unauthorized domain error from OAuth redirect
+  const urlParams = new URLSearchParams(window.location.search);
+  const authError = urlParams.get("error");
+  const authEmail = urlParams.get("email");
+
+  if (!user || authError === "unauthorized_domain") {
+    const isUnauthorized = authError === "unauthorized_domain";
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#221F1F]">
+        <div className="flex flex-col items-center gap-8 p-8 max-w-md w-full">
+          <img src={LOGO_YELLOW} alt="Inginerie Creativă" className="h-12 object-contain" />
+          <div className="flex flex-col items-center gap-3 text-center">
+            <h1 className="text-2xl font-bold text-white tracking-tight">Portal Intern</h1>
+            {isUnauthorized ? (
+              <>
+                <div className="bg-red-900/30 border border-red-500/40 rounded-lg px-4 py-3 text-center">
+                  <p className="text-red-400 text-sm font-semibold mb-1">Acces refuzat</p>
+                  <p className="text-gray-300 text-xs">
+                    Contul <span className="text-white font-medium">{authEmail}</span> nu aparține domeniului{" "}
+                    <span className="text-[#FFCB09] font-medium">@ingineriecreativa.ro</span>.
+                  </p>
+                  <p className="text-gray-400 text-xs mt-1">Folosește contul tău de firmă pentru a accesa portalul.</p>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-gray-400 max-w-xs">
+                Accesul este restricționat exclusiv angajaților cu adresă{" "}
+                <span className="text-[#FFCB09] font-medium">@ingineriecreativa.ro</span>
+              </p>
+            )}
+          </div>
+          <Button
+            onClick={() => { redirectToLogin(); }}
+            size="lg"
+            className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] font-semibold shadow-lg"
+          >
+            {isUnauthorized ? "Încearcă cu alt cont" : "Autentificare cu Google"}
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <SidebarProvider style={{ "--sidebar-width": `${sidebarWidth}px` } as CSSProperties}>
+      <DashboardLayoutContent setSidebarWidth={setSidebarWidth}>
+        {children}
+      </DashboardLayoutContent>
+    </SidebarProvider>
+  );
+}
+
+function DashboardLayoutContent({
+  children,
+  setSidebarWidth,
+}: {
+  children: React.ReactNode;
+  setSidebarWidth: (w: number) => void;
+}) {
+  const { user, logout } = useAuth();
+  const [location, setLocation] = useLocation();
+  const { state, toggleSidebar } = useSidebar();
+  const isCollapsed = state === "collapsed";
+  const [isResizing, setIsResizing] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
+
+  // Pending invitations count
+  const { data: pendingInvitations = [] } = trpc.invitations.pending.useQuery(undefined, { refetchInterval: 30000 });
+  const unreadCount = (pendingInvitations as any[]).length;
+  // Budget alerts for tasks where user is responsible
+  const { data: budgetAlerts = [] } = trpc.projects.myBudgetAlerts.useQuery(undefined, { refetchInterval: 60000 });
+  const budgetAlertCount = (budgetAlerts as any[]).length;
+  // Active task session
+  const { data: activeSession } = trpc.projects.activeSession.useQuery(undefined, { refetchInterval: 10000 });
+  const { data: enrolledTasksData } = trpc.projects.myEnrolledTasks.useQuery(undefined);
+  const utils = trpc.useUtils();
+  const [elapsed, setElapsed] = useState(0);
+  // Keep a ref to the last known elapsed so we don't reset during refetch
+  const elapsedRef = useRef(0);
+  const [displayElapsed, setDisplayElapsed] = useState(0);
+  // Quick-start picker state
+  const [quickPickerOpen, setQuickPickerOpen] = useState(false);
+  const [quickProjectId, setQuickProjectId] = useState<string>("none");
+  const [quickTaskId, setQuickTaskId] = useState<string>("none");
+  const enrolledProjects = (enrolledTasksData as any[]) ?? [];
+  const quickProjectTasks = enrolledProjects.find((p: any) => String(p.projectId) === quickProjectId)?.tasks ?? [];
+  const startSessionQuick = trpc.projects.startSession.useMutation({
+    onSuccess: () => {
+      utils.projects.activeSession.invalidate();
+      setQuickPickerOpen(false);
+      setQuickProjectId("none");
+      setQuickTaskId("none");
+    },
+  });
+
+  useEffect(() => {
+    if (!activeSession) {
+      // Only reset if we truly have no session (not just a refetch gap)
+      setElapsed(0);
+      elapsedRef.current = 0;
+      setDisplayElapsed(0);
+      return;
+    }
+    const s = activeSession as any;
+    const totalAccumulatedSeconds = (s.totalMinutes ?? 0) * 60;
+    // If paused: show accumulated time only, no interval
+    if (s.status === "in_pauza") {
+      const val = Math.max(totalAccumulatedSeconds, elapsedRef.current);
+      setElapsed(val);
+      elapsedRef.current = val;
+      setDisplayElapsed(val);
+      return;
+    }
+    // If active: elapsed = accumulated + time since last resume (or start if never paused)
+    // Ensure dates are parsed as UTC (add Z suffix if missing to prevent +3h local timezone offset)
+    const toUtcMs = (d: string | Date) => {
+      if (!d) return Date.now();
+      const str = String(d);
+      const normalized = /[Zz]|[+-]\d{2}:?\d{2}$/.test(str) ? str : str + 'Z';
+      return new Date(normalized).getTime();
+    };
+    const resumeBase = s.resumedAt ? toUtcMs(s.resumedAt) : toUtcMs(s.startedAt);
+    const update = () => {
+      const val = totalAccumulatedSeconds + Math.floor((Date.now() - resumeBase) / 1000);
+      setElapsed(val);
+      elapsedRef.current = val;
+      setDisplayElapsed(val);
+    };
+    update();
+    const t = setInterval(update, 1000);
+    return () => clearInterval(t);
+  }, [activeSession]);
+
+  const pauseSessionGlobal = trpc.projects.pauseSession.useMutation({
+    onMutate: () => {
+      // Freeze the display at current elapsed — don't reset during refetch
+      setDisplayElapsed(elapsedRef.current);
+    },
+    onSuccess: () => utils.projects.activeSession.invalidate(),
+  });
+  const resumeSessionGlobal = trpc.projects.resumeSession.useMutation({
+    onSuccess: () => utils.projects.activeSession.invalidate(),
+  });
+  const stopSessionGlobal = trpc.projects.stopSession.useMutation({
+    onSuccess: () => utils.projects.activeSession.invalidate(),
+  });
+  // Use displayElapsed for rendering — it's frozen during pause/refetch to avoid flash-to-zero
+  const hh = String(Math.floor(displayElapsed / 3600)).padStart(2, "0");
+  const mm2 = String(Math.floor((displayElapsed % 3600) / 60)).padStart(2, "0");
+  const ss = String(displayElapsed % 60).padStart(2, "0");
+  const isSessionPaused = (activeSession as any)?.status === "in_pauza";
+
+  useEffect(() => {
+    if (isCollapsed) setIsResizing(false);
+  }, [isCollapsed]);
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+      const sidebarLeft = sidebarRef.current?.getBoundingClientRect().left ?? 0;
+      const newWidth = e.clientX - sidebarLeft;
+      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) setSidebarWidth(newWidth);
+    };
+    const handleMouseUp = () => setIsResizing(false);
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    }
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing, setSidebarWidth]);
+
+  const initials = user?.name
+    ?.split(" ")
+    .map((n: string) => n[0])
+    .slice(0, 2)
+    .join("")
+    .toUpperCase() ?? "?";
+
+  return (
+    <>
+      <div className="relative" ref={sidebarRef}>
+        <Sidebar collapsible="icon" className="border-r-0" disableTransition={isResizing}>
+          {/* Header */}
+          <SidebarHeader className="h-16 border-b border-sidebar-border">
+            <div className="flex items-center gap-3 px-3 h-full">
+              <button
+                onClick={toggleSidebar}
+                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-sidebar-accent transition-colors shrink-0 focus:outline-none"
+                aria-label="Toggle navigation"
+              >
+                {isCollapsed ? (
+                  <img src={LOGO_ICON} alt="IC" className="h-6 w-6 object-contain" />
+                ) : (
+                  <PanelLeft className="h-4 w-4 text-sidebar-foreground/60" />
+                )}
+              </button>
+              {!isCollapsed && (
+                <div className="flex items-center min-w-0">
+                  <img
+                    src={LOGO_YELLOW}
+                    alt="Inginerie Creativă"
+                    className="h-10 w-auto object-contain object-left"
+                    style={{ background: 'transparent', mixBlendMode: 'normal' }}
+                  />
+                </div>
+              )}
+            </div>
+          </SidebarHeader>
+
+          {/* Navigation */}
+          <SidebarContent className="gap-0 py-2 overflow-y-auto">
+            {navSections
+              .filter((section) => !section.roles || section.roles.includes(user?.role ?? "angajat"))
+              .map((section) => {
+                const visibleItems = section.items.filter(
+                  (item) => !item.roles || item.roles.includes(user?.role ?? "angajat")
+                );
+                if (visibleItems.length === 0) return null;
+                return (
+              <div key={section.label} className="mb-1">
+                {!isCollapsed && (
+                  <p className="px-4 py-1.5 text-[10px] font-semibold tracking-widest text-sidebar-foreground/40 uppercase">
+                    {section.label}
+                  </p>
+                )}
+                <SidebarMenu className="px-2">
+                  {visibleItems.map((item) => {
+                    const isActive = location === item.path || (item.path !== "/" && location.startsWith(item.path));
+                    return (
+                      <SidebarMenuItem key={item.path}>
+                        <SidebarMenuButton
+                          isActive={isActive}
+                          onClick={() => setLocation(item.path)}
+                          tooltip={item.label}
+                          className={`h-9 text-sm transition-all font-normal rounded-md
+                            ${isActive
+                              ? "bg-sidebar-accent text-sidebar-accent-foreground border-l-2 border-[#FFCB09] pl-[calc(0.5rem-2px)]"
+                              : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+                            }`}
+                        >
+                          <item.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-[#FFCB09]" : ""}`} />
+                          <span className="truncate">{item.label}</span>
+                          {item.badge && !isCollapsed && (
+                            <span className="ml-auto text-[9px] font-bold bg-[#FFCB09] text-[#221F1F] px-1.5 py-0.5 rounded-full">
+                              {item.badge}
+                            </span>
+                          )}
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    );
+                  })}
+                </SidebarMenu>
+              </div>
+                );
+              })}
+          </SidebarContent>
+
+          {/* Footer */}
+          <SidebarFooter className="border-t border-sidebar-border p-2">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-2.5 rounded-lg px-2 py-2 hover:bg-sidebar-accent/50 transition-colors w-full text-left focus:outline-none group-data-[collapsible=icon]:justify-center">
+                  <Avatar className="h-8 w-8 shrink-0 border border-sidebar-border">
+                    <AvatarImage src={user?.avatarUrl ?? undefined} />
+                    <AvatarFallback className="text-xs font-semibold bg-[#FFCB09] text-[#221F1F]">
+                      {initials}
+                    </AvatarFallback>
+                  </Avatar>
+                  {!isCollapsed && (
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-medium text-sidebar-foreground truncate leading-none">
+                        {user?.name || "—"}
+                      </p>
+                      <p className="text-[10px] text-sidebar-foreground/50 truncate mt-1">
+                        {user?.email || "—"}
+                      </p>
+                    </div>
+                  )}
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" side="top" className="w-52 mb-1">
+                <div className="px-3 py-2 border-b">
+                  <p className="text-sm font-medium truncate">{user?.name}</p>
+                  <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                </div>
+                <DropdownMenuItem onClick={() => setLocation("/profil")} className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profilul meu</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setLocation("/setari")} className="cursor-pointer">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Setări</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={logout} className="cursor-pointer text-destructive focus:text-destructive">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Deconectare</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarFooter>
+        </Sidebar>
+
+        {/* Resize handle */}
+        <div
+          className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-[#FFCB09]/30 transition-colors ${isCollapsed ? "hidden" : ""}`}
+          onMouseDown={() => { if (!isCollapsed) setIsResizing(true); }}
+          style={{ zIndex: 50 }}
+        />
+      </div>
+
+      <SidebarInset>
+        {/* Mobile header */}
+        {isMobile && (
+          <div className="flex border-b h-14 items-center justify-between bg-background/95 px-3 backdrop-blur sticky top-0 z-40">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="h-9 w-9 rounded-lg" />
+              <img src={LOGO_ICON} alt="IC" className="h-7 w-7 object-contain" />
+            </div>
+            <div className="flex items-center gap-1">
+              {/* Active task indicator (mobile) */}
+              {activeSession && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="flex items-center gap-1.5 h-8 px-2.5 rounded-lg bg-[#221F1F] text-white text-xs font-medium hover:bg-gray-800 transition-colors">
+                      <Timer className="h-3.5 w-3.5 text-[#FFCB09]" />
+                      <span className="font-mono text-[#FFCB09]">{hh}:{mm2}:{ss}</span>
+                      {isSessionPaused && <span className="text-amber-400 text-[10px]">⏸</span>}
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-72 p-3" align="end">
+                    <p className="text-xs font-semibold text-foreground mb-1">Task activ</p>
+                    <p className="text-xs text-gray-600 truncate mb-1">{(activeSession as any).taskName}</p>
+                    <p className="text-[10px] text-gray-400 truncate mb-3">{(activeSession as any).projectName} › {(activeSession as any).phaseName}</p>
+                    <div className="flex gap-2">
+                      {isSessionPaused ? (
+                        <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8"
+                          onClick={() => resumeSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                          <Play className="h-3.5 w-3.5 mr-1" />Reia
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" className="flex-1 h-8"
+                          onClick={() => pauseSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                          <Pause className="h-3.5 w-3.5 mr-1" />Pauză
+                        </Button>
+                      )}
+                      <Button size="sm" className="flex-1 bg-red-600 hover:bg-red-700 text-white h-8"
+                        onClick={() => stopSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                        <Square className="h-3.5 w-3.5 mr-1" />Stop
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              )}
+              {budgetAlertCount > 0 && (
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <button className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors" title="Alerte buget">
+                      <AlertTriangle className="h-5 w-5 text-amber-500" />
+                      <span className="absolute top-1 right-1 h-3.5 w-3.5 flex items-center justify-center bg-red-500 text-white text-[8px] font-bold rounded-full">
+                        {budgetAlertCount > 9 ? "9+" : budgetAlertCount}
+                      </span>
+                    </button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-3" align="end">
+                    <p className="text-xs font-semibold text-foreground mb-2">⚠️ Alerte buget sarcini</p>
+                    <div className="space-y-2 max-h-64 overflow-y-auto">
+                      {(budgetAlerts as any[]).map((a: any) => (
+                        <div key={a.id} className="flex items-start gap-2 p-2 rounded-lg bg-amber-50 border border-amber-100">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-gray-800 truncate">{a.name}</p>
+                            <p className="text-[10px] text-gray-500 truncate">{a.projectName} › {a.phaseName}</p>
+                          </div>
+                          <span className={`text-xs font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                            Number(a.pct) >= 90 ? 'bg-red-100 text-red-700' :
+                            Number(a.pct) >= 75 ? 'bg-orange-100 text-orange-700' :
+                            Number(a.pct) >= 50 ? 'bg-amber-100 text-amber-700' :
+                            'bg-yellow-50 text-yellow-700'
+                          }`}>{a.pct}%</span>
+                        </div>
+                      ))}
+                    </div>
+                    <button className="mt-2 text-xs text-[#FFCB09] hover:underline w-full text-left" onClick={() => setLocation('/proiecte')}>
+                      Vezi proiectele →
+                    </button>
+                  </PopoverContent>
+                </Popover>
+              )}
+              <button
+                onClick={() => setLocation("/notificari")}
+                className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
+              >
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 h-4 w-4 flex items-center justify-center bg-[#FFCB09] text-[#221F1F] text-[9px] font-bold rounded-full">
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </span>
+                )}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Desktop topbar */}
+        {!isMobile && (
+          <div className="flex border-b h-12 items-center justify-end bg-background/95 px-4 backdrop-blur sticky top-0 z-40 gap-2">
+            {/* Active task indicator (desktop) — always visible */}
+            <Popover open={activeSession ? undefined : quickPickerOpen} onOpenChange={activeSession ? undefined : setQuickPickerOpen}>
+              <PopoverTrigger asChild>
+                {activeSession ? (
+                  <button className="flex items-center gap-1.5 h-8 px-3 rounded-lg bg-[#221F1F] text-white text-xs font-medium hover:bg-gray-800 transition-colors">
+                    <Timer className="h-3.5 w-3.5 text-[#FFCB09]" />
+                    <span className="font-mono text-[#FFCB09] text-xs">{hh}:{mm2}:{ss}</span>
+                    <span className="text-gray-300 text-[10px] truncate max-w-[120px]">{(activeSession as any).taskName}</span>
+                    {isSessionPaused && <span className="text-amber-400 text-[10px]">⏸</span>}
+                  </button>
+                ) : (
+                  <button className="flex items-center gap-1.5 h-8 px-3 rounded-lg border border-dashed border-gray-300 text-gray-400 text-xs hover:border-[#FFCB09] hover:text-[#FFCB09] transition-colors">
+                    <Timer className="h-3.5 w-3.5" />
+                    <span>Task activ</span>
+                  </button>
+                )}
+              </PopoverTrigger>
+              <PopoverContent className="w-72 p-3" align="end">
+                {activeSession ? (
+                  <>
+                    <p className="text-xs font-semibold text-foreground mb-1">Task activ</p>
+                    <p className="text-xs text-gray-600 truncate mb-1">{(activeSession as any).taskName}</p>
+                    <p className="text-[10px] text-gray-400 truncate mb-3">{(activeSession as any).projectName} › {(activeSession as any).phaseName}</p>
+                    <div className="flex gap-2">
+                      {isSessionPaused ? (
+                        <Button size="sm" className="flex-1 bg-green-600 hover:bg-green-700 text-white h-8"
+                          onClick={() => resumeSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                          <Play className="h-3.5 w-3.5 mr-1" />Reia
+                        </Button>
+                      ) : (
+                        <Button size="sm" variant="outline" className="flex-1 h-8"
+                          onClick={() => pauseSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                          <Pause className="h-3.5 w-3.5 mr-1" />Pauză
+                        </Button>
+                      )}
+                      <Button size="sm" className="flex-1 bg-red-600 hover:bg-red-700 text-white h-8"
+                        onClick={() => stopSessionGlobal.mutate({ sessionId: (activeSession as any).id })}>
+                        <Square className="h-3.5 w-3.5 mr-1" />Stop
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-xs font-semibold text-foreground mb-3">Pornește un task</p>
+                    <div className="space-y-2">
+                      <select
+                        value={quickProjectId}
+                        onChange={e => { setQuickProjectId(e.target.value); setQuickTaskId("none"); }}
+                        className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs focus:border-[#FFCB09] outline-none"
+                      >
+                        <option value="none">Selectează proiect...</option>
+                        {enrolledProjects.map((p: any) => (
+                          <option key={p.projectId} value={String(p.projectId)}>
+                            {p.projectCode ? `${p.projectCode}` : ""}{p.projectAbbreviation ? ` · ${p.projectAbbreviation}` : ""}{p.projectName ? ` — ${p.projectName}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                      {quickProjectId !== "none" && quickProjectTasks.length > 0 && (
+                        <select
+                          value={quickTaskId}
+                          onChange={e => setQuickTaskId(e.target.value)}
+                          className="w-full h-8 rounded-md border border-input bg-background px-2 text-xs focus:border-[#FFCB09] outline-none"
+                        >
+                          <option value="none">Selectează task...</option>
+                          {quickProjectTasks.map((t: any) => (
+                            <option key={t.taskId} value={String(t.taskId)}>
+                              {t.phaseName ? `[${t.phaseName}] ` : ""}{t.taskName}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                      <Button
+                        size="sm"
+                        className="w-full bg-[#FFCB09] hover:bg-yellow-400 text-[#221F1F] h-8 text-xs"
+                        disabled={quickProjectId === "none" || quickTaskId === "none" || startSessionQuick.isPending}
+                        onClick={() => {
+                          if (quickProjectId !== "none" && quickTaskId !== "none") {
+                            startSessionQuick.mutate({ taskId: Number(quickTaskId), projectId: Number(quickProjectId) });
+                          }
+                        }}
+                      >
+                        <Play className="h-3 w-3 mr-1 fill-current" />
+                        {startSessionQuick.isPending ? "Se pornește..." : "Start task"}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </PopoverContent>
+            </Popover>
+            {budgetAlertCount > 0 && (
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="relative h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors" title="Alerte buget">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <span className="absolute top-0.5 right-0.5 h-3.5 w-3.5 flex items-center justify-center bg-red-500 text-white text-[8px] font-bold rounded-full">
+                      {budgetAlertCount > 9 ? "9+" : budgetAlertCount}
+                    </span>
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 p-3" align="end">
+                  <p className="text-xs font-semibold text-foreground mb-2">⚠️ Alerte buget sarcini</p>
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {(budgetAlerts as any[]).map((a: any) => (
+                      <div key={a.id} className="flex items-start gap-2 p-2 rounded-lg bg-amber-50 border border-amber-100">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-gray-800 truncate">{a.name}</p>
+                          <p className="text-[10px] text-gray-500 truncate">{a.projectName} › {a.phaseName}</p>
+                        </div>
+                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded shrink-0 ${
+                          Number(a.pct) >= 90 ? 'bg-red-100 text-red-700' :
+                          Number(a.pct) >= 75 ? 'bg-orange-100 text-orange-700' :
+                          Number(a.pct) >= 50 ? 'bg-amber-100 text-amber-700' :
+                          'bg-yellow-50 text-yellow-700'
+                        }`}>{a.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="mt-2 text-xs text-[#FFCB09] hover:underline w-full text-left" onClick={() => setLocation('/proiecte')}>
+                    Vezi proiectele →
+                  </button>
+                </PopoverContent>
+              </Popover>
+            )}
+            <button
+              onClick={() => setLocation("/notificari")}
+              className="relative h-8 w-8 flex items-center justify-center rounded-lg hover:bg-accent transition-colors"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute top-0.5 right-0.5 h-4 w-4 flex items-center justify-center bg-[#FFCB09] text-[#221F1F] text-[9px] font-bold rounded-full">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
+            <Avatar className="h-7 w-7 border border-border cursor-pointer" onClick={() => setLocation("/profil")}>
+              <AvatarImage src={user?.avatarUrl ?? undefined} />
+              <AvatarFallback className="text-[10px] font-semibold bg-[#FFCB09] text-[#221F1F]">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <span className="text-sm font-medium text-foreground/80 max-w-[160px] truncate">
+              {user?.name}
+            </span>
+          </div>
+        )}
+
+        <main className="flex-1 p-2 md:p-3 overflow-hidden">{children}</main>
+      </SidebarInset>
+    </>
+  );
+}

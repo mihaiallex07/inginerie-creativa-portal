@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `company_events` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `title` varchar(256) NOT NULL,\n  `description` text,\n  `link` text,\n  `startTime` timestamp NOT NULL,\n  `endTime` timestamp NOT NULL,\n  `isRecurring` boolean DEFAULT false,\n  `recurringRule` varchar(128),\n  `recurringUntil` date,\n  `color` varchar(16) DEFAULT '#FFCB09',\n  `targetType` enum('all','department','users') NOT NULL DEFAULT 'all',\n  `targetDepartment` varchar(128),\n  `targetUserIds` json,\n  `createdBy` int NOT NULL,\n  `isActive` boolean DEFAULT true,\n  `createdAt` timestamp NOT NULL DEFAULT NOW(),\n  `updatedAt` timestamp NOT NULL DEFAULT NOW() ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`)\n)",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute CREATE TABLE IF NOT EXISTS `company_events` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `title` varchar(256) NOT NULL,\n  `description` text,\n  `link` text,\n  `startTime` timestamp NOT NULL,\n  `endTime` timestamp NOT NULL,\n  `isRecurring` boolean DEFAULT false,\n  `recurringRule` varchar(128),\n  `recurringUntil` date,\n  `color` varchar(16) DEFAULT '#FFCB09',\n  `targetType` enum('all','department','users') NOT NULL DEFAULT 'all',\n  `targetDepartment` varchar(128),\n  `targetUserIds` json,\n  `createdBy` int NOT NULL,\n  `isActive` boolean DEFAULT true,\n  `createdAt` timestamp NOT NULL DEFAULT NOW(),\n  `updatedAt` timestamp NOT NULL DEFAULT NOW() ON UPDATE CURRENT_TIMESTAMP,\n  PRIMARY KEY (`id`)\n)",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 239
+}

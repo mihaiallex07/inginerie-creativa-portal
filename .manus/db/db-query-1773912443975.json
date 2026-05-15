@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE proposals ADD COLUMN `departments` json;\nALTER TABLE proposals ADD COLUMN `isAnonymous` boolean DEFAULT false;\nALTER TABLE proposals ADD COLUMN `managerId` int;\nALTER TABLE proposals ADD COLUMN `managerDecision` text;\nALTER TABLE proposals ADD COLUMN `committeeDecision` text;\nALTER TABLE proposals ADD COLUMN `votesCount` int DEFAULT 0;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \nALTER TABLE proposals ADD COLUMN `departments` json;\nALTER TABLE proposals ADD COLUMN `isAnonymous` boolean DEFAULT false;\nALTER TABLE proposals ADD COLUMN `managerId` int;\nALTER TABLE proposals ADD COLUMN `managerDecision` text;\nALTER TABLE proposals ADD COLUMN `committeeDecision` text;\nALTER TABLE proposals ADD COLUMN `votesCount` int DEFAULT 0;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1836
+}

@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE pontaj \n  DROP COLUMN `status`,\n  DROP COLUMN `correctionReason`,\n  DROP COLUMN `isLocked`;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \nALTER TABLE pontaj \n  DROP COLUMN `status`,\n  DROP COLUMN `correctionReason`,\n  DROP COLUMN `isLocked`;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 718
+}

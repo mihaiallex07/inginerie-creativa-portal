@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE users \n  ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT NULL,\n  ADD COLUMN IF NOT EXISTS jobTitle VARCHAR(100) DEFAULT NULL,\n  ADD COLUMN IF NOT EXISTS avatarUrl TEXT DEFAULT NULL,\n  ADD COLUMN IF NOT EXISTS phone VARCHAR(20) DEFAULT NULL,\n  ADD COLUMN IF NOT EXISTS isActive TINYINT(1) NOT NULL DEFAULT 1,\n  ADD COLUMN IF NOT EXISTS workHoursPerDay INT NOT NULL DEFAULT 8;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \nALTER TABLE users \n  ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT NULL,\n  ADD COLUMN IF NOT EXISTS jobTitle VARCHAR(100) DEFAULT NULL,\n  ADD COLUMN IF NOT EXISTS avatarUrl TEXT DEFAULT NULL,\n  ADD COLUMN IF NOT EXISTS phone VARCHAR(20) DEFAULT NULL,\n  ADD COLUMN IF NOT EXISTS isActive TINYINT(1) NOT NULL DEFAULT 1,\n  ADD COLUMN IF NOT EXISTS workHoursPerDay INT NOT NULL DEFAULT 8;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3044
+}

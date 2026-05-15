@@ -1,0 +1,9 @@
+{
+  "query": "\n-- Pas 1: Schimbăm coloana la VARCHAR temporar\nALTER TABLE users MODIFY COLUMN role VARCHAR(32) NOT NULL DEFAULT 'angajat';\n\n-- Pas 2: Convertim valorile vechi la noile roluri\nUPDATE users SET role = 'admin' WHERE role IN ('super_admin', 'admin_hr', 'manager');\n\n-- Pas 3: Aplicăm noul enum cu 3 valori\nALTER TABLE users MODIFY COLUMN role ENUM('admin', 'angajat', 'colaborator') NOT NULL DEFAULT 'angajat';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway04.us-east-1.prod.aws.tidbcloud.com --port 4000 --user h1jFeiTyrASEJ6W.root --database 2gvgk32MDhEEiC7DrEzbf4 --execute \n-- Pas 1: Schimbăm coloana la VARCHAR temporar\nALTER TABLE users MODIFY COLUMN role VARCHAR(32) NOT NULL DEFAULT 'angajat';\n\n-- Pas 2: Convertim valorile vechi la noile roluri\nUPDATE users SET role = 'admin' WHERE role IN ('super_admin', 'admin_hr', 'manager');\n\n-- Pas 3: Aplicăm noul enum cu 3 valori\nALTER TABLE users MODIFY COLUMN role ENUM('admin', 'angajat', 'colaborator') NOT NULL DEFAULT 'angajat';\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1512
+}
