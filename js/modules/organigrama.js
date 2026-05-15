@@ -10,9 +10,10 @@ const Organigrama = {
   editMode: false,
 
   async render() {
-    const isAdmin = Auth.currentProfile?.role === 'admin';
     const { data: users } = await DB.getUsers();
-    this.users = (users || []).filter(u => !u.is_pre_created || u.id === Auth.currentUser?.id);
+    const isAdmin = Auth.currentProfile?.role === 'admin';
+    // Adminii văd toți angajații inclusiv pre-creați; ceilalți nu văd pre-creați
+    this.users = (users || []).filter(u => isAdmin || !u.is_pre_created || u.id === Auth.currentUser?.id);
 
     document.getElementById('page-content').innerHTML = `
       <div style="max-width:1100px">

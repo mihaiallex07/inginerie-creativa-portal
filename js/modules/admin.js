@@ -81,9 +81,13 @@ const Admin = {
                 <td class="text-sm">${u.position || '—'}</td>
                 <td>${roleBadge(u.role)}</td>
                 <td>
-                  <button class="btn-icon" onclick="Admin.editUser('${u.id}')" title="Editează">
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
-                  </button>
+                  <div class="flex gap-1">
+                    ${u.is_pre_created ? `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:#fffbea;color:#7a5c00;border:1px solid #ffe066;font-weight:600">Pre-creat</span>` : ''}
+                    <button class="btn-icon" onclick="Admin.editUser('${u.id}')" title="Editează profil complet" style="display:flex;align-items:center;gap:4px;padding:4px 8px;font-size:11px;border-radius:5px">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+                      Profil
+                    </button>
+                  </div>
                 </td>
               </tr>
             `).join('')}
@@ -152,27 +156,14 @@ const Admin = {
   },
 
   editUser(id) {
-    const u = this.users.find(u => u.id === id);
-    if (!u) return;
-    openModal('Editează utilizator', `
-      <div class="space-y-3">
-        <div><label class="label">Rol</label>
-          <select id="edit-role" class="select">
-            <option value="angajat" ${u.role === 'angajat' ? 'selected' : ''}>Angajat</option>
-            <option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Admin</option>
-          </select>
-        </div>
-        <div><label class="label">Departament</label>
-          <input type="text" id="edit-dept" class="input" value="${u.department || ''}" />
-        </div>
-        <div><label class="label">Funcție</label>
-          <input type="text" id="edit-pos" class="input" value="${u.position || ''}" />
-        </div>
-      </div>
-    `, `
-      <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
-      <button class="btn-brand" onclick="Admin.saveUser('${id}')">Salvează</button>
-    `);
+    // Deschide profilul complet al angajatului (admin poate edita tot)
+    Profil.render(id);
+    window.location.hash = '/profil';
+    document.querySelectorAll('.nav-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.page === 'profil');
+    });
+    const titleEl = document.getElementById('page-title');
+    if (titleEl) titleEl.textContent = 'Profil angajat';
   },
 
   async saveUser(id) {

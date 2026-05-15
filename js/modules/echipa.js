@@ -9,7 +9,8 @@ const Echipa = {
 
   async render() {
     const { data: users } = await DB.getUsers();
-    const allUsers = (users || []).filter(u => !u.is_pre_created || u.id === Auth.currentUser?.id);
+    const isAdmin = Auth.currentProfile?.role === 'admin';
+    const allUsers = (users || []).filter(u => isAdmin || !u.is_pre_created || u.id === Auth.currentUser?.id);
 
     document.getElementById('page-content').innerHTML = `
       <div style="max-width:1100px">
@@ -94,7 +95,8 @@ const Echipa = {
   onSearch(val) {
     this.searchQuery = val;
     DB.getUsers().then(({ data: users }) => {
-      const allUsers = (users || []).filter(u => !u.is_pre_created || u.id === Auth.currentUser?.id);
+      const isAdmin = Auth.currentProfile?.role === 'admin';
+      const allUsers = (users || []).filter(u => isAdmin || !u.is_pre_created || u.id === Auth.currentUser?.id);
       const grid = document.getElementById('echipa-grid');
       if (grid) grid.innerHTML = this.renderGrid(allUsers, val);
     });
