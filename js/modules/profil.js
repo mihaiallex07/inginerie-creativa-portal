@@ -94,6 +94,27 @@ const Profil = {
           </div>
         </div>
 
+        <!-- 0. Rol utilizator — vizibil/editabil DOAR de admin pe profilul altui angajat -->
+        ${isAdmin && !isSelf ? `
+        <div class="card p-6 mb-4" style="border-left:3px solid var(--primary)">
+          <div class="section-title" style="font-size:15px;font-weight:700;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--primary)">
+            🔑 Rol în sistem
+          </div>
+          <div class="form-row form-row-2">
+            <div>
+              <label class="label">Rol</label>
+              ${isEditing
+                ? `<select id="prof-role" class="input">
+                    <option value="angajat" ${(profile.role || 'angajat') === 'angajat' ? 'selected' : ''}>Angajat</option>
+                    <option value="admin" ${profile.role === 'admin' ? 'selected' : ''}>Admin</option>
+                  </select>`
+                : `<div class="input" style="background:var(--bg-secondary,#f5f5f5);cursor:default;border-color:transparent">${roleBadge(profile.role || 'angajat')}</div>`
+              }
+            </div>
+          </div>
+        </div>
+        ` : ''}
+
         <!-- 1. Informații profesionale -->
         <div class="card p-6 mb-4">
           <div class="section-title" style="font-size:15px;font-weight:700;margin-bottom:16px;padding-bottom:8px;border-bottom:2px solid var(--primary)">
@@ -365,6 +386,12 @@ const Profil = {
       if (pos !== undefined) updates.job_title = pos || null;
       if (dep !== undefined) updates.department = dep || null;
       if (ec !== undefined) updates.employee_code = ec || null;
+    }
+
+    // Câmpul Rol — editabil doar de admin pe profilul altui angajat
+    if (isAdmin && !isSelf) {
+      const rolEl = document.getElementById('prof-role');
+      if (rolEl && rolEl.value) updates.role = rolEl.value;
     }
 
     const { error } = await DB.updateProfile(targetId, updates);
