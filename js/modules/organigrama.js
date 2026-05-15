@@ -33,9 +33,11 @@ const Organigrama = {
         </div>
 
         <!-- Org chart vizual -->
-        <div class="card mb-4" style="overflow:auto;padding:24px;position:relative">
-          <div id="org-chart-container">
-            ${this.renderOrgChart()}
+        <div class="card mb-4" style="padding:24px;position:relative;overflow:hidden">
+          <div id="org-chart-container" style="overflow-x:auto;overflow-y:visible;width:100%;padding-bottom:8px">
+            <div style="display:inline-block;min-width:100%">
+              ${this.renderOrgChart()}
+            </div>
           </div>
         </div>
 
@@ -165,7 +167,7 @@ const Organigrama = {
         </div>`
       : '';
 
-    return (hint || editHint) + `<div class="org-tree-wrap" style="display:flex;justify-content:center;overflow-x:auto">
+    return (hint || editHint) + `<div class="org-tree-wrap" style="display:inline-flex;justify-content:flex-start;min-width:max-content;padding:8px 0">
       ${tree.map(node => this.renderNode(node, true)).join('')}
     </div>`;
   },

@@ -62,12 +62,9 @@ const ProcessOverview = {
       if (proj) userProjectMap[m.user_id].push({ ...proj, memberRole: m.role });
     });
 
-    // Filtrează utilizatorii care sunt înrolați în cel puțin un proiect activ
-    const enrolledUsers = this.users.filter(u => userProjectMap[u.id] && userProjectMap[u.id].length > 0);
-
-    // Grupează pe departamente (doar utilizatorii înrolați)
+    // Grupează TOȚI angajații pe departamente (inclusiv cei fără proiecte → celule libere)
     const deptMap = {};
-    enrolledUsers.forEach(u => {
+    this.users.forEach(u => {
       const dept = u.department || 'General';
       if (!deptMap[dept]) deptMap[dept] = [];
       deptMap[dept].push(u);
@@ -101,13 +98,7 @@ const ProcessOverview = {
     let totalRows = 0;
 
     if (Object.keys(deptMap).length === 0) {
-      rowsHtml = `
-        <div style="padding:48px;text-align:center;color:var(--text-muted)">
-          <div style="font-size:32px;margin-bottom:12px">📋</div>
-          <div style="font-size:15px;font-weight:500">Niciun angajat înrolat în proiecte active</div>
-          <div style="font-size:13px;margin-top:6px">Adaugă membri în echipa proiectelor pentru a-i vedea aici.</div>
-        </div>
-      `;
+      rowsHtml = `<div style="padding:48px;text-align:center;color:var(--text-muted)">Nu există angajați.</div>`;
     } else {
       Object.entries(deptMap).forEach(([dept, members]) => {
         rowsHtml += `
