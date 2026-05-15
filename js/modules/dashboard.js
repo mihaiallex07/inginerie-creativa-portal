@@ -31,7 +31,7 @@ const Dashboard = {
     const greeting = getGreeting();
 
     document.getElementById('page-content').innerHTML = `
-      <div style="max-width:1200px">
+      <div style="width:100%">
         <!-- Greeting -->
         <div class="mb-4">
           <h1 style="font-size:20px;font-weight:700;color:var(--text)">${greeting}, ${profile?.full_name?.split(' ')[0] || 'bun venit'}!</h1>

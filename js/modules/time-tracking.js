@@ -60,7 +60,7 @@ const TimeTracking = {
     const totalMins = this.entries.filter(e => e.count_in_time).reduce((s, e) => s + e.duration_minutes, 0);
 
     document.getElementById('page-content').innerHTML = `
-      <div style="max-width:1300px">
+      <div style="width:100%">
         <div class="page-header">
           <div>
             <h1 class="page-title">Time-Tracking</h1>

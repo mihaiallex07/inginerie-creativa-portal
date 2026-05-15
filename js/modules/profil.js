@@ -63,7 +63,7 @@ const Profil = {
     };
 
     document.getElementById('page-content').innerHTML = `
-      <div style="max-width:760px">
+      <div style="width:100%">
         <div class="page-header" style="margin-bottom:24px;display:flex;align-items:center;justify-content:space-between">
           <div style="display:flex;align-items:center;gap:12px">
             <h1 class="page-title">${title}</h1>

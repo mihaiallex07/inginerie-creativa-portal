@@ -34,7 +34,7 @@ const Stiri = {
     const regular = filtered.filter(n => !n.is_pinned);
 
     document.getElementById('page-content').innerHTML = `
-      <div style="max-width:800px">
+      <div style="width:100%">
         <div class="page-header">
           <div>
             <h1 class="page-title">Știri &amp; Anunțuri</h1>

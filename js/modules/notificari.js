@@ -13,7 +13,7 @@ const Notificari = {
   renderPage() {
     const unread = this.items.filter(n => !n.read).length;
     document.getElementById('page-content').innerHTML = `
-      <div style="max-width:700px">
+      <div style="width:100%">
         <div class="page-header">
           <div>
             <h1 class="page-title">Notificări</h1>

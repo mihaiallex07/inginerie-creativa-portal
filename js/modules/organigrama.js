@@ -1,7 +1,7 @@
 // ============================================================
 // Organigramă Module — Portal Inginerie Creativă
 // Ierarhie dinamică din DB (manager_id pe profiles)
-// Admin poate edita: cine raportează cui, departament, funcție
+// Admin: click pe nod în edit mode → popover inline cu dropdown manager
 // Card echipă de jos → click deschide profilul angajatului
 // ============================================================
 
@@ -12,18 +12,18 @@ const Organigrama = {
   async render() {
     const { data: users } = await DB.getUsers();
     const isAdmin = Auth.currentProfile?.role === 'admin';
-    // Adminii văd toți angajații inclusiv pre-creați; ceilalți nu văd pre-creați
     this.users = (users || []).filter(u => isAdmin || !u.is_pre_created || u.id === Auth.currentUser?.id);
+    this.editMode = false;
 
     document.getElementById('page-content').innerHTML = `
-      <div style="max-width:1100px">
+      <div style="width:100%">
         <div class="page-header">
           <div>
             <h1 class="page-title">Organigramă</h1>
             <p class="page-subtitle">Structura organizatorică Inginerie Creativă</p>
           </div>
           ${isAdmin ? `
-            <div style="display:flex;gap:8px">
+            <div style="display:flex;gap:8px;align-items:center">
               <button id="org-edit-btn" class="btn-secondary" onclick="Organigrama.toggleEdit()">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 Editează ierarhia
@@ -33,33 +33,11 @@ const Organigrama = {
         </div>
 
         <!-- Org chart vizual -->
-        <div class="card mb-4" style="overflow-x:auto;padding:24px">
+        <div class="card mb-4" style="overflow:auto;padding:24px;position:relative">
           <div id="org-chart-container">
             ${this.renderOrgChart()}
           </div>
         </div>
-
-        <!-- Editor ierarhie (admin) -->
-        ${isAdmin ? `
-          <div id="org-editor" style="display:none" class="card mb-4">
-            <div class="card-header">
-              <span class="card-title">Editare ierarhie</span>
-              <span class="text-xs text-muted">Setează managerul direct pentru fiecare angajat</span>
-            </div>
-            <div style="padding:16px">
-              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px">
-                ${this.renderEditorRows()}
-              </div>
-              <div style="margin-top:16px;display:flex;gap:8px">
-                <button class="btn-brand" onclick="Organigrama.saveHierarchy()">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                  Salvează ierarhia
-                </button>
-                <button class="btn-secondary" onclick="Organigrama.toggleEdit()">Anulează</button>
-              </div>
-            </div>
-          </div>
-        ` : ''}
 
         <!-- Lista echipă -->
         <div class="card">
@@ -79,7 +57,29 @@ const Organigrama = {
           </div>
         </div>
       </div>
+
+      <!-- Popover editor (ascuns implicit) -->
+      <div id="org-popover" style="display:none;position:fixed;z-index:9999;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,0.18);padding:16px;min-width:260px;max-width:320px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <div id="org-popover-name" style="font-size:13px;font-weight:700"></div>
+          <button onclick="Organigrama.closePopover()" style="background:none;border:none;cursor:pointer;color:var(--text-muted);font-size:18px;line-height:1;padding:0 2px">&times;</button>
+        </div>
+        <label class="text-xs text-muted" style="display:block;margin-bottom:6px">Raportează la:</label>
+        <select id="org-popover-select" class="select" style="font-size:13px;width:100%"></select>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn-brand" style="flex:1;font-size:12px" onclick="Organigrama.saveNodeManager()">Salvează</button>
+          <button class="btn-secondary" style="font-size:12px" onclick="Organigrama.closePopover()">Anulează</button>
+        </div>
+      </div>
     `;
+
+    // Închide popover la click în afara lui
+    document.addEventListener('click', this._outsideClick = (e) => {
+      const pop = document.getElementById('org-popover');
+      if (pop && pop.style.display !== 'none' && !pop.contains(e.target) && !e.target.closest('.org-node-editable')) {
+        this.closePopover();
+      }
+    });
   },
 
   // ── CONSTRUIEȘTE ARBORELE IERARHIC ────────────────────────────
@@ -87,12 +87,10 @@ const Organigrama = {
     const map = {};
     const roots = [];
 
-    // Indexează toți utilizatorii
     for (const u of this.users) {
       map[u.id] = { ...u, children: [] };
     }
 
-    // Construiește arborele
     for (const u of this.users) {
       if (u.manager_id && map[u.manager_id]) {
         map[u.manager_id].children.push(map[u.id]);
@@ -101,12 +99,10 @@ const Organigrama = {
       }
     }
 
-    // Dacă nu există ierarhie definită, grupează pe departamente
     if (roots.length === this.users.length) {
       return this.buildDeptTree();
     }
 
-    // Dacă există mai mulți roots, înfășoară-i într-un nod companie
     if (roots.length > 1) {
       return [{
         id: '__company__',
@@ -124,7 +120,6 @@ const Organigrama = {
   },
 
   buildDeptTree() {
-    // Grupare pe departamente când nu există ierarhie setată
     const depts = {};
     for (const u of this.users) {
       const dept = u.department || 'General';
@@ -132,7 +127,7 @@ const Organigrama = {
       depts[dept].push({ ...u, children: [] });
     }
 
-    const companyNode = {
+    return [{
       id: '__company__',
       full_name: 'Inginerie Creativă',
       job_title: 'SRL',
@@ -148,9 +143,7 @@ const Organigrama = {
         isDept: true,
         children: members,
       })),
-    };
-
-    return [companyNode];
+    }];
   },
 
   renderOrgChart() {
@@ -158,13 +151,21 @@ const Organigrama = {
     if (!tree.length) return `<div style="text-align:center;color:var(--text-muted);padding:40px">Niciun angajat în organigramă</div>`;
 
     const hasHierarchy = this.users.some(u => u.manager_id);
-    const hint = !hasHierarchy && Auth.currentProfile?.role === 'admin'
+    const isAdmin = Auth.currentProfile?.role === 'admin';
+
+    const hint = !hasHierarchy && isAdmin
       ? `<div style="text-align:center;margin-bottom:16px;padding:10px 16px;background:var(--surface-2);border-radius:8px;font-size:12px;color:var(--text-muted)">
-          💡 Ierarhia este grupată pe departamente. Apasă <strong>Editează ierarhia</strong> pentru a seta relațiile de subordonare.
+          💡 Ierarhia este grupată pe departamente. Apasă <strong>Editează ierarhia</strong> și dă click pe orice angajat pentru a seta managerul.
         </div>`
       : '';
 
-    return hint + `<div class="org-tree-wrap" style="display:flex;justify-content:center">
+    const editHint = this.editMode
+      ? `<div style="text-align:center;margin-bottom:16px;padding:10px 16px;background:#fef9c3;border:1px solid #fbbf24;border-radius:8px;font-size:12px;color:#92400e">
+          ✏️ <strong>Mod editare activ</strong> — dă click pe orice angajat pentru a-i seta managerul direct
+        </div>`
+      : '';
+
+    return (hint || editHint) + `<div class="org-tree-wrap" style="display:flex;justify-content:center;overflow-x:auto">
       ${tree.map(node => this.renderNode(node, true)).join('')}
     </div>`;
   },
@@ -172,7 +173,9 @@ const Organigrama = {
   renderNode(node, isRoot = false) {
     const hasChildren = node.children && node.children.length > 0;
     const isClickable = !node.isCompany && !node.isDept;
+    const isEditable = this.editMode && isClickable;
     const initials = node.employee_code || (node.full_name || 'IC').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 3);
+
     const avatarEl = node.isCompany
       ? `<div style="width:44px;height:44px;border-radius:50%;background:var(--brand-dark);color:#000;font-size:16px;font-weight:900;display:flex;align-items:center;justify-content:center;margin:0 auto 8px">IC</div>`
       : node.isDept
@@ -185,15 +188,32 @@ const Organigrama = {
       ? 'background:var(--brand-dark);color:#000;border:none'
       : node.isDept
       ? 'background:var(--surface-2);border:1px dashed var(--border)'
+      : isEditable
+      ? 'background:var(--surface);border:2px solid #fbbf24;cursor:pointer'
       : 'background:var(--surface);border:1px solid var(--border)';
 
     const nameColor = node.isCompany ? 'color:#000' : 'color:var(--text)';
     const subtitleColor = node.isCompany ? 'color:rgba(0,0,0,0.6)' : 'color:var(--text-muted)';
 
+    const editBadge = isEditable
+      ? `<div style="position:absolute;top:-6px;right:-6px;background:#fbbf24;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:9px">✏️</div>`
+      : '';
+
+    const clickHandler = isEditable
+      ? `onclick="Organigrama.openNodeEditor('${node.id}', event)"`
+      : isClickable
+      ? `onclick="Echipa.viewProfile('${node.id}')"`
+      : '';
+
+    const hoverHandler = (isClickable || isEditable)
+      ? `onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseleave="this.style.boxShadow=''"`
+      : '';
+
     return `
       <div class="org-node-wrap" style="display:inline-flex;flex-direction:column;align-items:center;margin:0 8px">
-        <div class="org-node" style="padding:12px 14px;border-radius:10px;min-width:120px;max-width:160px;text-align:center;${nodeStyle};${isClickable ? 'cursor:pointer;transition:box-shadow 0.15s' : ''}"
-          ${isClickable ? `onclick="Echipa.viewProfile('${node.id}')" onmouseenter="this.style.boxShadow='0 4px 16px rgba(0,0,0,0.15)'" onmouseleave="this.style.boxShadow=''"` : ''}>
+        <div class="org-node${isEditable ? ' org-node-editable' : ''}" style="position:relative;padding:12px 14px;border-radius:10px;min-width:120px;max-width:160px;text-align:center;${nodeStyle};transition:box-shadow 0.15s"
+          ${clickHandler} ${hoverHandler}>
+          ${editBadge}
           ${avatarEl}
           <div style="font-size:12px;font-weight:700;${nameColor};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${node.full_name || node.name || ''}</div>
           ${(node.job_title || node.position) ? `<div style="font-size:10px;${subtitleColor};margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${node.job_title || node.position}</div>` : ''}
@@ -215,94 +235,106 @@ const Organigrama = {
     `;
   },
 
-  // ── EDITOR IERARHIE (ADMIN) ───────────────────────────────────
-  renderEditorRows() {
-    return this.users.map(u => {
-      const otherUsers = this.users.filter(other => other.id !== u.id);
-      return `
-        <div style="background:var(--surface-2);border-radius:8px;padding:12px">
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
-            ${avatarHtml(u.full_name, u.avatar_url, 'sm')}
-            <div>
-              <div style="font-size:13px;font-weight:700">${u.full_name}</div>
-              <div class="text-xs text-muted">${u.job_title || u.position || 'fără funcție'}</div>
-            </div>
-          </div>
-          <div>
-            <label class="text-xs text-muted" style="display:block;margin-bottom:4px">Raportează la:</label>
-            <select class="select" id="manager-${u.id}" style="font-size:12px">
-              <option value="">— fără manager (root) —</option>
-              ${otherUsers.map(m => `
-                <option value="${m.id}" ${u.manager_id === m.id ? 'selected' : ''}>${m.full_name}${m.job_title || m.position ? ' · ' + (m.job_title || m.position) : ''}</option>
-              `).join('')}
-            </select>
-          </div>
-        </div>
-      `;
-    }).join('');
-  },
-
+  // ── TOGGLE EDIT MODE ─────────────────────────────────────────
   toggleEdit() {
-    const editor = document.getElementById('org-editor');
+    this.editMode = !this.editMode;
     const btn = document.getElementById('org-edit-btn');
-    if (!editor) return;
-    const isVisible = editor.style.display !== 'none';
-    editor.style.display = isVisible ? 'none' : 'block';
-    if (btn) btn.textContent = isVisible ? '✏️ Editează ierarhia' : '✕ Închide editor';
-    if (!isVisible) editor.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  },
-
-  async saveHierarchy() {
-    const sb = getSupabase();
-    if (!sb) { showToast('Supabase nu e conectat', 'error'); return; }
-
-    const updates = [];
-    for (const u of this.users) {
-      const sel = document.getElementById('manager-' + u.id);
-      if (!sel) continue;
-      const newManagerId = sel.value || null;
-      if (newManagerId !== (u.manager_id || null)) {
-        updates.push({ id: u.id, manager_id: newManagerId });
+    if (btn) {
+      if (this.editMode) {
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Ieși din editare`;
+        btn.style.background = '#fef9c3';
+        btn.style.borderColor = '#fbbf24';
+        btn.style.color = '#92400e';
+      } else {
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Editează ierarhia`;
+        btn.style.background = '';
+        btn.style.borderColor = '';
+        btn.style.color = '';
       }
     }
+    // Re-render org chart cu/fără edit mode
+    const container = document.getElementById('org-chart-container');
+    if (container) container.innerHTML = this.renderOrgChart();
+    this.closePopover();
+  },
 
-    if (updates.length === 0) {
-      showToast('Nicio modificare detectată', 'info');
+  // ── POPOVER EDITOR ───────────────────────────────────────────
+  _currentEditUserId: null,
+
+  openNodeEditor(userId, event) {
+    event.stopPropagation();
+    const user = this.users.find(u => u.id === userId);
+    if (!user) return;
+
+    this._currentEditUserId = userId;
+
+    const pop = document.getElementById('org-popover');
+    const nameEl = document.getElementById('org-popover-name');
+    const sel = document.getElementById('org-popover-select');
+    if (!pop || !nameEl || !sel) return;
+
+    nameEl.textContent = user.full_name || 'Angajat';
+
+    // Populează dropdown cu toți ceilalți angajați
+    const others = this.users.filter(u => u.id !== userId);
+    sel.innerHTML = `<option value="">— fără manager (root) —</option>` +
+      others.map(m => `<option value="${m.id}" ${user.manager_id === m.id ? 'selected' : ''}>${m.full_name}${m.job_title ? ' · ' + m.job_title : ''}</option>`).join('');
+
+    // Poziționează popover lângă nodul clickat
+    const rect = event.currentTarget.getBoundingClientRect();
+    const popWidth = 300;
+    let left = rect.right + 8;
+    let top = rect.top;
+
+    // Ajustează dacă iese din viewport
+    if (left + popWidth > window.innerWidth) left = rect.left - popWidth - 8;
+    if (top + 200 > window.innerHeight) top = window.innerHeight - 220;
+    if (top < 8) top = 8;
+
+    pop.style.left = left + 'px';
+    pop.style.top = top + 'px';
+    pop.style.display = 'block';
+  },
+
+  closePopover() {
+    const pop = document.getElementById('org-popover');
+    if (pop) pop.style.display = 'none';
+    this._currentEditUserId = null;
+  },
+
+  async saveNodeManager() {
+    const userId = this._currentEditUserId;
+    if (!userId) return;
+
+    const sel = document.getElementById('org-popover-select');
+    const newManagerId = sel?.value || null;
+
+    const user = this.users.find(u => u.id === userId);
+    if (!user) return;
+
+    // Verifică ciclu
+    const tempMap = {};
+    for (const u of this.users) tempMap[u.id] = u.manager_id;
+    tempMap[userId] = newManagerId;
+    if (newManagerId && this.hasCycle(userId, tempMap)) {
+      showToast('Ciclu detectat! Nu poți seta acest manager.', 'error');
       return;
     }
 
-    // Verifică cicluri înainte de salvare
-    const tempMap = {};
-    for (const u of this.users) {
-      const upd = updates.find(x => x.id === u.id);
-      tempMap[u.id] = upd ? upd.manager_id : u.manager_id;
-    }
-    for (const u of this.users) {
-      if (this.hasCycle(u.id, tempMap)) {
-        showToast(`Ciclu detectat pentru ${u.full_name}! Verifică ierarhia.`, 'error');
-        return;
-      }
-    }
+    const sb = getSupabase();
+    if (!sb) { showToast('Supabase nu e conectat', 'error'); return; }
 
-    // Salvează în DB
-    let errors = 0;
-    for (const upd of updates) {
-      const { error } = await sb.from('profiles').update({ manager_id: upd.manager_id }).eq('id', upd.id);
-      if (error) { console.error('Error updating manager_id:', error); errors++; }
-      else {
-        const user = this.users.find(u => u.id === upd.id);
-        if (user) user.manager_id = upd.manager_id;
-      }
-    }
-
-    if (errors > 0) {
-      showToast(`${errors} erori la salvare`, 'error');
+    const { error } = await sb.from('profiles').update({ manager_id: newManagerId }).eq('id', userId);
+    if (error) {
+      showToast('Eroare la salvare: ' + error.message, 'error');
     } else {
-      showToast(`Ierarhia actualizată (${updates.length} modificări)`, 'success');
-      // Reîncarcă organigrama
+      user.manager_id = newManagerId;
+      const managerName = newManagerId ? (this.users.find(m => m.id === newManagerId)?.full_name || 'manager') : 'niciun manager';
+      showToast(`${user.full_name} → ${managerName}`, 'success');
+      this.closePopover();
+      // Re-render org chart
       const container = document.getElementById('org-chart-container');
       if (container) container.innerHTML = this.renderOrgChart();
-      this.toggleEdit();
     }
   },
 
@@ -343,7 +375,6 @@ const Organigrama = {
       ? `<img src="${u.avatar_url}" alt="${u.full_name}" style="width:48px;height:48px;border-radius:50%;object-fit:cover;border:2px solid var(--brand-dark);flex-shrink:0" />`
       : `<div style="width:48px;height:48px;border-radius:50%;background:var(--brand-dark);color:#000;font-size:15px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0">${initials}</div>`;
 
-    // Găsește managerul
     const manager = u.manager_id ? this.users.find(m => m.id === u.manager_id) : null;
 
     return `

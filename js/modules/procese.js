@@ -27,7 +27,7 @@ const Procese = {
     );
 
     document.getElementById('page-content').innerHTML = `
-      <div style="max-width:900px">
+      <div style="width:100%">
         <div class="page-header">
           <div>
             <h1 class="page-title">Procese &amp; Proceduri</h1>

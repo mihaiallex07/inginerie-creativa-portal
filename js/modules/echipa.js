@@ -13,7 +13,7 @@ const Echipa = {
     const allUsers = (users || []).filter(u => isAdmin || !u.is_pre_created || u.id === Auth.currentUser?.id);
 
     document.getElementById('page-content').innerHTML = `
-      <div style="max-width:1100px">
+      <div style="width:100%">
         <div class="page-header">
           <div>
             <h1 class="page-title">Echipa</h1>
