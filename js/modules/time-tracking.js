@@ -28,7 +28,19 @@ const TimeTracking = {
       DB.getProjects(),
       dbQuery('project_members', q => q.select('project_id').eq('user_id', userId), []),
     ]);
-    this.entries = entriesRes.data || [];
+    // Normalizăm câmpurile din Supabase: start_time -> start_hour/start_min, is_billable -> count_in_time
+    this.entries = (entriesRes.data || []).map(e => {
+      let start_hour = e.start_hour;
+      let start_min = e.start_min;
+      // Dacă DB-ul returnează start_time (ex: "09:30:00") în loc de start_hour/start_min
+      if ((start_hour === undefined || start_hour === null) && e.start_time) {
+        const parts = String(e.start_time).split(':');
+        start_hour = parseInt(parts[0]) || 0;
+        start_min = parseInt(parts[1]) || 0;
+      }
+      const count_in_time = e.count_in_time !== undefined ? e.count_in_time : (e.is_billable !== undefined ? e.is_billable : true);
+      return { ...e, start_hour: start_hour || 0, start_min: start_min || 0, count_in_time };
+    });
     const allProjects = (projectsRes.data || []).filter(p => p.status === 'activ');
 
     // Filtrare proiecte: admin vede toate, angajat vede doar proiectele la care e înrolat
@@ -387,7 +399,11 @@ function getWeekStart(date) {
 }
 
 function formatDateISO(date) {
-  return date.toISOString().split('T')[0];
+  // Folosim local time (nu UTC) pentru a evita off-by-one in timezone-uri ca Romania (UTC+3)
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
 
 function isLightColor(hex) {
