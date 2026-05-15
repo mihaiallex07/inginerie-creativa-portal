@@ -4,17 +4,22 @@
 
 const Dashboard = {
   async render() {
-    const [projectsRes, timeRes, newsRes, notifRes] = await Promise.all([
+    const [projectsRes, timeRes, newsRes, notifRes, profilesRes] = await Promise.all([
       DB.getProjects(),
       DB.getTimeEntries(Auth.currentUser?.id, getDateStr(-7), getTodayStr()),
       DB.getNews(),
       DB.getNotifications(Auth.currentUser?.id),
+      supabase.from('profiles').select('id,full_name,name,birth_date,hire_date,employee_code').eq('is_active', true),
     ]);
 
     const projects = projectsRes.data || [];
     const timeEntries = timeRes.data || [];
     const news = (newsRes.data || []).slice(0, 3);
     const notifications = (notifRes.data || []).filter(n => !n.read).slice(0, 5);
+    const allProfiles = profilesRes.data || [];
+
+    // Calculează evenimentele (zile de naștere + aniversări angajare) pentru luna curentă și viitoare
+    MiniCalendar.setEvents(allProfiles);
 
     const activeProjects = projects.filter(p => p.status === 'activ');
     const todayEntries = timeEntries.filter(e => e.date === getTodayStr());
@@ -123,6 +128,9 @@ const Dashboard = {
             <!-- Mini calendar -->
             ${MiniCalendar.render()}
 
+            <!-- Evenimente viitoare -->
+            ${MiniCalendar.renderUpcomingEvents()}
+
             <!-- Știri recente -->
             <div class="card">
               <div class="card-header">
@@ -178,6 +186,32 @@ const Dashboard = {
 // ── MINI CALENDAR ─────────────────────────────────────────────
 const MiniCalendar = {
   currentDate: new Date(),
+  events: [], // { day, month (0-indexed), type: 'birthday'|'anniversary', name, years }
+
+  setEvents(profiles) {
+    this.events = [];
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    for (const p of profiles) {
+      const displayName = p.full_name || p.name || 'Angajat';
+      const code = p.employee_code || (displayName.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 3));
+      if (p.birth_date) {
+        const bd = new Date(p.birth_date);
+        this.events.push({ day: bd.getDate(), month: bd.getMonth(), type: 'birthday', name: displayName, code });
+      }
+      if (p.hire_date) {
+        const hd = new Date(p.hire_date);
+        const years = currentYear - hd.getFullYear();
+        if (years > 0) {
+          this.events.push({ day: hd.getDate(), month: hd.getMonth(), type: 'anniversary', name: displayName, code, years });
+        }
+      }
+    }
+  },
+
+  getEventsForDay(day, month) {
+    return this.events.filter(e => e.day === day && e.month === month);
+  },
 
   render() {
     const d = this.currentDate;
@@ -192,14 +226,17 @@ const MiniCalendar = {
     const today = new Date();
 
     let cells = '';
-    // Empty cells
     for (let i = 0; i < startOffset; i++) {
       cells += `<div class="mini-cal-day other-month"></div>`;
     }
-    // Day cells
     for (let day = 1; day <= daysInMonth; day++) {
       const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === day;
-      cells += `<div class="mini-cal-day ${isToday ? 'today' : ''}">${day}</div>`;
+      const dayEvents = this.getEventsForDay(day, month);
+      const hasBirthday = dayEvents.some(e => e.type === 'birthday');
+      const hasAnniversary = dayEvents.some(e => e.type === 'anniversary');
+      const dots = dayEvents.length > 0 ? `<div style="display:flex;gap:2px;justify-content:center;margin-top:1px">${hasBirthday ? '<span style="width:4px;height:4px;border-radius:50%;background:#e91e63;display:inline-block"></span>' : ''}${hasAnniversary ? '<span style="width:4px;height:4px;border-radius:50%;background:var(--brand-dark);display:inline-block"></span>' : ''}</div>` : '';
+      const tooltip = dayEvents.map(e => e.type === 'birthday' ? `🎂 ${e.name}` : `🎉 ${e.name} (${e.years} an${e.years > 1 ? 'i' : ''})`).join('\n');
+      cells += `<div class="mini-cal-day ${isToday ? 'today' : ''} ${dayEvents.length > 0 ? 'has-event' : ''}" title="${tooltip}" style="cursor:${dayEvents.length > 0 ? 'pointer' : 'default'};position:relative;padding-bottom:2px">${day}${dots}</div>`;
     }
 
     return `
@@ -217,21 +254,58 @@ const MiniCalendar = {
           ${dayNames.map(d => `<div class="mini-cal-day-name">${d}</div>`).join('')}
           ${cells}
         </div>
+        <div style="display:flex;gap:12px;padding:8px 4px 2px;font-size:10px;color:var(--text-muted)">
+          <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:#e91e63;margin-right:3px;vertical-align:middle"></span>Zi de naștere</span>
+          <span><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--brand-dark);margin-right:3px;vertical-align:middle"></span>Aniversare angajare</span>
+        </div>
       </div>
     `;
   },
 
-  init() {
-    // Calendar is rendered inline, no extra init needed
+  renderUpcomingEvents() {
+    const today = new Date();
+    const upcoming = [];
+    // Caută evenimente în următoarele 30 de zile
+    for (let i = 0; i <= 30; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      const dayEvents = this.getEventsForDay(d.getDate(), d.getMonth());
+      for (const ev of dayEvents) {
+        upcoming.push({ ...ev, date: new Date(d), daysUntil: i });
+      }
+    }
+    if (upcoming.length === 0) return '';
+    const monthNames = ['ian','feb','mar','apr','mai','iun','iul','aug','sep','oct','nov','dec'];
+    return `
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Evenimente viitoare</span>
+        </div>
+        <div style="padding:0">
+          ${upcoming.slice(0, 6).map(ev => `
+            <div class="flex items-center gap-3 p-3" style="border-bottom:1px solid var(--border)">
+              <div style="width:36px;height:36px;border-radius:8px;background:${ev.type === 'birthday' ? '#fce4ec' : '#fff9e6'};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">${ev.type === 'birthday' ? '🎂' : '🎉'}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:13px;font-weight:600;color:var(--text)">${ev.name}</div>
+                <div class="text-xs text-muted">${ev.type === 'birthday' ? 'Zi de naștere' : `Aniversare angajare (${ev.years} an${ev.years > 1 ? 'i' : ''})`}</div>
+              </div>
+              <div style="text-align:right;flex-shrink:0">
+                <div style="font-size:12px;font-weight:700;color:${ev.daysUntil === 0 ? '#e91e63' : 'var(--brand-dark)'}">${ev.daysUntil === 0 ? 'Azi!' : ev.daysUntil === 1 ? 'Mâine' : `${ev.date.getDate()} ${monthNames[ev.date.getMonth()]}`}</div>
+                ${ev.daysUntil > 1 ? `<div class="text-xs text-muted">în ${ev.daysUntil} zile</div>` : ''}
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
   },
+
+  init() {},
 
   prevMonth() {
     this.currentDate.setMonth(this.currentDate.getMonth() - 1);
     const cal = document.getElementById('mini-calendar');
     if (cal) cal.outerHTML = this.render();
-    // Re-init after replace
-    const newCal = document.getElementById('mini-calendar');
-    if (newCal) newCal.outerHTML = this.render();
   },
 
   nextMonth() {
