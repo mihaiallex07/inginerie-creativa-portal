@@ -278,8 +278,6 @@ const TimeTracking = {
       user_id: Auth.currentUser?.id,
       date: document.getElementById('tt-date')?.value,
       start_time: String(hour).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':00',
-      start_hour: hour,
-      start_min: min,
       duration_minutes: parseInt(document.getElementById('tt-duration')?.value) || 60,
       task_name: taskName,
       activity_type: 'proiectare',
