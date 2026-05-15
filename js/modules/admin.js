@@ -156,11 +156,11 @@ const Admin = {
   },
 
   editUser(id) {
-    // Deschide profilul complet al angajatului (admin poate edita tot)
-    Profil.render(id);
-    window.location.hash = '/profil';
+    // Deschide profilul complet al angajatului (admin poate edita tot) - preview implicit
+    Profil.render(id, false);
+    window.location.hash = '/admin-utilizatori';
     document.querySelectorAll('.nav-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.page === 'profil');
+      el.classList.toggle('active', el.dataset.page === 'admin-utilizatori');
     });
     const titleEl = document.getElementById('page-title');
     if (titleEl) titleEl.textContent = 'Profil angajat';

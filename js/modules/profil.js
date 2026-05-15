@@ -1,35 +1,27 @@
 // ============================================================
 // Profil Module — Profilul meu + vizualizare profil angajat
-// Secțiuni: Info profesionale, Date personale, CI (sensibil),
-//           Date financiare (sensibil), Contact urgență, Date medicale
-// Vizibilitate: angajat vede info prof + date personale + urgență + medical
-//               doar proprietarul și adminul văd CI + financiar
-// Mod: isSelf → mereu editabil; admin vizualizează alt angajat → preview implicit + buton Editează
+// Comportament:
+//   - render(userId)  → preview implicit (câmpuri read-only)
+//   - render(userId, true) → mod editabil (apelat de butonul Editează)
+//   - Profilul propriu și al altora: același comportament — preview → Editează → Salvează → preview
+//   - "Profil negăsit" fix: render() fără userId = profilul propriu (nu null lookup)
 // ============================================================
 const Profil = {
-  viewUserId: null,  // null = profilul propriu, altfel ID-ul altui utilizator
-  editMode: false,   // false = preview (pt admin pe alt profil), true = editabil
+  viewUserId: null,  // null = profilul propriu
 
-  async render(userId, forceEdit) {
+  async render(userId, editMode) {
+    // Dacă userId e undefined/null → profilul propriu
     this.viewUserId = userId || null;
     const currentProfile = Auth.currentProfile;
     const isAdmin = currentProfile?.role === 'admin';
     const isSelf = !this.viewUserId || this.viewUserId === Auth.currentUser?.id;
 
-    // Dacă e profilul propriu → mereu în mod editabil
-    // Dacă admin vizualizează alt angajat → preview implicit (editMode controlat de buton)
-    if (isSelf) {
-      this.editMode = true;
-    } else if (forceEdit !== undefined) {
-      this.editMode = !!forceEdit;
-    } else {
-      this.editMode = false; // preview implicit pentru admin
-    }
-
+    // editMode: explicit true = editabil, orice altceva = preview
+    const isEditing = editMode === true;
     const canSeeSensitive = isSelf || isAdmin;
 
     // Încarcă profilul (propriu sau al altui angajat)
-    let profile = currentProfile;
+    let profile = isSelf ? currentProfile : null;
     if (!isSelf && this.viewUserId) {
       const { data } = await DB.getProfile(this.viewUserId);
       profile = data;
@@ -39,52 +31,49 @@ const Profil = {
       return;
     }
 
-    const isReadOnly = !this.editMode;
     const title = isSelf ? 'Profilul meu' : `Profil: ${profile.full_name || profile.name || profile.email}`;
+    // ID-ul pe care îl pasăm la Editează/Salvează (string pentru onclick)
+    const uidArg = this.viewUserId ? `'${this.viewUserId}'` : 'null';
 
-    // Helper pentru câmp: preview vs input
+    // Helper: afișează câmp ca text (preview) sau input (edit)
     const field = (id, value, opts = {}) => {
-      if (!this.editMode) {
-        // Preview mode: afișează valoarea ca text
-        const display = value || `<span style="color:var(--text-muted);font-style:italic">—</span>`;
-        return `<div class="input" style="background:var(--bg-secondary,#f8f8f8);cursor:default;color:${value ? 'inherit' : 'var(--text-muted)'}">${display}</div>`;
+      if (!isEditing) {
+        const display = (value !== null && value !== undefined && value !== '')
+          ? String(value).replace(/</g,'&lt;')
+          : `<span style="color:var(--text-muted);font-style:italic">—</span>`;
+        return `<div class="input" style="background:var(--bg-secondary,#f5f5f5);cursor:default;border-color:transparent">${display}</div>`;
       }
-      const extra = opts.readonly ? 'readonly' : '';
-      const style = opts.style ? `style="${opts.style}"` : '';
-      const placeholder = opts.placeholder ? `placeholder="${opts.placeholder}"` : '';
-      const maxlength = opts.maxlength ? `maxlength="${opts.maxlength}"` : '';
-      const pattern = opts.pattern ? `pattern="${opts.pattern}" title="${opts.patternTitle || ''}"` : '';
-      const type = opts.type || 'text';
-      return `<input type="${type}" id="${id}" class="input" value="${(value || '').replace(/"/g,'&quot;')}" ${extra} ${placeholder} ${maxlength} ${pattern} ${style} />`;
+      const ro = opts.readonly ? 'readonly' : '';
+      const st = opts.style ? `style="${opts.style}"` : '';
+      const ph = opts.placeholder ? `placeholder="${opts.placeholder}"` : '';
+      const ml = opts.maxlength ? `maxlength="${opts.maxlength}"` : '';
+      const pt = opts.pattern ? `pattern="${opts.pattern}" title="${opts.patternTitle||''}"` : '';
+      const tp = opts.type || 'text';
+      const val = (value !== null && value !== undefined) ? String(value).replace(/"/g,'&quot;') : '';
+      return `<input type="${tp}" id="${id}" class="input" value="${val}" ${ro} ${ph} ${ml} ${pt} ${st} />`;
     };
 
-    const selectField = (id, value, options, opts = {}) => {
-      if (!this.editMode) {
+    const selectField = (id, value, options) => {
+      if (!isEditing) {
         const display = value || `<span style="color:var(--text-muted);font-style:italic">—</span>`;
-        return `<div class="input" style="background:var(--bg-secondary,#f8f8f8);cursor:default">${display}</div>`;
+        return `<div class="input" style="background:var(--bg-secondary,#f5f5f5);cursor:default;border-color:transparent">${display}</div>`;
       }
-      const disabled = opts.disabled ? 'disabled' : '';
       const optHtml = options.map(o => `<option value="${o}" ${value === o ? 'selected' : ''}>${o}</option>`).join('');
-      return `<select id="${id}" class="input" ${disabled}><option value="">— Selectează —</option>${optHtml}</select>`;
+      return `<select id="${id}" class="input"><option value="">— Selectează —</option>${optHtml}</select>`;
     };
 
     document.getElementById('page-content').innerHTML = `
       <div style="max-width:760px">
-        <div class="page-header" style="margin-bottom:24px">
+        <div class="page-header" style="margin-bottom:24px;display:flex;align-items:center;justify-content:space-between">
           <div style="display:flex;align-items:center;gap:12px">
             <h1 class="page-title">${title}</h1>
-            ${!isSelf && isAdmin && !this.editMode ? `
-              <button class="btn-brand" onclick="Profil.render('${this.viewUserId}', true)" style="font-size:13px;padding:6px 16px">
+            ${!isEditing ? `
+              <button class="btn-brand" onclick="Profil.render(${uidArg}, true)" style="font-size:13px;padding:6px 16px">
                 ✏️ Editează
               </button>
             ` : ''}
-            ${!isSelf && isAdmin && this.editMode ? `
-              <button class="btn-secondary" onclick="Profil.render('${this.viewUserId}', false)" style="font-size:13px;padding:6px 16px">
-                👁 Preview
-              </button>
-            ` : ''}
           </div>
-          ${!isSelf ? `<button class="btn-secondary" onclick="navigate('admin',null)" style="font-size:13px">← Înapoi</button>` : ''}
+          ${!isSelf ? `<button class="btn-secondary" onclick="navigate('admin-utilizatori',null)" style="font-size:13px">← Înapoi</button>` : ''}
         </div>
 
         <!-- Header card cu avatar și info de bază -->
@@ -103,7 +92,6 @@ const Profil = {
               ${profile.job_title || profile.position ? `<span class="badge badge-gray">${profile.job_title || profile.position}</span>` : ''}
             </div>
           </div>
-          ${isSelf ? `<button class="btn-brand" onclick="Profil.save()" style="flex-shrink:0">Salvează</button>` : ''}
         </div>
 
         <!-- 1. Informații profesionale -->
@@ -255,13 +243,22 @@ const Profil = {
           </div>
         </div>
 
-        <!-- Butoane de acțiune (doar când e în mod editabil) -->
-        ${this.editMode ? `
+        <!-- Butoane de acțiune — doar în mod editabil -->
+        ${isEditing ? `
         <div class="flex justify-between items-center mb-6">
-          ${isSelf ? `<button class="btn-danger" onclick="Auth.logout()">Deconectare</button>` : `<div></div>`}
+          ${isSelf
+            ? `<button class="btn-danger" onclick="Auth.logout()">Deconectare</button>`
+            : `<button class="btn-secondary" onclick="Profil.render(${uidArg}, false)">✕ Anulează</button>`
+          }
           <button class="btn-brand" onclick="Profil.save()">💾 Salvează toate modificările</button>
         </div>
+        ` : `
+        ${isSelf ? `
+        <div class="flex justify-end mb-6">
+          <button class="btn-danger" onclick="Auth.logout()">Deconectare</button>
+        </div>
         ` : ''}
+        `}
       </div>
     `;
   },
@@ -306,64 +303,68 @@ const Profil = {
     const currentProfile = Auth.currentProfile;
     const isAdmin = currentProfile?.role === 'admin';
     const isSelf = !this.viewUserId || this.viewUserId === Auth.currentUser?.id;
-    // Salvează pe angajatul vizualizat, NU pe cel logat
+    // Salvează ÎNTOTDEAUNA pe angajatul vizualizat (nu pe cel logat)
     const targetId = isSelf ? Auth.currentUser?.id : this.viewUserId;
 
     if (!targetId) { showToast('Eroare: ID utilizator lipsă', 'error'); return; }
 
-    const updates = {
-      full_name: document.getElementById('prof-name')?.value?.trim() || undefined,
-      phone_mobile: document.getElementById('prof-phone-mobile')?.value?.trim() || null,
-      phone_work: document.getElementById('prof-phone-work')?.value?.trim() || null,
-      hire_date: document.getElementById('prof-hire-date')?.value || null,
-      birth_date: document.getElementById('prof-birth-date')?.value || null,
-      residence_address: document.getElementById('prof-residence')?.value?.trim() || null,
-      emergency_contact_name: document.getElementById('prof-emg-name')?.value?.trim() || null,
-      emergency_contact_phone: document.getElementById('prof-emg-phone')?.value?.trim() || null,
-      emergency_contact_relation: document.getElementById('prof-emg-relation')?.value?.trim() || null,
-      blood_type: document.getElementById('prof-blood-type')?.value || null,
-      known_allergies: document.getElementById('prof-allergies')?.value?.trim() || null,
-    };
-    // Elimină undefined
-    Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);
+    const updates = {};
+
+    // Câmpuri de bază
+    const phoneM = document.getElementById('prof-phone-mobile')?.value?.trim();
+    const phoneW = document.getElementById('prof-phone-work')?.value?.trim();
+    const hireD = document.getElementById('prof-hire-date')?.value;
+    const birthD = document.getElementById('prof-birth-date')?.value;
+    const resid = document.getElementById('prof-residence')?.value?.trim();
+    const emgN = document.getElementById('prof-emg-name')?.value?.trim();
+    const emgP = document.getElementById('prof-emg-phone')?.value?.trim();
+    const emgR = document.getElementById('prof-emg-relation')?.value?.trim();
+    const blood = document.getElementById('prof-blood-type')?.value;
+    const allerg = document.getElementById('prof-allergies')?.value?.trim();
+
+    if (phoneM !== undefined) updates.phone_mobile = phoneM || null;
+    if (phoneW !== undefined) updates.phone_work = phoneW || null;
+    if (hireD !== undefined) updates.hire_date = hireD || null;
+    if (birthD !== undefined) updates.birth_date = birthD || null;
+    if (resid !== undefined) updates.residence_address = resid || null;
+    if (emgN !== undefined) updates.emergency_contact_name = emgN || null;
+    if (emgP !== undefined) updates.emergency_contact_phone = emgP || null;
+    if (emgR !== undefined) updates.emergency_contact_relation = emgR || null;
+    if (blood !== undefined) updates.blood_type = blood || null;
+    if (allerg !== undefined) updates.known_allergies = allerg || null;
 
     // Câmpuri sensibile — doar proprietar sau admin
     if (isSelf || isAdmin) {
-      updates.cnp = document.getElementById('prof-cnp')?.value?.trim() || null;
-      updates.ci_series = document.getElementById('prof-ci-series')?.value?.toUpperCase().trim() || null;
-      updates.ci_number = document.getElementById('prof-ci-number')?.value?.trim() || null;
-      updates.ci_expiry_date = document.getElementById('prof-ci-expiry')?.value || null;
-      updates.ci_issued_by = document.getElementById('prof-ci-issued-by')?.value?.trim() || null;
-      updates.iban = document.getElementById('prof-iban')?.value?.toUpperCase().trim() || null;
-      updates.bank_name = document.getElementById('prof-bank')?.value?.trim() || null;
+      const cnp = document.getElementById('prof-cnp')?.value?.trim();
+      const ciS = document.getElementById('prof-ci-series')?.value?.toUpperCase().trim();
+      const ciN = document.getElementById('prof-ci-number')?.value?.trim();
+      const ciE = document.getElementById('prof-ci-expiry')?.value;
+      const ciI = document.getElementById('prof-ci-issued-by')?.value?.trim();
+      const iban = document.getElementById('prof-iban')?.value?.toUpperCase().trim();
+      const bank = document.getElementById('prof-bank')?.value?.trim();
+
+      if (cnp !== undefined) updates.cnp = cnp || null;
+      if (ciS !== undefined) updates.ci_series = ciS || null;
+      if (ciN !== undefined) updates.ci_number = ciN || null;
+      if (ciE !== undefined) updates.ci_expiry_date = ciE || null;
+      if (ciI !== undefined) updates.ci_issued_by = ciI || null;
+      if (iban !== undefined) updates.iban = iban || null;
+      if (bank !== undefined) updates.bank_name = bank || null;
+
+      // Validări
+      if (cnp && cnp.length !== 13) { showToast('CNP-ul trebuie să conțină exact 13 cifre', 'error'); return; }
+      if (ciN && ciN.length !== 6) { showToast('Numărul CI trebuie să conțină exact 6 cifre', 'error'); return; }
+      if (iban && iban.length !== 24) { showToast('IBAN-ul trebuie să conțină exact 24 caractere', 'error'); return; }
     }
 
     // Câmpuri editabile de admin
     if (isAdmin) {
-      updates.job_title = document.getElementById('prof-position')?.value?.trim() || null;
-      updates.department = document.getElementById('prof-department')?.value?.trim() || null;
-      updates.employee_code = document.getElementById('prof-employee-code')?.value?.toUpperCase().trim() || null;
-    }
-
-    // Validare CNP
-    const cnp = updates.cnp;
-    if (cnp && cnp.length !== 13) {
-      showToast('CNP-ul trebuie să conțină exact 13 cifre', 'error');
-      return;
-    }
-
-    // Validare CI număr
-    const ciNum = updates.ci_number;
-    if (ciNum && ciNum.length !== 6) {
-      showToast('Numărul CI trebuie să conțină exact 6 cifre', 'error');
-      return;
-    }
-
-    // Validare IBAN
-    const iban = updates.iban;
-    if (iban && iban.length !== 24) {
-      showToast('IBAN-ul trebuie să conțină exact 24 caractere', 'error');
-      return;
+      const pos = document.getElementById('prof-position')?.value?.trim();
+      const dep = document.getElementById('prof-department')?.value?.trim();
+      const ec = document.getElementById('prof-employee-code')?.value?.toUpperCase().trim();
+      if (pos !== undefined) updates.job_title = pos || null;
+      if (dep !== undefined) updates.department = dep || null;
+      if (ec !== undefined) updates.employee_code = ec || null;
     }
 
     const { error } = await DB.updateProfile(targetId, updates);
@@ -375,7 +376,7 @@ const Profil = {
       if (typeof updateSidebarUser === 'function') updateSidebarUser();
     }
     showToast('Profil actualizat cu succes!', 'success');
-    // Re-render în mod preview după salvare (dacă e alt angajat)
-    setTimeout(() => this.render(this.viewUserId, isSelf ? true : false), 500);
+    // Revino în mod preview după salvare
+    setTimeout(() => this.render(this.viewUserId, false), 400);
   },
 };

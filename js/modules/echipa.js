@@ -103,12 +103,11 @@ const Echipa = {
   },
 
   viewProfile(userId) {
-    // Navighează la pagina de profil cu userId-ul selectat
-    Profil.render(userId);
-    // Actualizează hash-ul și titlul paginii
-    window.location.hash = '/profil';
+    // Navighează la pagina de profil cu userId-ul selectat — preview implicit
+    Profil.render(userId, false);
+    window.location.hash = '/organigrama';
     document.querySelectorAll('.nav-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.page === 'profil');
+      el.classList.toggle('active', el.dataset.page === 'organigrama');
     });
     const titleEl = document.getElementById('page-title');
     if (titleEl) titleEl.textContent = 'Profil angajat';
