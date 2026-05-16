@@ -1,5 +1,8 @@
-// ============================================================
 // Time Tracking Module — Portal Inginerie Creativă
+// Schema Supabase time_entries (camelCase):
+//   id, userId(int), projectId(int), date(date), startHour(int), startMin(int),
+//   endHour(int), endMin(int), durationMinutes(int), activityType(enum), taskName(varchar),
+//   description(text), isBillable(bool), isRunning(bool), status(enum), createdAt, updatedAt
 // ============================================================
 
 const TimeTracking = {
@@ -7,12 +10,57 @@ const TimeTracking = {
   entries: [],
   projects: [],
   tasks: [],
-  activeTimer: null,
-  timerInterval: null,
-  selectedDate: getTodayStr(),
+
+  // ── Helpers ──────────────────────────────────────────────────────────────
+
+  // Returnează data locală ca YYYY-MM-DD (fără UTC shift)
+  localDateStr(d) {
+    const dt = d || new Date();
+    return dt.getFullYear() + '-' +
+      String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+      String(dt.getDate()).padStart(2, '0');
+  },
+
+  // Returnează ziua de Luni a săptămânii care conține `d`
+  weekStart(d) {
+    const dt = new Date(d);
+    const day = dt.getDay(); // 0=Sun, 1=Mon...
+    const diff = (day === 0 ? -6 : 1 - day);
+    dt.setDate(dt.getDate() + diff);
+    dt.setHours(0, 0, 0, 0);
+    return dt;
+  },
+
+  // Formatare dată dd/mm/yyyy
+  fmtDate(dateStr) {
+    if (!dateStr) return '';
+    const [y, m, d] = String(dateStr).split('-');
+    return `${d}/${m}/${y}`;
+  },
+
+  // Formatare ore din minute
+  fmtDuration(mins) {
+    if (!mins) return '0h';
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+  },
+
+  // Formatare oră HH:MM
+  fmtTime(h, m) {
+    return String(h || 0).padStart(2, '0') + ':' + String(m || 0).padStart(2, '0');
+  },
+
+  // userId numeric al utilizatorului curent
+  getNumericUserId() {
+    // Auth.currentProfile.id este integer (serial din users table)
+    return Auth.currentProfile?.id || null;
+  },
+
+  // ── Lifecycle ────────────────────────────────────────────────────────────
 
   async render() {
-    this.currentWeekStart = getWeekStart(new Date());
+    this.currentWeekStart = this.weekStart(new Date());
     await this.loadData();
     this.renderPage();
   },
@@ -20,235 +68,271 @@ const TimeTracking = {
   async loadData() {
     const weekEnd = new Date(this.currentWeekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    const userId = Auth.currentUser?.id;
+    const userId = this.getNumericUserId();
     const isAdmin = Auth.currentProfile?.role === 'admin';
 
-    const [entriesRes, projectsRes, membershipsRes] = await Promise.all([
-      DB.getTimeEntries(userId, formatDateISO(this.currentWeekStart), formatDateISO(weekEnd)),
-      DB.getProjects(),
-      dbQuery('project_members', q => q.select('project_id').eq('user_id', userId), []),
-    ]);
-    // Normalizăm câmpurile din Supabase: start_time -> start_hour/start_min, is_billable -> count_in_time
-    this.entries = (entriesRes.data || []).map(e => {
-      let start_hour = e.start_hour;
-      let start_min = e.start_min;
-      // Dacă DB-ul returnează start_time (ex: "09:30:00") în loc de start_hour/start_min
-      if ((start_hour === undefined || start_hour === null) && e.start_time) {
-        const parts = String(e.start_time).split(':');
-        start_hour = parseInt(parts[0]) || 0;
-        start_min = parseInt(parts[1]) || 0;
-      }
-      const count_in_time = e.count_in_time !== undefined ? e.count_in_time : (e.is_billable !== undefined ? e.is_billable : true);
-      return { ...e, start_hour: start_hour || 0, start_min: start_min || 0, count_in_time };
-    });
-    const allProjects = (projectsRes.data || []).filter(p => p.status === 'activ');
+    // Încarcă time entries pentru săptămâna curentă
+    const sb = getSupabase();
+    if (!sb) {
+      this.entries = [];
+      this.projects = [];
+      this.tasks = [];
+      return;
+    }
 
-    // Filtrare proiecte: admin vede toate, angajat vede doar proiectele la care e înrolat
+    const dateFrom = this.localDateStr(this.currentWeekStart);
+    const dateTo = this.localDateStr(weekEnd);
+
+    const [entriesRes, projectsRes, membershipsRes] = await Promise.all([
+      sb.from('time_entries')
+        .select('*')
+        .eq('userId', userId)
+        .gte('date', dateFrom)
+        .lte('date', dateTo)
+        .order('date', { ascending: true })
+        .order('startHour', { ascending: true }),
+      sb.from('projects').select('id,name,color,emoji').eq('status', 'activ'),
+      sb.from('project_members').select('project_id,role').eq('user_id', userId),
+    ]);
+
+    this.entries = entriesRes.data || [];
+    const allProjects = projectsRes.data || [];
+    const memberships = membershipsRes.data || [];
+
     if (isAdmin) {
       this.projects = allProjects;
     } else {
-      const enrolledIds = new Set((membershipsRes.data || []).map(m => m.project_id));
+      const enrolledIds = new Set(memberships.map(m => m.project_id));
       this.projects = allProjects.filter(p => enrolledIds.has(p.id));
     }
 
-    // Load tasks for accessible projects
-    const allTasksRes = await Promise.all(this.projects.map(p => DB.getProjectTasks(p.id)));
-    const allTasks = allTasksRes.flatMap(r => r.data || []);
-    // Filtrare task-uri: admin vede toate, angajat vede STRICT task-urile asignate lui
-    if (isAdmin) {
-      this.tasks = allTasks;
+    // Încarcă task-urile pentru proiectele accesibile
+    if (this.projects.length > 0) {
+      const projectIds = this.projects.map(p => p.id);
+      const tasksRes = await sb.from('project_tasks')
+        .select('id,name,project_id,phase_id,assigned_user_id,budget_hours,minutes_worked')
+        .in('project_id', projectIds)
+        .order('display_order');
+      const allTasks = tasksRes.data || [];
+      if (isAdmin) {
+        this.tasks = allTasks;
+      } else {
+        const coordProjectIds = new Set(memberships.filter(m => m.role === 'coordonator').map(m => m.project_id));
+        this.tasks = allTasks.filter(t =>
+          coordProjectIds.has(t.project_id) || t.assigned_user_id === userId
+        );
+      }
     } else {
-      // Verificăm și dacă e coordonator pe vreun proiect
-      const coordProjectIds = new Set((membershipsRes.data || []).filter(m => m.role === 'coordonator').map(m => m.project_id));
-      this.tasks = allTasks.filter(t => {
-        if (coordProjectIds.has(t.project_id)) return true; // coordonatorii văd toate task-urile din proiectele lor
-        return t.assigned_user_id === userId; // angajații văd STRICT task-urile asignate lor
-      });
+      this.tasks = [];
     }
   },
 
+  // ── Navigare săptămână ───────────────────────────────────────────────────
+
+  async prevWeek() {
+    this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
+    await this.loadData();
+    this.renderPage();
+  },
+
+  async nextWeek() {
+    this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
+    await this.loadData();
+    this.renderPage();
+  },
+
+  async thisWeek() {
+    this.currentWeekStart = this.weekStart(new Date());
+    await this.loadData();
+    this.renderPage();
+  },
+
+  // ── Render ───────────────────────────────────────────────────────────────
+
   renderPage() {
     const days = this.getWeekDays();
-    const totalMins = this.entries.filter(e => e.count_in_time).reduce((s, e) => s + e.duration_minutes, 0);
+    const totalMins = this.entries.reduce((s, e) => s + (e.durationMinutes || 0), 0);
+    const todayStr = this.localDateStr();
+
+    // Construiește header-ul zilelor
+    const DAY_LABELS = ['LU', 'MA', 'MI', 'JO', 'VI', 'SÂ', 'DU'];
+    const dayHeaders = days.map((d, i) => {
+      const dStr = this.localDateStr(d);
+      const isToday = dStr === todayStr;
+      const dayNum = d.getDate();
+      return `<th style="text-align:center;padding:8px 4px;font-weight:600;font-size:12px;color:var(--text-muted)">
+        <div>${DAY_LABELS[i]}</div>
+        <div style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-top:2px;
+          ${isToday ? 'background:var(--primary);color:#fff;font-weight:700' : 'color:var(--text)'}">
+          ${dayNum}
+        </div>
+      </th>`;
+    }).join('');
+
+    // Construiește rândurile de ore (8-18)
+    const HOURS = [8,9,10,11,12,13,14,15,16,17,18];
+    const rows = HOURS.map(hour => {
+      const cells = days.map(d => {
+        const dStr = this.localDateStr(d);
+        const dayEntries = this.entries.filter(e => e.date === dStr && (e.startHour || 0) === hour);
+        const blocks = dayEntries.map(e => {
+          const proj = this.projects.find(p => p.id === e.projectId);
+          const color = proj?.color || '#3B82F6';
+          const emoji = proj?.emoji || '';
+          const heightPx = Math.max(20, Math.round((e.durationMinutes || 60) / 60 * 40));
+          return `<div onclick="TimeTracking.viewEntry(${e.id})"
+            title="${e.taskName || ''} · ${this.fmtDuration(e.durationMinutes)}"
+            style="background:${color}22;border-left:3px solid ${color};border-radius:3px;padding:2px 4px;
+              margin:1px 0;cursor:pointer;font-size:10px;line-height:1.3;overflow:hidden;
+              max-height:${heightPx}px;min-height:18px">
+            <span style="font-weight:600;color:${color}">${emoji} ${e.taskName || 'Activitate'}</span>
+          </div>`;
+        }).join('');
+        return `<td style="border:1px solid var(--border);padding:2px;vertical-align:top;min-width:80px;height:40px">${blocks}</td>`;
+      }).join('');
+      return `<tr>
+        <td style="padding:4px 8px;font-size:11px;color:var(--text-muted);white-space:nowrap;border-right:1px solid var(--border)">${String(hour).padStart(2,'0')}:00</td>
+        ${cells}
+      </tr>`;
+    }).join('');
+
+    // Tabel activități
+    const tableRows = this.entries.length === 0
+      ? `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--text-muted)">
+          <div style="font-size:32px;margin-bottom:8px">⏱</div>
+          Nu există activități înregistrate pentru această săptămână
+        </td></tr>`
+      : this.entries.map(e => {
+          const proj = this.projects.find(p => p.id === e.projectId);
+          return `<tr style="border-bottom:1px solid var(--border)">
+            <td style="padding:8px 12px">${this.fmtDate(e.date)}</td>
+            <td style="padding:8px 12px;font-weight:500">${e.taskName || '—'}</td>
+            <td style="padding:8px 12px;color:var(--text-muted)">${proj ? `${proj.emoji || ''} ${proj.name}` : '—'}</td>
+            <td style="padding:8px 12px">${this.fmtTime(e.startHour, e.startMin)}${e.endHour != null ? ' → ' + this.fmtTime(e.endHour, e.endMin) : ''}</td>
+            <td style="padding:8px 12px"><span class="badge badge-blue">${this.fmtDuration(e.durationMinutes)}</span></td>
+            <td style="padding:8px 12px">
+              <button onclick="TimeTracking.deleteEntry(${e.id})" title="Șterge"
+                style="background:none;border:none;cursor:pointer;color:#EF4444;font-size:14px;padding:2px 6px">🗑</button>
+            </td>
+          </tr>`;
+        }).join('');
 
     document.getElementById('page-content').innerHTML = `
       <div style="width:100%">
         <div class="page-header">
           <div>
             <h1 class="page-title">Time-Tracking</h1>
-            <p class="page-subtitle">Total săptămână: <strong>${(totalMins/60).toFixed(1)}h</strong> (${totalMins} min)</p>
+            <p class="page-subtitle">Total săptămână: <strong>${this.fmtDuration(totalMins)}</strong></p>
           </div>
           <div class="flex gap-2">
             <button class="btn-secondary" onclick="TimeTracking.prevWeek()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
-              Săptămâna anterioară
+              ‹ Săptămâna anterioară
             </button>
             <button class="btn-secondary" onclick="TimeTracking.thisWeek()">Săptămâna curentă</button>
             <button class="btn-secondary" onclick="TimeTracking.nextWeek()">
-              Săptămâna viitoare
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              Săptămâna viitoare ›
             </button>
             <button class="btn-brand" onclick="TimeTracking.openAddModal()">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Adaugă activitate
+              + Adaugă activitate
             </button>
           </div>
         </div>
 
-        <!-- Week calendar -->
-        <div class="card mb-3" style="overflow:hidden">
-          <!-- Day headers -->
-          <div style="display:grid;grid-template-columns:52px repeat(7,1fr);border-bottom:1px solid var(--border);background:var(--surface-2)">
-            <div style="border-right:1px solid var(--border);padding:8px 4px;font-size:10px;color:var(--text-muted);text-align:center">ORA</div>
-            ${days.map(d => {
-              const isToday = d.str === getTodayStr();
-              const dayEntries = this.entries.filter(e => e.date === d.str);
-              const dayMins = dayEntries.filter(e => e.count_in_time).reduce((s, e) => s + e.duration_minutes, 0);
-              return `
-                <div style="border-right:1px solid var(--border);padding:6px 4px;text-align:center;${isToday ? 'background:rgba(255,203,9,0.08)' : ''}">
-                  <div style="font-size:10px;font-weight:700;color:var(--text-muted);text-transform:uppercase">${d.dayName}</div>
-                  <div style="font-size:16px;font-weight:700;color:${isToday ? 'var(--nero)' : 'var(--text)'}">
-                    ${isToday
-                      ? `<span style="background:var(--brand);color:var(--nero);width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center">${d.dayNum}</span>`
-                      : d.dayNum
-                    }
-                  </div>
-                  <div style="font-size:10px;color:var(--text-muted)">${dayMins > 0 ? (dayMins/60).toFixed(1)+'h' : ''}</div>
-                </div>
-              `;
-            }).join('')}
-          </div>
-
-          <!-- Time grid (8:00 - 20:00) -->
-          <div style="display:grid;grid-template-columns:52px repeat(7,1fr);max-height:480px;overflow-y:auto;position:relative">
-            ${Array.from({length: 13}, (_, i) => i + 8).map(hour => `
-              <div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface-2)">
-                <div style="height:48px;display:flex;align-items:flex-start;justify-content:flex-end;padding:2px 6px 0 0;font-size:10px;color:var(--text-light)">${hour}:00</div>
-              </div>
-              ${days.map(d => {
-                const isToday = d.str === getTodayStr();
-                const cellEntries = this.entries.filter(e => e.date === d.str && e.start_hour === hour);
-                return `
-                  <div style="border-right:1px solid var(--border);border-bottom:1px solid var(--border);height:48px;position:relative;${isToday ? 'background:rgba(255,203,9,0.03)' : ''}"
-                       onclick="TimeTracking.openAddModal('${d.str}', ${hour})">
-                    ${cellEntries.map(e => {
-                      const top = (e.start_min / 60) * 48;
-                      const height = Math.max(16, (e.duration_minutes / 60) * 48);
-                      const color = e.project_id
-                        ? (this.projects.find(p => p.id === e.project_id)?.color || getActivityColor(e.activity_type))
-                        : getActivityColor(e.activity_type);
-                      return `
-                        <div class="tt-entry" style="top:${top}px;height:${height}px;background:${color};color:${isLightColor(color) ? '#221F1F' : '#fff'}"
-                             onclick="event.stopPropagation();TimeTracking.viewEntry(${e.id})"
-                             title="${e.task_name}">
-                          ${e.task_name}
-                        </div>
-                      `;
-                    }).join('')}
-                  </div>
-                `;
-              }).join('')}
-            `).join('')}
-          </div>
+        <!-- Calendar săptămânal -->
+        <div class="card mb-3" style="overflow-x:auto">
+          <table style="width:100%;border-collapse:collapse;min-width:600px">
+            <thead>
+              <tr>
+                <th style="width:50px;border-right:1px solid var(--border)"></th>
+                ${dayHeaders}
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
         </div>
 
-        <!-- Entries list -->
+        <!-- Tabel activități -->
         <div class="card">
-          <div class="card-header">
-            <span class="card-title">Activități săptămâna aceasta</span>
-            <span class="text-sm text-muted">${this.entries.length} înregistrări</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border)">
+            <h3 style="margin:0;font-size:14px;font-weight:600">Activități săptămâna aceasta</h3>
+            <span style="font-size:12px;color:var(--text-muted)">${this.entries.length} înregistrări</span>
           </div>
-          <div style="overflow-x:auto">
-            ${this.entries.length === 0 ? emptyState('Nu există activități înregistrate pentru această săptămână') : `
-              <table>
-                <thead>
-                  <tr>
-                    <th>Data</th>
-                    <th>Ora</th>
-                    <th>Activitate</th>
-                    <th>Tip</th>
-                    <th>Proiect</th>
-                    <th>Durată</th>
-                    <th>Pontaj</th>
-                    <th></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${this.entries.map(e => {
-                    const project = this.projects.find(p => p.id === e.project_id);
-                    return `
-                      <tr>
-                        <td>${formatDate(e.date)}</td>
-                        <td style="font-family:monospace;font-size:12px">${String(e.start_hour).padStart(2,'0')}:${String(e.start_min).padStart(2,'0')}</td>
-                        <td style="font-weight:600;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.task_name}</td>
-                        <td><span style="display:inline-flex;align-items:center;gap:4px"><span style="width:8px;height:8px;border-radius:50%;background:${getActivityColor(e.activity_type)};display:inline-block"></span>${getActivityLabel(e.activity_type)}</span></td>
-                        <td>${project ? `<span style="display:inline-flex;align-items:center;gap:4px">${project.emoji || '📁'} ${project.abbreviation || project.name}</span>` : '—'}</td>
-                        <td style="font-weight:600">${formatHours(e.duration_minutes)}</td>
-                        <td>${e.count_in_time ? badge('Da', 'green') : badge('Nu', 'gray')}</td>
-                        <td>
-                          <button class="btn-icon" onclick="TimeTracking.deleteEntry(${e.id})" title="Șterge" style="color:var(--danger)">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-                          </button>
-                        </td>
-                      </tr>
-                    `;
-                  }).join('')}
-                </tbody>
-              </table>
-            `}
-          </div>
+          <table style="width:100%;border-collapse:collapse">
+            <thead>
+              <tr style="background:var(--bg-secondary,#f8f9fa)">
+                <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--text-muted)">Data</th>
+                <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--text-muted)">Activitate</th>
+                <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--text-muted)">Proiect</th>
+                <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--text-muted)">Interval</th>
+                <th style="padding:8px 12px;text-align:left;font-size:12px;color:var(--text-muted)">Durată</th>
+                <th style="padding:8px 12px;width:50px"></th>
+              </tr>
+            </thead>
+            <tbody>${tableRows}</tbody>
+          </table>
         </div>
       </div>
     `;
   },
 
-  openAddModal(date = getTodayStr(), hour = 9) {
+  getWeekDays() {
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(this.currentWeekStart);
+      d.setDate(d.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  },
+
+  // ── Modal adăugare activitate ─────────────────────────────────────────────
+
+  openAddModal(prefillDate) {
+    const today = prefillDate || this.localDateStr();
+    const now = new Date();
     const projectOptions = this.projects.map(p =>
       `<option value="${p.id}">${p.emoji || ''} ${p.name}</option>`
     ).join('');
 
-    const taskOptions = `<option value="">— Selectează task —</option>`;
-
     openModal('Adaugă activitate', `
       <div class="space-y-3">
-        <div>
-          <label class="label">Data</label>
-          <input type="date" id="tt-date" class="input" value="${date}" />
+        <div class="flex gap-3">
+          <div style="flex:1">
+            <label class="label">Data *</label>
+            <input type="date" id="tt-date" class="input" value="${today}">
+          </div>
+          <div style="flex:1">
+            <label class="label">Durată (minute) *</label>
+            <input type="number" id="tt-duration" class="input" value="60" min="1" max="720">
+          </div>
+        </div>
+        <div class="flex gap-3">
+          <div style="flex:1">
+            <label class="label">Ora start</label>
+            <input type="number" id="tt-hour" class="input" value="${now.getHours()}" min="0" max="23" placeholder="9">
+          </div>
+          <div style="flex:1">
+            <label class="label">Minut start</label>
+            <input type="number" id="tt-min" class="input" value="0" min="0" max="59" placeholder="0">
+          </div>
         </div>
         <div>
           <label class="label">Descriere activitate *</label>
-          <input type="text" id="tt-task" class="input" placeholder="Ex: Planșe arhitectură etaj 2" />
+          <input type="text" id="tt-task" class="input" placeholder="Ex: Planșe arhitectură etaj 2">
         </div>
-        <div class="form-row form-row-2">
-          <div>
-            <label class="label">Proiect</label>
-            <select id="tt-project" class="select" onchange="TimeTracking.onProjectChange(this.value)">
-              <option value="">— Fără proiect —</option>
-              ${projectOptions}
-            </select>
-          </div>
-          <div>
-            <label class="label">Task proiect</label>
-            <select id="tt-task-id" class="select">
-              ${taskOptions}
-            </select>
-          </div>
+        <div>
+          <label class="label">Proiect</label>
+          <select id="tt-project" class="select" onchange="TimeTracking.onProjectChange(this.value)">
+            <option value="">— Fără proiect —</option>
+            ${projectOptions}
+          </select>
         </div>
-        <div class="form-row form-row-3">
-          <div>
-            <label class="label">Ora start</label>
-            <input type="number" id="tt-hour" class="input" value="${hour}" min="0" max="23" />
-          </div>
-          <div>
-            <label class="label">Minut start</label>
-            <input type="number" id="tt-min" class="input" value="0" min="0" max="59" step="15" />
-          </div>
-          <div>
-            <label class="label">Durată (minute)</label>
-            <input type="number" id="tt-duration" class="input" value="60" min="15" max="480" step="15" />
-          </div>
+        <div>
+          <label class="label">Task proiect</label>
+          <select id="tt-task-id" class="select">
+            <option value="">— Selectează task —</option>
+          </select>
         </div>
-
       </div>
     `, `
       <button class="btn-secondary" onclick="closeModalForce()">Anulează</button>
@@ -269,127 +353,139 @@ const TimeTracking = {
     const taskName = document.getElementById('tt-task')?.value?.trim();
     if (!taskName) { showToast('Completează descrierea activității', 'error'); return; }
 
-    const hour = parseInt(document.getElementById('tt-hour')?.value) || 9;
-    const min = parseInt(document.getElementById('tt-min')?.value) || 0;
+    const dateVal = document.getElementById('tt-date')?.value;
+    if (!dateVal) { showToast('Selectează data', 'error'); return; }
+
+    const startHour = parseInt(document.getElementById('tt-hour')?.value) || 0;
+    const startMin = parseInt(document.getElementById('tt-min')?.value) || 0;
+    const durationMinutes = parseInt(document.getElementById('tt-duration')?.value) || 60;
     const projectId = document.getElementById('tt-project')?.value || null;
     const taskId = document.getElementById('tt-task-id')?.value || null;
+    const userId = this.getNumericUserId();
+
+    if (!userId) { showToast('Eroare: utilizator neidentificat', 'error'); return; }
+
+    // Calculăm endHour/endMin din start + durată
+    const totalStartMins = startHour * 60 + startMin;
+    const totalEndMins = totalStartMins + durationMinutes;
+    const endHour = Math.floor(totalEndMins / 60) % 24;
+    const endMin = totalEndMins % 60;
 
     const entry = {
-      user_id: Auth.currentUser?.id,
-      date: document.getElementById('tt-date')?.value,
-      start_time: String(hour).padStart(2,'0') + ':' + String(min).padStart(2,'0') + ':00',
-      duration_minutes: parseInt(document.getElementById('tt-duration')?.value) || 60,
-      task_name: taskName,
-      activity_type: 'proiectare',
-      project_id: projectId ? parseInt(projectId) : null,
-      project_task_id: taskId ? parseInt(taskId) : null,
-      is_billable: true,
+      userId: userId,
+      date: dateVal,
+      startHour: startHour,
+      startMin: startMin,
+      endHour: endHour,
+      endMin: endMin,
+      durationMinutes: durationMinutes,
+      taskName: taskName,
+      activityType: 'proiectare',
+      projectId: projectId ? parseInt(projectId) : null,
+      isBillable: true,
       status: 'salvat',
     };
 
-    const result = await DB.createTimeEntry(entry);
-    if (result && result.error) { showToast('Eroare la salvare: ' + result.error.message, 'error'); return; }
+    const sb = getSupabase();
+    if (!sb) { showToast('Eroare: conexiune Supabase indisponibilă', 'error'); return; }
+
+    const { data, error } = await sb.from('time_entries').insert(entry).select().single();
+    if (error) {
+      console.error('[TT] saveEntry error:', error);
+      showToast('Eroare la salvare: ' + error.message, 'error');
+      return;
+    }
 
     // Actualizează minutes_worked pe task dacă e selectat
-    if (taskId && entry.duration_minutes) {
+    if (taskId && durationMinutes) {
       const task = this.tasks.find(t => String(t.id) === String(taskId));
       if (task) {
-        const newMinutes = (task.minutes_worked || 0) + entry.duration_minutes;
-        await dbQuery('project_tasks', q => q.update({ minutes_worked: newMinutes }).eq('id', taskId), null);
+        const newMinutes = (task.minutes_worked || 0) + durationMinutes;
+        await sb.from('project_tasks').update({ minutes_worked: newMinutes }).eq('id', parseInt(taskId));
+        task.minutes_worked = newMinutes;
       }
     }
 
     closeModalForce();
-    showToast('Activitate salvată', 'success');
+    showToast('✅ Activitate salvată', 'success');
     await this.loadData();
     this.renderPage();
   },
 
+  // ── Vizualizare intrare ───────────────────────────────────────────────────
+
   viewEntry(id) {
     const e = this.entries.find(e => e.id === id);
     if (!e) return;
-    const project = this.projects.find(p => p.id === e.project_id);
+    const proj = this.projects.find(p => p.id === e.projectId);
     openModal('Detalii activitate', `
       <div class="space-y-3">
-        <div><strong>${e.task_name}</strong></div>
-        <div class="text-sm text-muted">${formatDate(e.date)} · ${String(e.start_hour).padStart(2,'0')}:${String(e.start_min).padStart(2,'0')} · ${formatHours(e.duration_minutes)}</div>
-        <div>${badge(getActivityLabel(e.activity_type), 'blue')}</div>
-        ${project ? `<div class="text-sm">Proiect: <strong>${project.name}</strong></div>` : ''}
-        <div class="text-sm">Pontaj: ${e.count_in_time ? badge('Da', 'green') : badge('Nu', 'gray')}</div>
+        <div style="font-size:16px;font-weight:600">${e.taskName || 'Activitate'}</div>
+        <div style="color:var(--text-muted);font-size:13px">
+          ${this.fmtDate(e.date)} · ${this.fmtTime(e.startHour, e.startMin)}
+          ${e.endHour != null ? ' → ' + this.fmtTime(e.endHour, e.endMin) : ''}
+          · ${this.fmtDuration(e.durationMinutes)}
+        </div>
+        ${proj ? `<div style="font-size:13px">Proiect: <strong>${proj.emoji || ''} ${proj.name}</strong></div>` : ''}
+        ${e.description ? `<div style="font-size:13px;color:var(--text-muted)">${e.description}</div>` : ''}
       </div>
     `, `
       <button class="btn-secondary" onclick="closeModalForce()">Închide</button>
-      <button class="btn-danger" onclick="TimeTracking.deleteEntry(${id});closeModalForce()">Șterge</button>
+      <button class="btn-danger" onclick="TimeTracking.deleteEntry(${id});closeModalForce()">🗑 Șterge</button>
     `);
   },
 
   async deleteEntry(id) {
-    const { error } = await DB.deleteTimeEntry(id);
-    if (error) { showToast('Eroare la ștergere', 'error'); return; }
+    const sb = getSupabase();
+    if (!sb) return;
+    const { error } = await sb.from('time_entries').delete().eq('id', id);
+    if (error) { showToast('Eroare la ștergere: ' + error.message, 'error'); return; }
     showToast('Activitate ștearsă', 'success');
     await this.loadData();
     this.renderPage();
   },
 
-  async prevWeek() {
-    this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
-    await this.loadData();
-    this.renderPage();
-  },
+  // ── Integrare cu timer din Proiecte / Start Task ──────────────────────────
+  // Apelat de Proiecte.stopTask() și stopActiveTimer() din app.js
 
-  async nextWeek() {
-    this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
-    await this.loadData();
-    this.renderPage();
-  },
+  async saveFromTimer(timerData, minutes) {
+    const userId = this.getNumericUserId();
+    if (!userId) return { error: { message: 'Utilizator neidentificat' } };
 
-  async thisWeek() {
-    this.currentWeekStart = getWeekStart(new Date());
-    await this.loadData();
-    this.renderPage();
-  },
+    const sb = getSupabase();
+    if (!sb) return { error: { message: 'Supabase indisponibil' } };
 
-  getWeekDays() {
-    const days = [];
-    const dayNames = ['Lu', 'Ma', 'Mi', 'Jo', 'Vi', 'Sâ', 'Du'];
-    for (let i = 0; i < 7; i++) {
-      const d = new Date(this.currentWeekStart);
-      d.setDate(d.getDate() + i);
-      days.push({
-        str: formatDateISO(d),
-        dayName: dayNames[i],
-        dayNum: d.getDate(),
-      });
+    const now = new Date();
+    const localDate = this.localDateStr(now);
+    const endHour = now.getHours();
+    const endMin = now.getMinutes();
+
+    const totalStartMins = (timerData.startHour || 0) * 60 + (timerData.startMin || 0);
+    // Recalculăm startHour/Min din startTime dacă nu sunt setate
+    let startHour = timerData.startHour;
+    let startMin = timerData.startMin;
+    if (startHour === undefined || startHour === null) {
+      const startDate = new Date(timerData.startTime);
+      startHour = startDate.getHours();
+      startMin = startDate.getMinutes();
     }
-    return days;
+
+    const entry = {
+      userId: userId,
+      date: localDate,
+      startHour: startHour,
+      startMin: startMin,
+      endHour: endHour,
+      endMin: endMin,
+      durationMinutes: minutes,
+      taskName: timerData.taskName || '',
+      activityType: 'proiectare',
+      projectId: timerData.projectId ? parseInt(timerData.projectId) : null,
+      isBillable: true,
+      status: 'salvat',
+    };
+
+    const result = await sb.from('time_entries').insert(entry).select().single();
+    return result;
   },
 };
-
-function getWeekStart(date) {
-  const d = new Date(date);
-  const day = d.getDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  d.setDate(d.getDate() + diff);
-  d.setHours(0, 0, 0, 0);
-  return d;
-}
-
-function formatDateISO(date) {
-  // Folosim local time (nu UTC) pentru a evita off-by-one in timezone-uri ca Romania (UTC+3)
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
-function isLightColor(hex) {
-  if (!hex || !hex.startsWith('#')) return false;
-  const r = parseInt(hex.slice(1, 3), 16);
-  const g = parseInt(hex.slice(3, 5), 16);
-  const b = parseInt(hex.slice(5, 7), 16);
-  return (r * 299 + g * 587 + b * 114) / 1000 > 128;
-}
-
-// Timer functions are now handled globally in app.js
-// startGlobalTimer(), stopGlobalTimerInterval(), updateHeaderTimer(), stopActiveTimer()
-// window.activeTimerData and window.pausedTimerData are the shared state

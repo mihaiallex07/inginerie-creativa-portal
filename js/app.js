@@ -420,29 +420,13 @@ async function stopActiveTimer() {
   if (typeof Proiecte !== 'undefined' && Proiecte.stopTask) {
     Proiecte.stopTask(data.taskId);
   } else {
-    // Stop din altă pagină — salvăm direct în time_entries
+    // Stop din altă pagină — salvăm direct via TimeTracking.saveFromTimer
     stopGlobalTimerInterval();
     const elapsed = Date.now() - data.startTime - (data.pausedMs || 0);
     const minutes = Math.max(1, Math.round(elapsed / 60000));
-    const stopDate = new Date();
-    const localDate = stopDate.getFullYear() + '-' + String(stopDate.getMonth()+1).padStart(2,'0') + '-' + String(stopDate.getDate()).padStart(2,'0');
-    const stopHour = stopDate.getHours();
-    const stopMin = stopDate.getMinutes();
-    const entry = {
-      user_id: Auth.currentProfile ? Auth.currentProfile.id : (Auth.currentUser ? Auth.currentUser.id : null),
-      project_id: data.projectId || null,
-      project_task_id: data.taskId || null,
-      date: localDate,
-      start_time: String(data.startHour).padStart(2,'0') + ':' + String(data.startMin).padStart(2,'0') + ':00',
-      end_time: String(stopHour).padStart(2,'0') + ':' + String(stopMin).padStart(2,'0') + ':00',
-      duration_minutes: minutes,
-      task_name: data.taskName || '',
-      activity_type: 'proiectare',
-      is_billable: true,
-      status: 'salvat',
-    };
-    if (typeof DB !== 'undefined' && DB.createTimeEntry) {
-      const result = await DB.createTimeEntry(entry);
+
+    if (typeof TimeTracking !== 'undefined' && TimeTracking.saveFromTimer) {
+      const result = await TimeTracking.saveFromTimer(data, minutes);
       if (result && result.error) {
         showToast('Eroare la salvare: ' + result.error.message, 'error');
       } else {
@@ -451,6 +435,7 @@ async function stopActiveTimer() {
         showToast('⏹ Task oprit. ' + (h > 0 ? h + 'h ' : '') + m + 'm înregistrate în Time-Tracking.', 'success');
       }
     }
+
     window.activeTimerData = null;
     window.pausedTimerData = null;
     _timerClear();
