@@ -1,8 +1,11 @@
 // Time Tracking Module — Portal Inginerie Creativă
 // Schema Supabase time_entries (camelCase):
-//   id, userId(int), projectId(int), date(date), startHour(int), startMin(int),
-//   endHour(int), endMin(int), durationMinutes(int), activityType(enum), taskName(varchar),
-//   description(text), isBillable(bool), isRunning(bool), status(enum), createdAt, updatedAt
+//   id, userId(int), projectId(int), date(date),
+//   startHour(int), startMin(int), endHour(int), endMin(int),
+//   durationMinutes(int), taskName(varchar), description(text),
+//   isBillable(bool), isRunning(bool), status(enum), createdAt, updatedAt
+// NOTE: activityType are default 'proiectare' în DB — NU îl trimitem în INSERT
+//       deoarece Supabase schema cache poate să nu îl recunoască
 // ============================================================
 
 const TimeTracking = {
@@ -13,7 +16,6 @@ const TimeTracking = {
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
-  // Returnează data locală ca YYYY-MM-DD (fără UTC shift)
   localDateStr(d) {
     const dt = d || new Date();
     return dt.getFullYear() + '-' +
@@ -21,24 +23,21 @@ const TimeTracking = {
       String(dt.getDate()).padStart(2, '0');
   },
 
-  // Returnează ziua de Luni a săptămânii care conține `d`
   weekStart(d) {
     const dt = new Date(d);
-    const day = dt.getDay(); // 0=Sun, 1=Mon...
+    const day = dt.getDay();
     const diff = (day === 0 ? -6 : 1 - day);
     dt.setDate(dt.getDate() + diff);
     dt.setHours(0, 0, 0, 0);
     return dt;
   },
 
-  // Formatare dată dd/mm/yyyy
   fmtDate(dateStr) {
     if (!dateStr) return '';
     const [y, m, d] = String(dateStr).split('-');
     return `${d}/${m}/${y}`;
   },
 
-  // Formatare ore din minute
   fmtDuration(mins) {
     if (!mins) return '0h';
     const h = Math.floor(mins / 60);
@@ -46,14 +45,11 @@ const TimeTracking = {
     return h > 0 ? (m > 0 ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
   },
 
-  // Formatare oră HH:MM
   fmtTime(h, m) {
     return String(h || 0).padStart(2, '0') + ':' + String(m || 0).padStart(2, '0');
   },
 
-  // userId numeric al utilizatorului curent
   getNumericUserId() {
-    // Auth.currentProfile.id este integer (serial din users table)
     return Auth.currentProfile?.id || null;
   },
 
@@ -71,14 +67,8 @@ const TimeTracking = {
     const userId = this.getNumericUserId();
     const isAdmin = Auth.currentProfile?.role === 'admin';
 
-    // Încarcă time entries pentru săptămâna curentă
     const sb = getSupabase();
-    if (!sb) {
-      this.entries = [];
-      this.projects = [];
-      this.tasks = [];
-      return;
-    }
+    if (!sb) { this.entries = []; this.projects = []; this.tasks = []; return; }
 
     const dateFrom = this.localDateStr(this.currentWeekStart);
     const dateTo = this.localDateStr(weekEnd);
@@ -106,7 +96,6 @@ const TimeTracking = {
       this.projects = allProjects.filter(p => enrolledIds.has(p.id));
     }
 
-    // Încarcă task-urile pentru proiectele accesibile
     if (this.projects.length > 0) {
       const projectIds = this.projects.map(p => p.id);
       const tasksRes = await sb.from('project_tasks')
@@ -154,13 +143,12 @@ const TimeTracking = {
     const totalMins = this.entries.reduce((s, e) => s + (e.durationMinutes || 0), 0);
     const todayStr = this.localDateStr();
 
-    // Construiește header-ul zilelor
     const DAY_LABELS = ['LU', 'MA', 'MI', 'JO', 'VI', 'SÂ', 'DU'];
     const dayHeaders = days.map((d, i) => {
       const dStr = this.localDateStr(d);
       const isToday = dStr === todayStr;
       const dayNum = d.getDate();
-      return `<th style="text-align:center;padding:8px 4px;font-weight:600;font-size:12px;color:var(--text-muted)">
+      return `<th style="text-align:center;padding:6px 4px;font-weight:600;font-size:12px;color:var(--text-muted);min-width:100px">
         <div>${DAY_LABELS[i]}</div>
         <div style="width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;margin-top:2px;
           ${isToday ? 'background:var(--primary);color:#fff;font-weight:700' : 'color:var(--text)'}">
@@ -169,29 +157,42 @@ const TimeTracking = {
       </th>`;
     }).join('');
 
-    // Construiește rândurile de ore (8-18)
-    const HOURS = [8,9,10,11,12,13,14,15,16,17,18];
-    const rows = HOURS.map(hour => {
-      const cells = days.map(d => {
+    // Ore 7-18 vizibile (scroll pentru altele)
+    const ALL_HOURS = Array.from({length: 24}, (_, i) => i); // 0-23
+    const VISIBLE_HOURS = Array.from({length: 12}, (_, i) => i + 7); // 7-18
+
+    const rows = ALL_HOURS.map(hour => {
+      const cells = days.map((d, di) => {
         const dStr = this.localDateStr(d);
         const dayEntries = this.entries.filter(e => e.date === dStr && (e.startHour || 0) === hour);
         const blocks = dayEntries.map(e => {
           const proj = this.projects.find(p => p.id === e.projectId);
           const color = proj?.color || '#3B82F6';
           const emoji = proj?.emoji || '';
-          const heightPx = Math.max(20, Math.round((e.durationMinutes || 60) / 60 * 40));
           return `<div onclick="TimeTracking.viewEntry(${e.id})"
             title="${e.taskName || ''} · ${this.fmtDuration(e.durationMinutes)}"
-            style="background:${color}22;border-left:3px solid ${color};border-radius:3px;padding:2px 4px;
-              margin:1px 0;cursor:pointer;font-size:10px;line-height:1.3;overflow:hidden;
-              max-height:${heightPx}px;min-height:18px">
+            style="background:${color}22;border-left:3px solid ${color};border-radius:3px;padding:2px 5px;
+              margin:1px 0;cursor:pointer;font-size:10px;line-height:1.4;overflow:hidden;white-space:nowrap;text-overflow:ellipsis">
             <span style="font-weight:600;color:${color}">${emoji} ${e.taskName || 'Activitate'}</span>
+            <span style="color:var(--text-muted);margin-left:4px">${this.fmtDuration(e.durationMinutes)}</span>
           </div>`;
         }).join('');
-        return `<td style="border:1px solid var(--border);padding:2px;vertical-align:top;min-width:80px;height:40px">${blocks}</td>`;
+        // Click pe celulă goală → deschide modal cu data și ora pre-completate
+        const clickHandler = dayEntries.length === 0
+          ? `onclick="TimeTracking.openAddModal('${dStr}', ${hour})"`
+          : '';
+        return `<td ${clickHandler} style="border:1px solid var(--border);padding:2px;vertical-align:top;height:44px;
+          ${dayEntries.length === 0 ? 'cursor:pointer' : ''}
+          ${dayEntries.length === 0 ? 'transition:background 0.15s' : ''}"
+          ${dayEntries.length === 0 ? `onmouseenter="this.style.background='var(--primary-light,#FFCB0915)'"` : ''}
+          ${dayEntries.length === 0 ? `onmouseleave="this.style.background=''"` : ''}>
+          ${blocks}
+        </td>`;
       }).join('');
       return `<tr>
-        <td style="padding:4px 8px;font-size:11px;color:var(--text-muted);white-space:nowrap;border-right:1px solid var(--border)">${String(hour).padStart(2,'0')}:00</td>
+        <td style="padding:4px 8px;font-size:11px;color:var(--text-muted);white-space:nowrap;border-right:1px solid var(--border);width:50px">
+          ${String(hour).padStart(2,'0')}:00
+        </td>
         ${cells}
       </tr>`;
     }).join('');
@@ -225,30 +226,26 @@ const TimeTracking = {
             <p class="page-subtitle">Total săptămână: <strong>${this.fmtDuration(totalMins)}</strong></p>
           </div>
           <div class="flex gap-2">
-            <button class="btn-secondary" onclick="TimeTracking.prevWeek()">
-              ‹ Săptămâna anterioară
-            </button>
-            <button class="btn-secondary" onclick="TimeTracking.thisWeek()">Săptămâna curentă</button>
-            <button class="btn-secondary" onclick="TimeTracking.nextWeek()">
-              Săptămâna viitoare ›
-            </button>
-            <button class="btn-brand" onclick="TimeTracking.openAddModal()">
-              + Adaugă activitate
-            </button>
+            <button class="btn-secondary" onclick="TimeTracking.prevWeek()">‹ Anterioară</button>
+            <button class="btn-secondary" onclick="TimeTracking.thisWeek()">Curentă</button>
+            <button class="btn-secondary" onclick="TimeTracking.nextWeek()">Următoare ›</button>
+            <button class="btn-brand" onclick="TimeTracking.openAddModal()">+ Adaugă activitate</button>
           </div>
         </div>
 
-        <!-- Calendar săptămânal -->
+        <!-- Calendar săptămânal — scroll vertical, 7-18 vizibil -->
         <div class="card mb-3" style="overflow-x:auto">
-          <table style="width:100%;border-collapse:collapse;min-width:600px">
-            <thead>
-              <tr>
-                <th style="width:50px;border-right:1px solid var(--border)"></th>
-                ${dayHeaders}
-              </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-          </table>
+          <div style="overflow-y:auto;max-height:580px;position:relative">
+            <table style="width:100%;border-collapse:collapse;min-width:700px" id="tt-calendar-table">
+              <thead style="position:sticky;top:0;z-index:10;background:var(--bg)">
+                <tr>
+                  <th style="width:50px;border-right:1px solid var(--border);background:var(--bg)"></th>
+                  ${dayHeaders}
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Tabel activități -->
@@ -273,6 +270,20 @@ const TimeTracking = {
         </div>
       </div>
     `;
+
+    // Scroll automat la ora 7 (rândul 7 din tabel)
+    setTimeout(() => {
+      const table = document.getElementById('tt-calendar-table');
+      if (!table) return;
+      const rows = table.querySelectorAll('tbody tr');
+      if (rows[7]) {
+        const container = table.closest('[style*="overflow-y"]');
+        if (container) {
+          const rowTop = rows[7].offsetTop;
+          container.scrollTop = rowTop;
+        }
+      }
+    }, 50);
   },
 
   getWeekDays() {
@@ -287,9 +298,11 @@ const TimeTracking = {
 
   // ── Modal adăugare activitate ─────────────────────────────────────────────
 
-  openAddModal(prefillDate) {
+  openAddModal(prefillDate, prefillHour) {
     const today = prefillDate || this.localDateStr();
     const now = new Date();
+    const hour = prefillHour !== undefined ? prefillHour : now.getHours();
+
     const projectOptions = this.projects.map(p =>
       `<option value="${p.id}">${p.emoji || ''} ${p.name}</option>`
     ).join('');
@@ -309,11 +322,11 @@ const TimeTracking = {
         <div class="flex gap-3">
           <div style="flex:1">
             <label class="label">Ora start</label>
-            <input type="number" id="tt-hour" class="input" value="${now.getHours()}" min="0" max="23" placeholder="9">
+            <input type="number" id="tt-hour" class="input" value="${hour}" min="0" max="23">
           </div>
           <div style="flex:1">
             <label class="label">Minut start</label>
-            <input type="number" id="tt-min" class="input" value="0" min="0" max="59" placeholder="0">
+            <input type="number" id="tt-min" class="input" value="0" min="0" max="59">
           </div>
         </div>
         <div>
@@ -346,7 +359,11 @@ const TimeTracking = {
     const pid = parseInt(projectId);
     const tasks = this.tasks.filter(t => t.project_id === pid);
     taskSelect.innerHTML = `<option value="">— Selectează task —</option>` +
-      tasks.map(t => `<option value="${t.id}">${t.name}</option>`).join('');
+      tasks.map(t => {
+        const budgetH = Math.round((t.budget_hours || 0) * 10) / 10;
+        const workedH = Math.round((t.minutes_worked || 0) / 60 * 10) / 10;
+        return `<option value="${t.id}">${t.name} (${workedH}h / ${budgetH}h buget)</option>`;
+      }).join('');
   },
 
   async saveEntry() {
@@ -365,12 +382,12 @@ const TimeTracking = {
 
     if (!userId) { showToast('Eroare: utilizator neidentificat', 'error'); return; }
 
-    // Calculăm endHour/endMin din start + durată
-    const totalStartMins = startHour * 60 + startMin;
-    const totalEndMins = totalStartMins + durationMinutes;
+    const totalEndMins = startHour * 60 + startMin + durationMinutes;
     const endHour = Math.floor(totalEndMins / 60) % 24;
     const endMin = totalEndMins % 60;
 
+    // IMPORTANT: NU includem activityType — Supabase schema cache nu îl recunoaște
+    // Are default 'proiectare' în DB
     const entry = {
       userId: userId,
       date: dateVal,
@@ -380,7 +397,6 @@ const TimeTracking = {
       endMin: endMin,
       durationMinutes: durationMinutes,
       taskName: taskName,
-      activityType: 'proiectare',
       projectId: projectId ? parseInt(projectId) : null,
       isBillable: true,
       status: 'salvat',
@@ -396,7 +412,7 @@ const TimeTracking = {
       return;
     }
 
-    // Actualizează minutes_worked pe task dacă e selectat
+    // Actualizează minutes_worked pe task (scade din buget)
     if (taskId && durationMinutes) {
       const task = this.tasks.find(t => String(t.id) === String(taskId));
       if (task) {
@@ -412,7 +428,7 @@ const TimeTracking = {
     this.renderPage();
   },
 
-  // ── Vizualizare intrare ───────────────────────────────────────────────────
+  // ── Vizualizare / ștergere intrare ───────────────────────────────────────
 
   viewEntry(id) {
     const e = this.entries.find(e => e.id === id);
@@ -446,7 +462,6 @@ const TimeTracking = {
   },
 
   // ── Integrare cu timer din Proiecte / Start Task ──────────────────────────
-  // Apelat de Proiecte.stopTask() și stopActiveTimer() din app.js
 
   async saveFromTimer(timerData, minutes) {
     const userId = this.getNumericUserId();
@@ -460,8 +475,6 @@ const TimeTracking = {
     const endHour = now.getHours();
     const endMin = now.getMinutes();
 
-    const totalStartMins = (timerData.startHour || 0) * 60 + (timerData.startMin || 0);
-    // Recalculăm startHour/Min din startTime dacă nu sunt setate
     let startHour = timerData.startHour;
     let startMin = timerData.startMin;
     if (startHour === undefined || startHour === null) {
@@ -470,6 +483,7 @@ const TimeTracking = {
       startMin = startDate.getMinutes();
     }
 
+    // IMPORTANT: NU includem activityType
     const entry = {
       userId: userId,
       date: localDate,
@@ -479,7 +493,6 @@ const TimeTracking = {
       endMin: endMin,
       durationMinutes: minutes,
       taskName: timerData.taskName || '',
-      activityType: 'proiectare',
       projectId: timerData.projectId ? parseInt(timerData.projectId) : null,
       isBillable: true,
       status: 'salvat',
