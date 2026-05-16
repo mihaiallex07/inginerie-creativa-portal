@@ -687,21 +687,27 @@ const Proiecte = {
     const elapsed = Date.now() - timerData.startTime - (timerData.pausedMs || 0);
     const minutes = Math.max(1, Math.round(elapsed / 60000));
 
+    // Calculăm data locală (nu UTC) pentru a evita off-by-one
+    const stopDate = new Date();
+    const localDate = stopDate.getFullYear() + '-' + String(stopDate.getMonth()+1).padStart(2,'0') + '-' + String(stopDate.getDate()).padStart(2,'0');
+    const stopHour = stopDate.getHours();
+    const stopMin = stopDate.getMinutes();
+
     const entry = {
-      user_id: Auth.currentProfile ? Auth.currentProfile.id : null,
-      project_id: timerData.projectId,
-      project_task_id: timerData.taskId,
-      phase_id: timerData.phaseId,
-      date: new Date().toISOString().split('T')[0],
+      user_id: Auth.currentProfile ? Auth.currentProfile.id : (Auth.currentUser ? Auth.currentUser.id : null),
+      project_id: timerData.projectId || null,
+      project_task_id: timerData.taskId || null,
+      date: localDate,
       start_time: String(timerData.startHour).padStart(2,'0') + ':' + String(timerData.startMin).padStart(2,'0') + ':00',
+      end_time: String(stopHour).padStart(2,'0') + ':' + String(stopMin).padStart(2,'0') + ':00',
       duration_minutes: minutes,
-      task_name: timerData.taskName,
+      task_name: timerData.taskName || '',
       activity_type: 'proiectare',
       is_billable: true,
-      status: 'draft',
+      status: 'salvat',
     };
 
-    const result = await dbQuery('time_entries', q => q.insert(entry).select().single(), null);
+    const result = await DB.createTimeEntry(entry);
     if (result && result.error) {
       showToast('Eroare la salvarea timpului: ' + result.error.message, 'error');
     } else {
@@ -713,7 +719,7 @@ const Proiecte = {
       }
       const h = Math.floor(minutes / 60);
       const m = minutes % 60;
-      showToast('⏹ Task oprit. ' + (h > 0 ? h + 'h ' : '') + m + 'm înregistrate.', 'success');
+      showToast('⏹ Task oprit. ' + (h > 0 ? h + 'h ' : '') + m + 'm înregistrate în Time-Tracking.', 'success');
     }
 
     if (typeof _timerClear === 'function') _timerClear();

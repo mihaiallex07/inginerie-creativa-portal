@@ -287,7 +287,7 @@ const TimeTracking = {
       status: 'salvat',
     };
 
-    const result = await dbQuery('time_entries', q => q.insert(entry).select().single(), null);
+    const result = await DB.createTimeEntry(entry);
     if (result && result.error) { showToast('Eroare la salvare: ' + result.error.message, 'error'); return; }
 
     // Actualizează minutes_worked pe task dacă e selectat
