@@ -134,7 +134,7 @@ const ProcessOverview = {
             const roleLabel = proj.memberRole === 'coordonator' ? ' ★' : '';
 
             bars += `
-              <div class="gantt-bar" style="left:${left}px;top:${top}px;width:${width}px;background:${color};color:${isLightColor(color) ? '#221F1F' : '#fff'}"
+              <div class="gantt-bar" style="left:${left}px;top:${top}px;width:${width}px;background:${color};color:${this.isLightColor(color) ? '#221F1F' : '#fff'}"
                    title="${proj.name} (${proj.code})${roleLabel ? ' — Coordonator' : ''}">
                 <span>${proj.abbreviation || proj.code}${roleLabel}</span>
               </div>
@@ -247,5 +247,17 @@ const ProcessOverview = {
   resetView() {
     this.offsetDays = 0;
     this.renderPage();
+  },
+
+  // Determină dacă o culoare hex este deschisă (pentru a alege text negru/alb)
+  isLightColor(hex) {
+    if (!hex) return false;
+    const h = hex.replace('#', '');
+    if (h.length < 6) return false;
+    const r = parseInt(h.substr(0,2),16);
+    const g = parseInt(h.substr(2,2),16);
+    const b = parseInt(h.substr(4,2),16);
+    const luminance = (0.299*r + 0.587*g + 0.114*b) / 255;
+    return luminance > 0.55;
   },
 };
