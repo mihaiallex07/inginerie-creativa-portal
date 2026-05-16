@@ -1,7 +1,7 @@
 // Time Tracking Module — Portal Inginerie Creativă
 // Schema REALĂ Supabase time_entries (snake_case):
-//   id, user_id(int), project_id(int), project_task_id(int),
-//   date(date), start_time(timestamp), end_time(timestamp),
+//   id, user_id(uuid), project_id(int), project_task_id(int),
+//   date(date), start_time(time = "HH:MM:SS"), end_time(time = "HH:MM:SS"),
 //   duration_minutes(int), activity_type(enum), task_name(varchar),
 //   description(text), is_billable(bool), is_running(bool),
 //   status(enum), approved_by(int), timer_started_at(timestamp),
@@ -49,25 +49,32 @@ const TimeTracking = {
     return String(h || 0).padStart(2, '0') + ':' + String(m || 0).padStart(2, '0');
   },
 
-  // Extrage ora și minutul dintr-un câmp start_time (timestamp sau "HH:MM:SS")
+  // Extrage ora și minutul dintr-un câmp start_time (format "HH:MM:SS" sau ISO timestamp)
   parseStartTime(entry) {
-    if (entry.start_time) {
-      const d = new Date(entry.start_time);
-      if (!isNaN(d)) return { h: d.getHours(), m: d.getMinutes() };
-      // fallback: "HH:MM:SS"
-      const parts = String(entry.start_time).split(':');
+    if (!entry.start_time) return { h: 0, m: 0 };
+    const s = String(entry.start_time);
+    // Format "HH:MM:SS" sau "HH:MM:SS.ffffff"
+    if (/^\d{1,2}:\d{2}/.test(s)) {
+      const parts = s.split(':');
       return { h: parseInt(parts[0]) || 0, m: parseInt(parts[1]) || 0 };
     }
+    // Format ISO timestamp
+    const d = new Date(s);
+    if (!isNaN(d)) return { h: d.getHours(), m: d.getMinutes() };
     return { h: 0, m: 0 };
   },
 
   parseEndTime(entry) {
-    if (entry.end_time) {
-      const d = new Date(entry.end_time);
-      if (!isNaN(d)) return { h: d.getHours(), m: d.getMinutes() };
-      const parts = String(entry.end_time).split(':');
+    if (!entry.end_time) return null;
+    const s = String(entry.end_time);
+    // Format "HH:MM:SS" sau "HH:MM:SS.ffffff"
+    if (/^\d{1,2}:\d{2}/.test(s)) {
+      const parts = s.split(':');
       return { h: parseInt(parts[0]) || 0, m: parseInt(parts[1]) || 0 };
     }
+    // Format ISO timestamp
+    const d = new Date(s);
+    if (!isNaN(d)) return { h: d.getHours(), m: d.getMinutes() };
     return null;
   },
 
@@ -402,16 +409,19 @@ const TimeTracking = {
 
     if (!userId) { showToast('Eroare: utilizator neidentificat', 'error'); return; }
 
-    // Construiește timestamp-uri pentru start_time și end_time
-    const startDt = new Date(`${dateVal}T${String(startHour).padStart(2,'0')}:${String(startMin).padStart(2,'0')}:00`);
-    const endDt = new Date(startDt.getTime() + durationMinutes * 60000);
+    // Construiește valorile HH:MM:SS pentru start_time și end_time (tip TIME în Supabase, nu TIMESTAMP)
+    const startTimeStr = String(startHour).padStart(2,'0') + ':' + String(startMin).padStart(2,'0') + ':00';
+    const endTotalMin = startHour * 60 + startMin + durationMinutes;
+    const endH = Math.floor(endTotalMin / 60) % 24;
+    const endM = endTotalMin % 60;
+    const endTimeStr = String(endH).padStart(2,'0') + ':' + String(endM).padStart(2,'0') + ':00';
 
     // Câmpuri EXACTE din schema Supabase reală (snake_case)
     const entry = {
       user_id: userId,
       date: dateVal,
-      start_time: startDt.toISOString(),
-      end_time: endDt.toISOString(),
+      start_time: startTimeStr,
+      end_time: endTimeStr,
       duration_minutes: durationMinutes,
       task_name: taskName,
       project_id: projectId ? parseInt(projectId) : null,
@@ -494,13 +504,16 @@ const TimeTracking = {
     const now = new Date();
     const startDt = timerData.startTime ? new Date(timerData.startTime) : new Date(now.getTime() - minutes * 60000);
     const localDate = this.localDateStr(startDt);
+    // Format HH:MM:SS pentru start_time și end_time (tip TIME în Supabase)
+    const startTimeStr = String(startDt.getHours()).padStart(2,'0') + ':' + String(startDt.getMinutes()).padStart(2,'0') + ':00';
+    const endTimeStr = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0') + ':00';
 
     // Câmpuri EXACTE din schema Supabase reală (snake_case)
     const entry = {
       user_id: userId,
       date: localDate,
-      start_time: startDt.toISOString(),
-      end_time: now.toISOString(),
+      start_time: startTimeStr,
+      end_time: endTimeStr,
       duration_minutes: minutes,
       task_name: timerData.taskName || '',
       project_id: timerData.projectId ? parseInt(timerData.projectId) : null,
